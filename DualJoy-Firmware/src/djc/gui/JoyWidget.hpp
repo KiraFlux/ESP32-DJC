@@ -1,17 +1,18 @@
 #pragma once
 
+#include <rs/ArrayString.hpp>
+
 #include "KiraFlux-GUI.hpp"
 
+namespace djc {
 
 struct JoyWidget final : kfgui::Widget {
 
 private:
-
     const float *x{nullptr};
     const float *y{nullptr};
 
 public:
-
     void bindAxis(const float &axis_x, const float &axis_y) noexcept {
         x = &axis_x;
         y = &axis_y;
@@ -33,8 +34,7 @@ public:
                 center_x,
                 center_y,
                 static_cast<kf::Position>(center_x + *x * static_cast<float>(center_x)),
-                center_y
-            );
+                center_y);
 
             painter.setCursor(text_offset, text_offset);
             painter.text(rs::formatted<8>(format, *x).data());
@@ -47,8 +47,7 @@ public:
                 center_x,
                 center_y,
                 center_x,
-                static_cast<kf::Position>(center_y - *y * static_cast<float>(center_y))
-            );
+                static_cast<kf::Position>(center_y - *y * static_cast<float>(center_y)));
 
             const auto text_offset_y = static_cast<kf::Position>(center_y + text_offset);
 
@@ -59,3 +58,5 @@ public:
         }
     }
 };
+
+}// namespace djc

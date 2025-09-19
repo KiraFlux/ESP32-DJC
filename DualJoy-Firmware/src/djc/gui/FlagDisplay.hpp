@@ -2,11 +2,11 @@
 
 #include "KiraFlux-GUI.hpp"
 
+namespace djc {
 
 struct FlagDisplay : kfgui::Widget {
 
 public:
-
     const char *label{nullptr};
     const bool *flag{nullptr};
 
@@ -16,5 +16,6 @@ public:
         painter.text_value_on = not lit;
         painter.text((label == nullptr) ? "null" : label);
     }
-
 };
+
+}// namespace djc
