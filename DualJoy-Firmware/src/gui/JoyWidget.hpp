@@ -18,8 +18,8 @@ public:
     }
 
     void render() noexcept override {
-        constexpr auto text_offset = static_cast<kf::Position>(2);
-        constexpr auto format = "%+1.2f";
+        constexpr auto text_offset = static_cast<kf::Position>(3);
+        constexpr auto format = "%+1.3f";
 
         painter.rect(0, 0, painter.maxX(), painter.maxY(), kf::Painter::Mode::FillBorder);
 

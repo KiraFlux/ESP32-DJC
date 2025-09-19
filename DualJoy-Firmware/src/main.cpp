@@ -1,33 +1,39 @@
+#include <Arduino.h>
 #include <WiFi.h>
-#include "Arduino.h"
-#include "KiraFlux-GUI.hpp"
-#include "kf/SSD1306.h"
-#include "kf/Joystick.hpp"
-#include "kf/Button.hpp"
-#include "kf/JoystickListener.hpp"
-#include "espnow/Protocol.hpp"
-#include "gui/JoyWidget.hpp"
+
+#include <KiraFlux-GUI.hpp>
+#include <kf/Button.hpp>
+#include <kf/Joystick.hpp>
+#include <kf/JoystickListener.hpp>
+#include <kf/Logger.hpp>
+#include <kf/SSD1306.h>
+
+#include <espnow/Protocol.hpp>
+#include <rs/aliases.hpp>
+
 #include "gui/FlagDisplay.hpp"
+#include "gui/JoyWidget.hpp"
 
-
-struct EspNowClient {
+struct EspnowNode {
     espnow::Mac target;
 
     [[nodiscard]] bool init() const {
         if (not WiFiClass::mode(WIFI_MODE_STA)) {
+            kf_Logger_error("WIFI mode set fail");
             return false;
         }
 
         if (const auto result = espnow::Protocol::init(); result.fail()) {
-            Serial.println(rs::toString(result.error));
+            kf_Logger_error(rs::toString(result.error));
             return false;
         }
 
         if (const auto result = espnow::Peer::add(target); result.fail()) {
-            Serial.println(rs::toString(result.error));
+            kf_Logger_error(rs::toString(result.error));
             return false;
         }
 
+        kf_Logger_info("OK");
         return true;
     }
 
@@ -39,11 +45,31 @@ struct EspNowClient {
 struct Periphery {
     kf::Button left_button{GPIO_NUM_15, kf::Button::Mode::PullUp};
     kf::Button right_button{GPIO_NUM_4, kf::Button::Mode::PullUp};
-    kf::Joystick left_joystick{GPIO_NUM_32, GPIO_NUM_33, 0.8f};
-    kf::Joystick right_joystick{GPIO_NUM_35, GPIO_NUM_34, 0.8f};
+    kf::Joystick left_joystick{GPIO_NUM_32, GPIO_NUM_33, 0.5f};
+    kf::Joystick right_joystick{GPIO_NUM_35, GPIO_NUM_34, 0.5f};
     kf::JoystickListener left_joystick_listener{left_joystick};
-    EspNowClient esp_now{{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}};
+    EspnowNode espnow_node{{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}};
     kf::SSD1306 display_driver{};
+
+    bool init() {
+        kf_Logger_info("init");
+
+        display_driver.init();
+        Wire.setClock(1000000u);
+        display_driver.update();
+
+        left_joystick.init();
+        right_joystick.init();
+        left_button.init(false);
+        right_button.init(false);
+
+        if (not espnow_node.init()) {
+            return false;
+        }
+
+        kf_Logger_info("OK");
+        return true;
+    }
 
     static Periphery &instance() {
         static Periphery instance;
@@ -63,12 +89,12 @@ struct FlightBehavior : kfgui::Behavior {
     } packet{};
 
     void bindPainters(kf::Painter &root) noexcept override {
-        auto [up, down] = root.splitVertically<2>({7, 1});
-        auto [left_joy, right_joy] = up.splitHorizontally<2>({});
+        auto [up, down] = root.splitVertically<2>({1, 7});
+        auto [left_joy, right_joy] = down.splitHorizontally<2>({});
 
         left_joy_widget.painter = left_joy;
         right_joy_widget.painter = right_joy;
-        toggle_mode.painter = down;
+        toggle_mode.painter = up;
     }
 
     void loop() noexcept override {
@@ -80,7 +106,7 @@ struct FlightBehavior : kfgui::Behavior {
         packet.right_y = periphery.right_joystick.axis_y.read();
 
         periphery.left_button.poll();
-        periphery.esp_now.send(packet);
+        periphery.espnow_node.send(packet);
     }
 
     void onBind() noexcept override {
@@ -93,7 +119,7 @@ struct FlightBehavior : kfgui::Behavior {
         left_joy_widget.bindAxis(packet.left_x, packet.left_y);
         right_joy_widget.bindAxis(packet.right_x, packet.right_y);
         toggle_mode.flag = &packet.toggle_mode;
-        toggle_mode.label = "Toggle";
+        toggle_mode.label = "mode";
     }
 
     static FlightBehavior &instance() {
@@ -110,7 +136,7 @@ private:
 };
 
 struct RemoteMenuBehavior : kfgui::Behavior {
-    enum class Code : uint8_t {
+    enum class Code : rs::u8 {
         None = 0x00,
         Reload = 0x10,
         Click = 0x20,
@@ -120,7 +146,7 @@ struct RemoteMenuBehavior : kfgui::Behavior {
         Down = 0x41
     };
 
-    std::array<char, 128> text_buffer{"Waiting for menu..."};
+    std::array<char, 250> text_buffer{"Waiting for menu..."};
     kfgui::TextDisplay text_display{text_buffer.data()};
 
     void bindPainters(kf::Painter &root) noexcept override {
@@ -136,22 +162,22 @@ struct RemoteMenuBehavior : kfgui::Behavior {
     void onBind() noexcept override {
         auto &periphery = Periphery::instance();
 
-        periphery.left_joystick_listener.handler = [](kf::JoystickListener::Direction dir) {
-            if (const auto code = translate(dir); code != Code::None) {
-                send(code);
-            }
-        };
+        periphery.left_joystick_listener.handler =
+            [](kf::JoystickListener::Direction dir) {
+                if (const auto code = translate(dir); code != Code::None) {
+                    send(code);
+                }
+            };
 
-        periphery.left_button.handler = []() {
-            send(Code::Click);
-        };
+        periphery.left_button.handler = []() { send(Code::Click); };
 
-        espnow::Protocol::instance().setReceiveHandler([](const espnow::Mac &mac, const void *data, uint8_t size) {
-            auto &self = RemoteMenuBehavior::instance();
-            size_t copy_size = std::min(size, static_cast<uint8_t>(self.text_buffer.size() - 1));
-            memcpy(self.text_buffer.data(), data, copy_size);
-            self.text_buffer[copy_size] = '\0';
-        });
+        espnow::Protocol::instance().setReceiveHandler(
+            [](const espnow::Mac &mac, const void *data, rs::u8 size) {
+                auto &self = RemoteMenuBehavior::instance();
+                rs::size copy_size = std::min(size, static_cast<rs::u8>(self.text_buffer.size() - 1));
+                memcpy(self.text_buffer.data(), data, copy_size);
+                self.text_buffer[copy_size] = '\0';
+            });
 
         send(Code::Reload);
     }
@@ -162,10 +188,7 @@ struct RemoteMenuBehavior : kfgui::Behavior {
     }
 
 private:
-
-    static void send(Code code) {
-        Periphery::instance().esp_now.send(code);
-    }
+    static void send(Code code) { Periphery::instance().espnow_node.send(code); }
 
     static Code translate(kf::JoystickListener::Direction dir) {
         switch (dir) {
@@ -182,9 +205,7 @@ private:
         }
     }
 
-    RemoteMenuBehavior() {
-        add(text_display);
-    }
+    RemoteMenuBehavior() { add(text_display); }
 };
 
 [[noreturn]] void setup() {
@@ -194,38 +215,39 @@ private:
     static auto &remote_menu_behavior = RemoteMenuBehavior::instance();
 
     Serial.begin(115200);
-
-    periphery.display_driver.init();
-    Wire.setClock(1000000);
-    periphery.display_driver.update();
-
-    periphery.left_joystick.init();
-    periphery.right_joystick.init();
-    periphery.left_joystick.axis_x.inverted = true;
-    periphery.right_joystick.axis_y.inverted = true;
-    periphery.left_joystick.calibrate(500);
-    periphery.right_joystick.calibrate(500);
-    periphery.left_button.init(false);
-    periphery.right_button.init(false);
-
-    if (not periphery.esp_now.init()) {
-        Serial.println("espnow fail");
-    }
-
-    periphery.right_button.handler = []() {
-        if (manager.isActive(flight_behavior)) {
-            manager.bindBehavior(remote_menu_behavior);
-        } else {
-            manager.bindBehavior(flight_behavior);
-        }
+    kf::Logger::instance().write_func = [](const char *buffer, rs::size size) {
+        Serial.write(buffer, size);
     };
+
+    periphery.init();
 
     static kf::Painter painter{
         kf::FrameView{
-            periphery.display_driver.buffer,
-            kf::SSD1306::width, kf::SSD1306::width, kf::SSD1306::height, 0, 0
-        },
-        kf::fonts::gyver_5x7_en
+            periphery.display_driver.buffer, kf::SSD1306::width,
+            kf::SSD1306::width, kf::SSD1306::height, 0, 0},
+        kf::fonts::gyver_5x7_en};
+
+    painter.text("Init");
+    periphery.display_driver.update();
+
+    periphery.left_joystick.axis_x.inverted = true;
+    periphery.right_joystick.axis_y.inverted = true;
+
+    periphery.left_joystick.calibrate(500);
+    periphery.right_joystick.calibrate(500);
+
+    periphery.right_button.handler = []() {
+        static std::array<kfgui::Behavior *, 2> behaviors{
+            &flight_behavior,
+            &remote_menu_behavior,
+        };
+        static rs::size current{0};
+
+        manager.bindBehavior(*behaviors[current]);
+        kf_Logger_debug("Behavior: %d", current);
+
+        current += 1;
+        current %= behaviors.size();
     };
 
     flight_behavior.bindPainters(painter);
