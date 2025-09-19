@@ -31,9 +31,7 @@ struct Periphery {
         left_button.init(false);
         right_button.init(false);
 
-        if (not espnow_node.init()) {
-            return false;
-        }
+        if (not espnow_node.init()) { return false; }
 
         kf_Logger_info("OK");
         return true;
