@@ -5,10 +5,13 @@
 #include "djc/Periphery.hpp"
 #include "djc/gui/FlagDisplay.hpp"
 #include "djc/gui/JoyWidget.hpp"
+#include "djc/tools/Singleton.hpp"
 
 namespace djc {
 
-struct FlightBehavior : kfgui::Behavior {
+struct FlightBehavior : kfgui::Behavior, Singleton<FlightBehavior> {
+    friend struct Singleton<FlightBehavior>;
+
     JoyWidget left_joy_widget;
     JoyWidget right_joy_widget;
     FlagDisplay toggle_mode;
@@ -51,11 +54,6 @@ struct FlightBehavior : kfgui::Behavior {
         right_joy_widget.bindAxis(packet.right_x, packet.right_y);
         toggle_mode.flag = &packet.toggle_mode;
         toggle_mode.label = "mode";
-    }
-
-    static FlightBehavior &instance() {
-        static FlightBehavior instance;
-        return instance;
     }
 
 private:

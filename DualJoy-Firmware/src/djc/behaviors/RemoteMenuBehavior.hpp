@@ -4,10 +4,14 @@
 #include <espnow/Protocol.hpp>
 
 #include "djc/Periphery.hpp"
+#include "djc/tools/Singleton.hpp"
 
 namespace djc {
 
-struct RemoteMenuBehavior : kfgui::Behavior {
+struct RemoteMenuBehavior : kfgui::Behavior, Singleton<RemoteMenuBehavior> {
+
+    friend struct Singleton<RemoteMenuBehavior>;
+
     enum class Code : rs::u8 {
         None = 0x00,
         Reload = 0x10,
@@ -52,11 +56,6 @@ struct RemoteMenuBehavior : kfgui::Behavior {
             });
 
         send(Code::Reload);
-    }
-
-    static RemoteMenuBehavior &instance() {
-        static RemoteMenuBehavior instance;
-        return instance;
     }
 
 private:
