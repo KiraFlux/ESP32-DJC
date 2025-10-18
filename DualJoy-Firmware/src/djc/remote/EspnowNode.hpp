@@ -32,6 +32,10 @@ struct EspnowNode {
     template<typename T> inline rs::Result<void, espnow::Protocol::SendError> send(const T &value) {
         return espnow::Protocol::send(target, value);
     }
+
+    inline rs::Result<void, espnow::Protocol::SendError> send(const void *data, rs::u8 len) {
+        return espnow::Protocol::send(target, data, len);
+    }
 };
 
 }// namespace djc
