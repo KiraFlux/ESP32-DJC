@@ -23,7 +23,7 @@ struct FlightControl : kf::sys::Behavior, Singleton<FlightControl> {
         rs::f32 right_y;
     };
 
-    void setupLayout(kf::Painter &root) override {
+    void updateLayout(kf::Painter &root) override {
         auto [up, down] = root.splitVertically<2>({1, 7});
         mavlink_mode_enable.painter = up;
 

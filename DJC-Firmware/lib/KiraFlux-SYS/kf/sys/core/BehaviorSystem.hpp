@@ -25,7 +25,7 @@ public:
         root_canvas.setFont(kf::fonts::gyver_5x7_en);
 
         for (auto b: behaviors) {
-            b->setupLayout(root_canvas);
+            b->updateLayout(root_canvas);
         }
     }
 

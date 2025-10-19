@@ -23,7 +23,7 @@ public:
         }
     }
 
-    virtual void setupLayout(kf::Painter &root) = 0;
+    virtual void updateLayout(kf::Painter &root) = 0;
 
     virtual void update() = 0;
 
