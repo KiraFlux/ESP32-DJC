@@ -10,6 +10,3 @@
 [submodule "DJC-Firmware/lib/Fresh-EspNow"]
 	path = DJC-Firmware/lib/Fresh-EspNow
 	url = https://github.com/KiraFlux/Fresh-EspNow.git
-[submodule "DJC-Firmware/lib/KiraFlux-Logger"]
-	path = DJC-Firmware/lib/KiraFlux-Logger
-	url = https://github.com/KiraFlux/KiraFlux-Logger.git
