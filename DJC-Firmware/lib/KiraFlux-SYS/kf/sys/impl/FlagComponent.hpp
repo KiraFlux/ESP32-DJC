@@ -8,16 +8,16 @@ namespace kf::sys {
 struct FlagComponent : Component {
 
 private:
-    const char *label{nullptr};
-    bool value{false};
+    const char *label;
+    bool value;
 
 public:
     explicit FlagComponent(const char *label, bool default_value = false) :
-        label{label}, value{default_value} {}
+        label{nullptr == label ? "no-title-flag" : label}, value{default_value} {}
 
     void display() override {
         canvas.setCursor(0, 0);
-        canvas.text((label == nullptr) ? "null" : label, not value);
+        canvas.text(label, not value);
     }
 
     inline void toggle() { value = not value; }
