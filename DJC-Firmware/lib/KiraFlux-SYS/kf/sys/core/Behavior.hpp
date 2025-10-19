@@ -22,11 +22,11 @@ public:
         }
     }
 
-    virtual void bindPainters(kf::Painter &root) {};
+    virtual void bindPainters(kf::Painter &root) = 0;
+
+    virtual void loop() = 0;
 
     virtual void onBind() {}
-
-    virtual void loop() {}
 };
 
 

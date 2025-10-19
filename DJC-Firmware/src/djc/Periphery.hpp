@@ -7,19 +7,29 @@
 #include <kf/SSD1306.h>
 
 #include "djc/remote/EspnowNode.hpp"
+#include "djc/tools/Singleton.hpp"
+
 
 namespace djc {
 
-struct Periphery {
+struct Periphery : Singleton<Periphery> {
+    friend struct Singleton<Periphery>;
+
     kf::Button left_button{GPIO_NUM_15, kf::Button::Mode::PullUp};
+
     kf::Button right_button{GPIO_NUM_4, kf::Button::Mode::PullUp};
+
     kf::Joystick left_joystick{GPIO_NUM_32, GPIO_NUM_33, 0.5f};
+
     kf::Joystick right_joystick{GPIO_NUM_35, GPIO_NUM_34, 0.5f};
+
     kf::JoystickListener left_joystick_listener{left_joystick};
+
     EspnowNode espnow_node{{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}};
+
     kf::SSD1306 display_driver{};
 
-    bool init() {
+    [[nodiscard]] bool init() {
         kf_Logger_info("init");
 
         display_driver.init();
@@ -37,10 +47,16 @@ struct Periphery {
         return true;
     }
 
-    static Periphery &instance() {
-        static Periphery instance;
-        return instance;
+    void configure() {
+        left_joystick.axis_x.inverted = true;
+        right_joystick.axis_y.inverted = true;
     }
+
+    void calibrate(int joystick_samples = 500) {
+        left_joystick.calibrate(joystick_samples);
+        right_joystick.calibrate(joystick_samples);
+    }
+
 };
 
 }// namespace djc

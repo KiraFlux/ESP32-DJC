@@ -1,53 +1,61 @@
 #pragma once
 
-#include "Behavior.hpp"
+#include <KiraFlux-GFX.hpp>
+#include <rs/aliases.hpp>
+#include <vector>
+
+#include <kf/sys/core/Behavior.hpp>
 
 
 namespace kf::sys {
 
-/// Менеджер поведения
-struct BehaviorManager final {
+struct BehaviorManager {
 
 private:
-
-    /// Активное поведение
-    Behavior *active_behavior{nullptr};
+    std::vector<Behavior *> behaviors;
+    Painter root_canvas{};
+    rs::size cursor{0};
 
 public:
-
-    static BehaviorManager &instance() {
-        static BehaviorManager instance{};
-        return instance;
-    }
-
-    [[nodiscard]] inline bool isActive(const Behavior &behavior) const {
-        return &behavior == active_behavior;
-    }
-
-    void bindBehavior(Behavior &behavior) {
-        active_behavior = &behavior;
-        behavior.onBind();
-    }
-
-    void display(kf::Painter &painter) {
-        if (active_behavior != nullptr) {
-            painter.fill(false);
-            active_behavior->display();
+    explicit BehaviorManager(
+        const Painter &root,
+        std::initializer_list<Behavior *> behaviors
+    ) :
+        behaviors{behaviors}, root_canvas{root} {
+        for (auto b: behaviors) {
+            b->bindPainters(root_canvas);
         }
     }
 
-    void loop() {
-        if (active_behavior != nullptr) {
-            active_behavior->loop();
-        }
+    virtual void init() {
+        root_canvas.setFont(kf::fonts::gyver_5x7_en);
+        root_canvas.text("Initializing...");
+    }
+
+    virtual void display() {
+        auto behavior = getCurrentBehavior();
+        if (nullptr == behavior) { return; }
+        root_canvas.fill(false);
+        behavior->display();
+    }
+
+    virtual void loop() {
+        auto behavior = getCurrentBehavior();
+        if (nullptr == behavior) { return; }
+        behavior->loop();
+    }
+
+    void next() {
+        if (behaviors.empty()) { return; }
+
+        cursor += 1;
+        cursor %= behaviors.size();
+
+        behaviors[cursor]->onBind();
     }
 
 private:
-    BehaviorManager() = default;
-
-public:
-    BehaviorManager(const BehaviorManager &) = delete;
+    Behavior *getCurrentBehavior() { return behaviors.empty() ? nullptr : behaviors[cursor]; }
 };
-
 
 }
