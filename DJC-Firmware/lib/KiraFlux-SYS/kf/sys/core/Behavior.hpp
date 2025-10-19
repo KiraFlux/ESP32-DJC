@@ -12,13 +12,13 @@ private:
     std::vector<Element *> elements{};
 
 public:
-    void add(Element &widget) {
-        elements.push_back(&widget);
+    void add(Element &element) {
+        elements.push_back(&element);
     }
 
     void display() {
-        for (auto w: elements) {
-            w->display();
+        for (auto element: elements) {
+            element->display();
         }
     }
 
