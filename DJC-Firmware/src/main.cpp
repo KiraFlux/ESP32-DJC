@@ -1,9 +1,9 @@
 #include <Arduino.h>
 
-#include "djc/DualJoystickControlBehaviorManager.hpp"
+#include "djc/RemoteController.hpp"
 
 
-static auto &behavior_manager = djc::DualJoystickControlBehaviorManager::instance();
+static auto &behavior_manager = djc::RemoteController::instance();
 
 void setup() {
     Serial.begin(115200);

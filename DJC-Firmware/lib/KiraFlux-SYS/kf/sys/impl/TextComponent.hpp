@@ -1,18 +1,18 @@
 #pragma once
 
-#include <kf/sys/abc/Element.hpp>
+#include <kf/sys/abc/Component.hpp>
 
 
 namespace kf::sys {
 
-struct TextElement final : Element {
+struct TextComponent final : Component {
 
     const char *text;
 
-    explicit TextElement(const char *text) :
+    explicit TextComponent(const char *text) :
         text{text} {}
 
-    explicit TextElement() :
+    explicit TextComponent() :
         text{nullptr} {}
 
     void display() override {

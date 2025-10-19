@@ -1,7 +1,8 @@
 #pragma once
 
 #include <vector>
-#include "kf/sys/abc/Element.hpp"
+
+#include <kf/sys/abc/Component.hpp>
 
 
 namespace kf::sys {
@@ -9,25 +10,24 @@ namespace kf::sys {
 struct Behavior {
 
 private:
-    std::vector<Element *> elements{};
+    std::vector<Component *> components{};
 
 public:
-    void add(Element &element) {
-        elements.push_back(&element);
+    void addComponent(Component &component) {
+        components.push_back(&component);
     }
 
     void display() {
-        for (auto element: elements) {
-            element->display();
+        for (auto component: components) {
+            component->display();
         }
     }
 
-    virtual void bindPainters(kf::Painter &root) = 0;
+    virtual void setupLayout(kf::Painter &root) = 0;
 
-    virtual void loop() = 0;
+    virtual void update() = 0;
 
-    virtual void onBind() {}
+    virtual void onEntry() {}
 };
-
 
 }

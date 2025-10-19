@@ -2,12 +2,12 @@
 
 #include <rs/ArrayString.hpp>
 
-#include <kf/sys/abc/Element.hpp>
+#include <kf/sys/abc/Component.hpp>
 
 
 namespace kf::sys {
 
-struct JoystickElement final : kf::sys::Element {
+struct JoystickComponent final : kf::sys::Component {
 
     float x{0.0f};
     float y{0.0f};

@@ -9,12 +9,12 @@
 
 namespace djc {
 
-struct FlightBehavior : kf::sys::Behavior, Singleton<FlightBehavior> {
-    friend struct Singleton<FlightBehavior>;
+struct FlightControl : kf::sys::Behavior, Singleton<FlightControl> {
+    friend struct Singleton<FlightControl>;
 
-    kf::sys::JoystickElement left_joystick;
-    kf::sys::JoystickElement right_joystick;
-    kf::sys::FlagElement mavlink_mode_enable{"MAV Link"};
+    kf::sys::JoystickComponent left_joystick;
+    kf::sys::JoystickComponent right_joystick;
+    kf::sys::FlagComponent mavlink_mode_enable{"MAV Link"};
 
     struct SimpleControlPacket {
         rs::f32 left_x;
@@ -23,7 +23,7 @@ struct FlightBehavior : kf::sys::Behavior, Singleton<FlightBehavior> {
         rs::f32 right_y;
     };
 
-    void bindPainters(kf::Painter &root) override {
+    void setupLayout(kf::Painter &root) override {
         auto [up, down] = root.splitVertically<2>({1, 7});
         mavlink_mode_enable.painter = up;
 
@@ -32,7 +32,7 @@ struct FlightBehavior : kf::sys::Behavior, Singleton<FlightBehavior> {
         right_joystick.painter = right_joy;
     }
 
-    void loop() override {
+    void update() override {
         auto &periphery = djc::Periphery::instance();
 
         left_joystick.x = periphery.left_joystick.axis_x.read();
@@ -73,15 +73,14 @@ struct FlightBehavior : kf::sys::Behavior, Singleton<FlightBehavior> {
         }
     }
 
-    void onBind() override {
+    void onEntry() override {
         djc::Periphery::instance().left_button.handler = [this]() { mavlink_mode_enable.toggle(); };
     }
-
 private:
-    FlightBehavior() {
-        add(left_joystick);
-        add(right_joystick);
-        add(mavlink_mode_enable);
+    FlightControl() {
+        addComponent(left_joystick);
+        addComponent(right_joystick);
+        addComponent(mavlink_mode_enable);
     }
 };
 

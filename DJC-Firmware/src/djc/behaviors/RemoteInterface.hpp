@@ -9,8 +9,8 @@
 
 namespace djc {
 
-struct RemoteMenuBehavior : kf::sys::Behavior, Singleton<RemoteMenuBehavior> {
-    friend struct Singleton<RemoteMenuBehavior>;
+struct RemoteInterface : kf::sys::Behavior, Singleton<RemoteInterface> {
+    friend struct Singleton<RemoteInterface>;
 
     enum class Code : rs::u8 {
         None = 0x00,
@@ -22,38 +22,35 @@ struct RemoteMenuBehavior : kf::sys::Behavior, Singleton<RemoteMenuBehavior> {
         Down = 0x41
     };
 
-    std::array<char, 250> text_buffer{"Waiting for menu..."};
-    kf::sys::TextElement text_display{text_buffer.data()};
+    std::array<char, 250> text_buffer{"Waiting\nfor remote menu..."};
+    kf::sys::TextComponent text_display{text_buffer.data()};
 
-    void bindPainters(kf::Painter &root) override {
+    void setupLayout(kf::Painter &root) override {
         text_display.painter = root;
     }
 
-    void loop() override {
+    void update() override {
         auto &periphery = djc::Periphery::instance();
         periphery.left_joystick_listener.poll();
         periphery.left_button.poll();
     }
 
-    void onBind() override {
+    void onEntry() override {
         auto &periphery = djc::Periphery::instance();
 
-        periphery.left_joystick_listener.handler =
-            [](kf::JoystickListener::Direction dir) {
-                if (const auto code = translate(dir); code != Code::None) {
-                    send(code);
-                }
-            };
+        periphery.left_joystick_listener.handler = [](kf::JoystickListener::Direction dir) {
+            if (const auto code = translate(dir); code != Code::None) {
+                send(code);
+            }
+        };
 
         periphery.left_button.handler = []() { send(Code::Click); };
 
-        kf::espnow::Protocol::instance().setReceiveHandler(
-            [](const kf::espnow::Mac &mac, const void *data, rs::u8 size) {
-                auto &self = RemoteMenuBehavior::instance();
-                const auto copy_size = std::min(size, static_cast<rs::u8>(self.text_buffer.size() - 1));
-                std::memcpy(self.text_buffer.data(), data, copy_size);
-                self.text_buffer[copy_size] = '\0';
-            });
+        kf::espnow::Protocol::instance().setReceiveHandler([this](const kf::espnow::Mac &mac, const void *data, rs::u8 size) {
+            const auto copy_size = std::min(size, static_cast<rs::u8>(text_buffer.size() - 1));
+            std::memcpy(text_buffer.data(), data, copy_size);
+            text_buffer[copy_size] = '\0';
+        });
 
         send(Code::Reload);
     }
@@ -75,7 +72,7 @@ private:
         }
     }
 
-    RemoteMenuBehavior() { add(text_display); }
+    RemoteInterface() { addComponent(text_display); }
 };
 
 }// namespace djc

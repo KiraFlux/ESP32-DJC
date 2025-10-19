@@ -1,15 +1,15 @@
 #pragma once
 
-#include <KiraFlux-GFX.hpp>
-#include <rs/aliases.hpp>
 #include <vector>
+#include <rs/aliases.hpp>
+#include <KiraFlux-GFX.hpp>
 
 #include <kf/sys/core/Behavior.hpp>
 
 
 namespace kf::sys {
 
-struct BehaviorManager {
+struct BehaviorSystem {
 
 private:
     std::vector<Behavior *> behaviors;
@@ -17,7 +17,7 @@ private:
     rs::size cursor{0};
 
 public:
-    explicit BehaviorManager(
+    explicit BehaviorSystem(
         const Painter &root,
         std::initializer_list<Behavior *> behaviors
     ) :
@@ -25,7 +25,7 @@ public:
         root_canvas.setFont(kf::fonts::gyver_5x7_en);
 
         for (auto b: behaviors) {
-            b->bindPainters(root_canvas);
+            b->setupLayout(root_canvas);
         }
     }
 
@@ -33,7 +33,7 @@ public:
         root_canvas.text("Initializing...");
         auto behavior = getCurrentBehavior();
         if (nullptr == behavior) { return; }
-        behavior->onBind();
+        behavior->onEntry();
     }
 
     virtual void display() {
@@ -46,7 +46,7 @@ public:
     virtual void loop() {
         auto behavior = getCurrentBehavior();
         if (nullptr == behavior) { return; }
-        behavior->loop();
+        behavior->update();
     }
 
     void next() {
@@ -55,7 +55,7 @@ public:
         cursor += 1;
         cursor %= behaviors.size();
 
-        behaviors[cursor]->onBind();
+        behaviors[cursor]->onEntry();
     }
 
 private:
