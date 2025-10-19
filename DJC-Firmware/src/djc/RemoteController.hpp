@@ -15,8 +15,8 @@ struct RemoteController : kf::sys::BehaviorSystem, Singleton<RemoteController> {
 
     explicit RemoteController() :
         kf::sys::BehaviorSystem{
-            kf::Painter{
-                kf::FrameView{
+            kf::gfx::Painter{
+                kf::gfx::FrameView{
                     Periphery::instance().display_driver.buffer, kf::SSD1306::width,
                     kf::SSD1306::width, kf::SSD1306::height, 0, 0
                 }

@@ -23,7 +23,7 @@ struct FlightControl : kf::sys::Behavior, Singleton<FlightControl> {
         rs::f32 right_y;
     };
 
-    void updateLayout(kf::Painter &root) override {
+    void updateLayout(kf::gfx::Painter &root) override {
         auto [up, down] = root.splitVertically<2>({1, 7});
         mavlink_mode_enable.painter = up;
 
@@ -76,6 +76,7 @@ struct FlightControl : kf::sys::Behavior, Singleton<FlightControl> {
     void onEntry() override {
         djc::Periphery::instance().left_button.handler = [this]() { mavlink_mode_enable.toggle(); };
     }
+
 private:
     FlightControl() {
         addComponent(left_joystick);

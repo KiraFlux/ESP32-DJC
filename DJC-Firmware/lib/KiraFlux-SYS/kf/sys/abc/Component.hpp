@@ -1,13 +1,13 @@
 #pragma once
 
-#include <kf/Painter.hpp>
+#include <kf/gfx.hpp>
 
 
 namespace kf::sys {
 
 /// System Component
 struct Component {
-    kf::Painter painter{};
+    gfx::Painter painter{};
 
     /// Show Component
     virtual void display() = 0;

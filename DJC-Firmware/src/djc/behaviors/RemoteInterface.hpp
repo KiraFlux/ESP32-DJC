@@ -25,7 +25,7 @@ struct RemoteInterface : kf::sys::Behavior, Singleton<RemoteInterface> {
     std::array<char, 250> text_buffer{"Waiting\nfor remote menu..."};
     kf::sys::TextComponent text_display{text_buffer.data()};
 
-    void updateLayout(kf::Painter &root) override {
+    void updateLayout(kf::gfx::Painter &root) override {
         text_display.painter = root;
     }
 
