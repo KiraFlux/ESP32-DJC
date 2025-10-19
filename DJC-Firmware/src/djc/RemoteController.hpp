@@ -14,18 +14,7 @@ struct RemoteController : kf::sys::BehaviorSystem, Singleton<RemoteController> {
     friend struct Singleton<RemoteController>;
 
     explicit RemoteController() :
-        kf::sys::BehaviorSystem{
-            kf::gfx::Canvas{
-                kf::gfx::FrameView{
-                    Periphery::instance().display_driver.buffer, kf::SSD1306::width,
-                    kf::SSD1306::width, kf::SSD1306::height, 0, 0
-                }
-            },
-            {
-                &FlightControl::instance(),
-                &RemoteInterface::instance(),
-            }
-        } {}
+        RemoteController{Periphery::instance().screen_driver} {}
 
     void init() override {
         auto &periphery = Periphery::instance();
@@ -33,7 +22,7 @@ struct RemoteController : kf::sys::BehaviorSystem, Singleton<RemoteController> {
         (void) periphery.init();
 
         BehaviorSystem::init();
-        periphery.display_driver.update();
+        periphery.screen_driver.flush();
 
         periphery.configure();
         periphery.right_button.handler = [this]() { next(); };
@@ -45,7 +34,7 @@ struct RemoteController : kf::sys::BehaviorSystem, Singleton<RemoteController> {
         auto &periphery = Periphery::instance();
         //
         BehaviorSystem::display();
-        periphery.display_driver.update();
+        periphery.screen_driver.flush();
     }
 
     void loop() override {
@@ -54,6 +43,21 @@ struct RemoteController : kf::sys::BehaviorSystem, Singleton<RemoteController> {
         periphery.right_button.poll();
         BehaviorSystem::loop();
     }
+
+private:
+    explicit RemoteController(kf::SSD1306 &display_driver) :
+        kf::sys::BehaviorSystem{
+            kf::gfx::Canvas{
+                kf::gfx::FrameView{
+                    display_driver.buffer, display_driver.width(),
+                    display_driver.width(), display_driver.height(), 0, 0
+                }
+            },
+            {
+                &FlightControl::instance(),
+                &RemoteInterface::instance(),
+            }
+        } {}
 };
 
 }

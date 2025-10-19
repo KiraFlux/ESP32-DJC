@@ -27,14 +27,18 @@ struct Periphery : Singleton<Periphery> {
 
     EspnowNode espnow_node{{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}};
 
-    kf::SSD1306 display_driver{};
+    kf::SSD1306 screen_driver{};
 
     [[nodiscard]] bool init() {
         kf_Logger_info("init");
 
-        display_driver.init();
+        if (not screen_driver.init()) {
+            kf_Logger_error("Screen driver error");
+            return false;
+        }
+
         Wire.setClock(1000000u);
-        display_driver.update();
+        screen_driver.flush();
 
         left_joystick.init();
         right_joystick.init();
