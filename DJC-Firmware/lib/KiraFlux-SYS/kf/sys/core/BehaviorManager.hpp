@@ -22,14 +22,18 @@ public:
         std::initializer_list<Behavior *> behaviors
     ) :
         behaviors{behaviors}, root_canvas{root} {
+        root_canvas.setFont(kf::fonts::gyver_5x7_en);
+
         for (auto b: behaviors) {
             b->bindPainters(root_canvas);
         }
     }
 
     virtual void init() {
-        root_canvas.setFont(kf::fonts::gyver_5x7_en);
         root_canvas.text("Initializing...");
+        auto behavior = getCurrentBehavior();
+        if (nullptr == behavior) { return; }
+        behavior->onBind();
     }
 
     virtual void display() {
