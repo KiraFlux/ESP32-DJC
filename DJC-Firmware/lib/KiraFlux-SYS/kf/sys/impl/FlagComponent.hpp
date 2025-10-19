@@ -17,8 +17,7 @@ public:
 
     void display() override {
         canvas.setCursor(0, 0);
-        canvas.text_value_on = not value;
-        canvas.text((label == nullptr) ? "null" : label);
+        canvas.text((label == nullptr) ? "null" : label, not value);
     }
 
     inline void toggle() { value = not value; }
