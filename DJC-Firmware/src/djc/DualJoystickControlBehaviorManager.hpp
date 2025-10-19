@@ -5,11 +5,13 @@
 #include "djc/Periphery.hpp"
 #include "djc/behaviors/FlightBehavior.hpp"
 #include "djc/behaviors/RemoteMenuBehavior.hpp"
+#include "djc/tools/Singleton.hpp"
 
 
 namespace djc {
 
-struct DualJoystickControlBehaviorManager : kf::sys::BehaviorManager {
+struct DualJoystickControlBehaviorManager : kf::sys::BehaviorManager, Singleton<DualJoystickControlBehaviorManager> {
+    friend struct Singleton<DualJoystickControlBehaviorManager>;
 
     DualJoystickControlBehaviorManager() :
         kf::sys::BehaviorManager{

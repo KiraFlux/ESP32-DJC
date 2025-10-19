@@ -3,7 +3,7 @@
 #include "djc/DualJoystickControlBehaviorManager.hpp"
 
 
-static djc::DualJoystickControlBehaviorManager behavior_manager{};
+static auto &behavior_manager = djc::DualJoystickControlBehaviorManager::instance();
 
 void setup() {
     Serial.begin(115200);
