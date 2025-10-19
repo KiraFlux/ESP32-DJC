@@ -1,11 +1,15 @@
 #include <WiFi.h>
-#include "Arduino.h"
+#include <Arduino.h>
+
 #include "KiraFlux-GUI.hpp"
+
 #include "kf/SSD1306.h"
 #include "kf/Joystick.hpp"
 #include "kf/Button.hpp"
 #include "kf/JoystickListener.hpp"
+
 #include "espnow/Protocol.hpp"
+
 #include "gui/JoyWidget.hpp"
 #include "gui/FlagDisplay.hpp"
 
@@ -86,8 +90,8 @@ struct FlightBehavior : kfgui::Behavior {
     void onBind() noexcept override {
         auto &periphery = Periphery::instance();
 
-        periphery.left_button.handler = [this]() {
-            packet.toggle_mode = not packet.toggle_mode;
+        periphery.left_button.handler = []() {
+            instance().packet.toggle_mode ^= 1;
         };
 
         left_joy_widget.bindAxis(packet.left_x, packet.left_y);
@@ -120,7 +124,7 @@ struct RemoteMenuBehavior : kfgui::Behavior {
         Down = 0x41
     };
 
-    std::array<char, 128> text_buffer{"Waiting for menu..."};
+    std::array<char, 128> text_buffer{"Waiting\nfor\nmenu..."};
     kfgui::TextDisplay text_display{text_buffer.data()};
 
     void bindPainters(kf::Painter &root) noexcept override {
