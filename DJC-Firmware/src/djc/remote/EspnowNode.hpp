@@ -1,13 +1,14 @@
 #pragma once
 
 #include <WiFi.h>
-#include <espnow/Protocol.hpp>
+#include <kf/espnow.hpp>
 #include <kf/Logger.hpp>
+
 
 namespace djc {
 
 struct EspnowNode {
-    espnow::Mac target;
+    kf::espnow::Mac target;
 
     [[nodiscard]] bool init() const {
         if (not WiFiClass::mode(WIFI_MODE_STA)) {
@@ -15,12 +16,12 @@ struct EspnowNode {
             return false;
         }
 
-        if (const auto result = espnow::Protocol::init(); result.fail()) {
+        if (const auto result = kf::espnow::Protocol::init(); result.fail()) {
             kf_Logger_error(rs::toString(result.error));
             return false;
         }
 
-        if (const auto result = espnow::Peer::add(target); result.fail()) {
+        if (const auto result = kf::espnow::Peer::add(target); result.fail()) {
             kf_Logger_error(rs::toString(result.error));
             return false;
         }
@@ -29,12 +30,12 @@ struct EspnowNode {
         return true;
     }
 
-    template<typename T> inline rs::Result<void, espnow::Protocol::SendError> send(const T &value) {
-        return espnow::Protocol::send(target, value);
+    template<typename T> [[nodiscard]] inline rs::Result<void, kf::espnow::Error> send(const T &value) const {
+        return kf::espnow::Protocol::send(target, value);
     }
 
-    inline rs::Result<void, espnow::Protocol::SendError> send(const void *data, rs::u8 len) {
-        return espnow::Protocol::send(target, data, len);
+    [[nodiscard]] inline rs::Result<void, kf::espnow::Error> send(const void *data, rs::u8 len) const {
+        return kf::espnow::Protocol::send(target, data, len);
     }
 };
 

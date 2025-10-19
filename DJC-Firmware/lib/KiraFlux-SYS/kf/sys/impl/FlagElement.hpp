@@ -1,16 +1,17 @@
 #pragma once
 
-#include "KiraFlux-GUI.hpp"
+#include <kf/sys/abc/Element.hpp>
 
-namespace djc {
 
-struct FlagDisplay : kfgui::Widget {
+namespace kf::sys {
+
+struct FlagElement : Element {
 
 public:
     const char *label{nullptr};
     const bool *flag{nullptr};
 
-    void render() noexcept override {
+    void display() override {
         const bool lit = (flag != nullptr) and *flag;
         painter.setCursor(0, 0);
         painter.text_value_on = not lit;
@@ -18,4 +19,4 @@ public:
     }
 };
 
-}// namespace djc
+}// namespace kf::sys

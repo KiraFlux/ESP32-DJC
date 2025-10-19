@@ -3,12 +3,12 @@
 #include "kf/Painter.hpp"
 
 
-namespace kfgui {
+namespace kf::sys {
 
-struct Widget {
+struct Element {
     kf::Painter painter{};
 
-    virtual void render() noexcept = 0;
+    virtual void display() = 0;
 };
 
 }

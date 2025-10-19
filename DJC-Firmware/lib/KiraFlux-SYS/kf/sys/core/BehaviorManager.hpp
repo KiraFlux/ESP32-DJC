@@ -1,9 +1,9 @@
 #pragma once
 
-#include "kfgui/core/Behavior.hpp"
+#include "Behavior.hpp"
 
 
-namespace kfgui {
+namespace kf::sys {
 
 /// Менеджер поведения
 struct BehaviorManager final {
@@ -15,28 +15,28 @@ private:
 
 public:
 
-    static BehaviorManager &instance() noexcept {
+    static BehaviorManager &instance() {
         static BehaviorManager instance{};
         return instance;
     }
 
-    [[nodiscard]] inline bool isActive(const Behavior &behavior) const noexcept {
+    [[nodiscard]] inline bool isActive(const Behavior &behavior) const {
         return &behavior == active_behavior;
     }
 
-    void bindBehavior(Behavior &behavior) noexcept {
+    void bindBehavior(Behavior &behavior) {
         active_behavior = &behavior;
         behavior.onBind();
     }
 
-    void render(kf::Painter &painter) noexcept {
+    void display(kf::Painter &painter) {
         if (active_behavior != nullptr) {
             painter.fill(false);
-            active_behavior->render();
+            active_behavior->display();
         }
     }
 
-    void loop() noexcept {
+    void loop() {
         if (active_behavior != nullptr) {
             active_behavior->loop();
         }

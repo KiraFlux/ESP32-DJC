@@ -2,23 +2,24 @@
 
 #include <rs/ArrayString.hpp>
 
-#include "KiraFlux-GUI.hpp"
+#include <kf/sys/abc/Element.hpp>
 
-namespace djc {
 
-struct JoyWidget final : kfgui::Widget {
+namespace kf::sys {
+
+struct JoystickElement final : kf::sys::Element {
 
 private:
     const float *x{nullptr};
     const float *y{nullptr};
 
 public:
-    void bindAxis(const float &axis_x, const float &axis_y) noexcept {
+    void bindAxis(const float &axis_x, const float &axis_y) {
         x = &axis_x;
         y = &axis_y;
     }
 
-    void render() noexcept override {
+    void display() override {
         constexpr auto text_offset = static_cast<kf::Position>(3);
         constexpr auto format = "%+1.3f";
 
@@ -32,27 +33,27 @@ public:
         painter.line(
             center_x,
             center_y,
-            static_cast<kf::Position>(center_x + *x * static_cast<float>(center_x)),
+            static_cast<kf::Position>(static_cast<float>(center_x) + *x * static_cast<float>(center_x)),
             center_y);
 
         painter.line(
             center_x,
             center_y,
             center_x,
-            static_cast<kf::Position>(center_y - *y * static_cast<float>(center_y)));
+            static_cast<kf::Position>(static_cast<float>(center_y) - *y * static_cast<float>(center_y)));
 
         const auto right_text_x = painter.maxGlyphX() - text_offset;
 
         painter.setCursor(text_offset, text_offset);
         painter.text(rs::formatted<8>(format, *x).data());
-        painter.setCursor(right_text_x, text_offset);
+        painter.setCursor(static_cast<kf::Position>(right_text_x), text_offset);
         painter.text("X");
 
         const auto text_offset_y = static_cast<kf::Position>(center_y + text_offset);
 
         painter.setCursor(text_offset, text_offset_y);
         painter.text(rs::formatted<8>(format, *y).data());
-        painter.setCursor(right_text_x, text_offset_y);
+        painter.setCursor(static_cast<kf::Position>(right_text_x), text_offset_y);
         painter.text("Y");
     }
 };

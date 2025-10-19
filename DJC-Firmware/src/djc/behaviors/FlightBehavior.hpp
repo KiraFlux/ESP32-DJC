@@ -1,21 +1,20 @@
 #pragma once
 
-#include <KiraFlux-GUI.hpp>
+#include <kf/sys.hpp>
 #include <MAVLink.h>
 
 #include "djc/Periphery.hpp"
-#include "djc/gui/FlagDisplay.hpp"
-#include "djc/gui/JoyWidget.hpp"
 #include "djc/tools/Singleton.hpp"
+
 
 namespace djc {
 
-struct FlightBehavior : kfgui::Behavior, Singleton<FlightBehavior> {
+struct FlightBehavior : kf::sys::Behavior, Singleton<FlightBehavior> {
     friend struct Singleton<FlightBehavior>;
 
-    JoyWidget left_joy_widget;
-    JoyWidget right_joy_widget;
-    FlagDisplay mavlink_mode_display;
+    kf::sys::JoystickElement left_joystick_element;
+    kf::sys::JoystickElement right_joystick_element;
+    kf::sys::FlagElement mavlink_mode_flag;
 
     bool mav_link_mode{true};
 
@@ -24,16 +23,16 @@ struct FlightBehavior : kfgui::Behavior, Singleton<FlightBehavior> {
         float right_x{0}, right_y{0};
     } packet{};
 
-    void bindPainters(kf::Painter &root) noexcept override {
+    void bindPainters(kf::Painter &root) override {
         auto [up, down] = root.splitVertically<2>({1, 7});
         auto [left_joy, right_joy] = down.splitHorizontally<2>({});
 
-        left_joy_widget.painter = left_joy;
-        right_joy_widget.painter = right_joy;
-        mavlink_mode_display.painter = up;
+        left_joystick_element.painter = left_joy;
+        right_joystick_element.painter = right_joy;
+        mavlink_mode_flag.painter = up;
     }
 
-    void loop() noexcept override {
+    void loop() override {
         auto &periphery = djc::Periphery::instance();
         packet.left_x = periphery.left_joystick.axis_x.read();
         packet.left_y = periphery.left_joystick.axis_y.read();
@@ -62,33 +61,33 @@ struct FlightBehavior : kfgui::Behavior, Singleton<FlightBehavior> {
 
             const auto len = mavlink_msg_to_send_buffer(buf, &msg);
 
-            periphery.espnow_node.send(static_cast<const void *>(buf), len);
+            (void)periphery.espnow_node.send(static_cast<const void *>(buf), len);
 
         } else {
-            periphery.espnow_node.send(packet);
+            (void)periphery.espnow_node.send(packet);
         }
 
         periphery.left_button.poll();
     }
 
-    void onBind() noexcept override {
+    void onBind() override {
         auto &periphery = djc::Periphery::instance();
 
         periphery.left_button.handler = [this]() {
             mav_link_mode = not mav_link_mode;
         };
 
-        left_joy_widget.bindAxis(packet.left_x, packet.left_y);
-        right_joy_widget.bindAxis(packet.right_x, packet.right_y);
-        mavlink_mode_display.flag = &mav_link_mode;
-        mavlink_mode_display.label = "MavLink Mode";
+        left_joystick_element.bindAxis(packet.left_x, packet.left_y);
+        right_joystick_element.bindAxis(packet.right_x, packet.right_y);
+        mavlink_mode_flag.flag = &mav_link_mode;
+        mavlink_mode_flag.label = "MavLink Mode";
     }
 
 private:
     FlightBehavior() {
-        add(left_joy_widget);
-        add(right_joy_widget);
-        add(mavlink_mode_display);
+        add(left_joystick_element);
+        add(right_joystick_element);
+        add(mavlink_mode_flag);
     }
 };
 

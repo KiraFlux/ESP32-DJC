@@ -1,15 +1,15 @@
 #pragma once
 
-#include <KiraFlux-GUI.hpp>
-#include <espnow/Protocol.hpp>
+#include <kf/sys.hpp>
+#include <kf/espnow.hpp>
 
 #include "djc/Periphery.hpp"
 #include "djc/tools/Singleton.hpp"
 
+
 namespace djc {
 
-struct RemoteMenuBehavior : kfgui::Behavior, Singleton<RemoteMenuBehavior> {
-
+struct RemoteMenuBehavior : kf::sys::Behavior, Singleton<RemoteMenuBehavior> {
     friend struct Singleton<RemoteMenuBehavior>;
 
     enum class Code : rs::u8 {
@@ -23,19 +23,19 @@ struct RemoteMenuBehavior : kfgui::Behavior, Singleton<RemoteMenuBehavior> {
     };
 
     std::array<char, 250> text_buffer{"Waiting for menu..."};
-    kfgui::TextDisplay text_display{text_buffer.data()};
+    kf::sys::TextElement text_display{text_buffer.data()};
 
-    void bindPainters(kf::Painter &root) noexcept override {
+    void bindPainters(kf::Painter &root) override {
         text_display.painter = root;
     }
 
-    void loop() noexcept override {
+    void loop() override {
         auto &periphery = djc::Periphery::instance();
         periphery.left_joystick_listener.poll();
         periphery.left_button.poll();
     }
 
-    void onBind() noexcept override {
+    void onBind() override {
         auto &periphery = djc::Periphery::instance();
 
         periphery.left_joystick_listener.handler =
@@ -47,11 +47,11 @@ struct RemoteMenuBehavior : kfgui::Behavior, Singleton<RemoteMenuBehavior> {
 
         periphery.left_button.handler = []() { send(Code::Click); };
 
-        espnow::Protocol::instance().setReceiveHandler(
-            [](const espnow::Mac &mac, const void *data, rs::u8 size) {
+        kf::espnow::Protocol::instance().setReceiveHandler(
+            [](const kf::espnow::Mac &mac, const void *data, rs::u8 size) {
                 auto &self = RemoteMenuBehavior::instance();
-                rs::size copy_size = std::min(size, static_cast<rs::u8>(self.text_buffer.size() - 1));
-                memcpy(self.text_buffer.data(), data, copy_size);
+                const auto copy_size = std::min(size, static_cast<rs::u8>(self.text_buffer.size() - 1));
+                std::memcpy(self.text_buffer.data(), data, copy_size);
                 self.text_buffer[copy_size] = '\0';
             });
 
@@ -59,20 +59,19 @@ struct RemoteMenuBehavior : kfgui::Behavior, Singleton<RemoteMenuBehavior> {
     }
 
 private:
-    static void send(Code code) { djc::Periphery::instance().espnow_node.send(code); }
+    static void send(Code code) {
+        (void) djc::Periphery::instance().espnow_node.send(code);
+    }
 
     static Code translate(kf::JoystickListener::Direction dir) {
+        using D = kf::JoystickListener::Direction;
+
         switch (dir) {
-            case kf::JoystickListener::Direction::Up:
-                return Code::Up;
-            case kf::JoystickListener::Direction::Down:
-                return Code::Down;
-            case kf::JoystickListener::Direction::Left:
-                return Code::Left;
-            case kf::JoystickListener::Direction::Right:
-                return Code::Right;
-            default:
-                return Code::None;
+            case D::Up:return Code::Up;
+            case D::Down:return Code::Down;
+            case D::Left:return Code::Left;
+            case D::Right:return Code::Right;
+            default:return Code::None;
         }
     }
 
