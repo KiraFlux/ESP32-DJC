@@ -1,15 +1,15 @@
 #pragma once
 
-#include <kf/sys.hpp>
 #include <MAVLink.h>
+#include <kf/sys.hpp>
+#include <kf/tools/meta/Singleton.hpp>
 
 #include "djc/Periphery.hpp"
-#include "djc/tools/Singleton.hpp"
 
 
 namespace djc {
 
-struct FlightControl : kf::sys::Behavior, Singleton<FlightControl> {
+struct FlightControl : kf::sys::Behavior, kf::tools::Singleton<FlightControl> {
     friend struct Singleton<FlightControl>;
 
     kf::sys::JoystickComponent left_joystick;

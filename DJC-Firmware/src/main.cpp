@@ -7,7 +7,7 @@ static auto &behavior_manager = djc::RemoteController::instance();
 
 void setup() {
     Serial.begin(115200);
-    kf::Logger::instance().write_func = [](const char *buffer, size_t size) { Serial.write(buffer, size); };
+    kf::Logger::instance().writer = [](const char *buffer, size_t size) { Serial.write(buffer, size); };
     behavior_manager.init();
 }
 

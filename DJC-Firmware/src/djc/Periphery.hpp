@@ -5,14 +5,14 @@
 #include <kf/JoystickListener.hpp>
 #include <kf/Logger.hpp>
 #include <kf/SSD1306.h>
+#include "kf/tools/meta/Singleton.hpp"
 
 #include "djc/remote/EspnowNode.hpp"
-#include "djc/tools/Singleton.hpp"
 
 
 namespace djc {
 
-struct Periphery : Singleton<Periphery> {
+struct Periphery : kf::tools::Singleton<Periphery> {
     friend struct Singleton<Periphery>;
 
     kf::Button left_button{GPIO_NUM_15, kf::Button::Mode::PullUp};

@@ -2,14 +2,14 @@
 
 #include <kf/sys.hpp>
 #include <kf/espnow.hpp>
+#include <kf/tools/meta/Singleton.hpp>
 
 #include "djc/Periphery.hpp"
-#include "djc/tools/Singleton.hpp"
 
 
 namespace djc {
 
-struct RemoteInterface : kf::sys::Behavior, Singleton<RemoteInterface> {
+struct RemoteInterface : kf::sys::Behavior, kf::tools::Singleton<RemoteInterface> {
     friend struct Singleton<RemoteInterface>;
 
     enum class Code : rs::u8 {

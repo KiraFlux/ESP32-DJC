@@ -1,16 +1,16 @@
 #pragma once
 
 #include <kf/sys.hpp>
+#include "kf/tools/meta/Singleton.hpp"
 
 #include "djc/Periphery.hpp"
 #include "djc/behaviors/FlightControl.hpp"
 #include "djc/behaviors/RemoteInterface.hpp"
-#include "djc/tools/Singleton.hpp"
 
 
 namespace djc {
 
-struct RemoteController : kf::sys::BehaviorSystem, Singleton<RemoteController> {
+struct RemoteController : kf::sys::BehaviorSystem, kf::tools::Singleton<RemoteController> {
     friend struct Singleton<RemoteController>;
 
     explicit RemoteController() :
