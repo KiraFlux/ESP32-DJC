@@ -16,9 +16,9 @@ public:
         label{label}, value{default_value} {}
 
     void display() override {
-        painter.setCursor(0, 0);
-        painter.text_value_on = not value;
-        painter.text((label == nullptr) ? "null" : label);
+        canvas.setCursor(0, 0);
+        canvas.text_value_on = not value;
+        canvas.text((label == nullptr) ? "null" : label);
     }
 
     inline void toggle() { value = not value; }

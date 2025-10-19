@@ -16,8 +16,8 @@ struct TextComponent final : Component {
         text{nullptr} {}
 
     void display() override {
-        painter.setCursor(0, 0);
-        painter.text((text == nullptr) ? "null" : text);
+        canvas.setCursor(0, 0);
+        canvas.text((text == nullptr) ? "null" : text);
     }
 
 };

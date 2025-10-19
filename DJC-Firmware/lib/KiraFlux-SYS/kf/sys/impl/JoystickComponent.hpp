@@ -16,35 +16,35 @@ struct JoystickComponent final : kf::sys::Component {
         constexpr auto text_offset = static_cast<gfx::Position>(3);
         constexpr auto format = "%+1.3f";
 
-        const auto center_x = painter.centerX();
-        const auto center_y = painter.centerY();
+        const auto center_x = canvas.centerX();
+        const auto center_y = canvas.centerY();
 
-        const auto right_text_x = painter.maxGlyphX() - text_offset;
+        const auto right_text_x = canvas.maxGlyphX() - text_offset;
         const auto text_offset_y = static_cast<gfx::Position>(center_y + text_offset);
 
-        painter.rect(0, 0, painter.maxX(), painter.maxY(), gfx::Painter::Mode::FillBorder);
+        canvas.rect(0, 0, canvas.maxX(), canvas.maxY(), gfx::Canvas::Mode::FillBorder);
 
-        painter.line(
+        canvas.line(
             center_x,
             center_y,
             static_cast<gfx::Position>(static_cast<float>(center_x) + x * static_cast<float>(center_x)),
             center_y);
 
-        painter.line(
+        canvas.line(
             center_x,
             center_y,
             center_x,
             static_cast<gfx::Position>(static_cast<float>(center_y) - y * static_cast<float>(center_y)));
 
-        painter.setCursor(text_offset, text_offset);
-        painter.text(rs::formatted<8>(format, x).data());
-        painter.setCursor(static_cast<gfx::Position>(right_text_x), text_offset);
-        painter.text("X");
+        canvas.setCursor(text_offset, text_offset);
+        canvas.text(rs::formatted<8>(format, x).data());
+        canvas.setCursor(static_cast<gfx::Position>(right_text_x), text_offset);
+        canvas.text("X");
 
-        painter.setCursor(text_offset, text_offset_y);
-        painter.text(rs::formatted<8>(format, y).data());
-        painter.setCursor(static_cast<gfx::Position>(right_text_x), text_offset_y);
-        painter.text("Y");
+        canvas.setCursor(text_offset, text_offset_y);
+        canvas.text(rs::formatted<8>(format, y).data());
+        canvas.setCursor(static_cast<gfx::Position>(right_text_x), text_offset_y);
+        canvas.text("Y");
     }
 };
 

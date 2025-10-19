@@ -23,7 +23,7 @@ public:
         }
     }
 
-    virtual void updateLayout(gfx::Painter &root) = 0;
+    virtual void updateLayout(gfx::Canvas &root) = 0;
 
     virtual void update() = 0;
 

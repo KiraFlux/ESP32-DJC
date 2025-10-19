@@ -23,13 +23,13 @@ struct FlightControl : kf::sys::Behavior, Singleton<FlightControl> {
         rs::f32 right_y;
     };
 
-    void updateLayout(kf::gfx::Painter &root) override {
+    void updateLayout(kf::gfx::Canvas &root) override {
         auto [up, down] = root.splitVertically<2>({1, 7});
-        mavlink_mode_enable.painter = up;
+        mavlink_mode_enable.canvas = up;
 
         const auto [left_joy, right_joy] = down.splitHorizontally<2>({});
-        left_joystick.painter = left_joy;
-        right_joystick.painter = right_joy;
+        left_joystick.canvas = left_joy;
+        right_joystick.canvas = right_joy;
     }
 
     void update() override {

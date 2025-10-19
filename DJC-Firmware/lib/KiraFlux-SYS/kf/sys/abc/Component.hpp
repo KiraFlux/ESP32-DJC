@@ -7,7 +7,7 @@ namespace kf::sys {
 
 /// System Component
 struct Component {
-    gfx::Painter painter{};
+    gfx::Canvas canvas{};
 
     /// Show Component
     virtual void display() = 0;

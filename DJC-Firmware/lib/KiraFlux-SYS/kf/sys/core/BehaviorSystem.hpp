@@ -13,12 +13,12 @@ struct BehaviorSystem {
 
 private:
     std::vector<Behavior *> behaviors;
-    gfx::Painter root_canvas{};
+    gfx::Canvas root_canvas{};
     rs::size cursor{0};
 
 public:
     explicit BehaviorSystem(
-        const gfx::Painter &root,
+        const gfx::Canvas &root,
         std::initializer_list<Behavior *> behaviors
     ) :
         behaviors{behaviors}, root_canvas{root} {
