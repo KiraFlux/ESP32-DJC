@@ -42,8 +42,8 @@ struct Periphery : kf::tools::Singleton<Periphery> {
 
         left_joystick.init();
         right_joystick.init();
-        left_button.init(false);
-        right_button.init(false);
+        left_button.init(kf::Button::PullType::Internal);
+        right_button.init(kf::Button::PullType::Internal);
 
         if (not espnow_node.init()) { return false; }
 

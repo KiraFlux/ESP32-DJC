@@ -1,7 +1,7 @@
 #include <Arduino.h>
+#include <kf/Logger.hpp>
 
 #include "djc/RemoteController.hpp"
-
 
 static auto &behavior_manager = djc::RemoteController::instance();
 
