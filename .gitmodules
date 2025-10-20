@@ -13,3 +13,6 @@
 [submodule "DJC-Firmware/lib/KiraFlux-ToolBox"]
 	path = DJC-Firmware/lib/KiraFlux-ToolBox
 	url = https://github.com/KiraFlux/KiraFlux-ToolBox.git
+[submodule "DJC-Firmware/lib/KiraFlux-SYS"]
+	path = DJC-Firmware/lib/KiraFlux-SYS
+	url = https://github.com/KiraFlux/KiraFlux-SYS.git
