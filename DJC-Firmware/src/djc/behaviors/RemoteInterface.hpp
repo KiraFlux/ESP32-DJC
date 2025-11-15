@@ -22,7 +22,7 @@ struct RemoteInterface : kf::sys::Behavior, kf::tools::Singleton<RemoteInterface
         Down = 0x41
     };
 
-    std::array<char, 250> text_buffer{"Waiting\nfor remote menu..."};
+    std::array<char, 250> text_buffer{"Waiting\nRemote Interface"};
     kf::sys::TextComponent text_display{text_buffer.data()};
 
     void updateLayout(kf::gfx::Canvas &root) override {
@@ -45,12 +45,12 @@ struct RemoteInterface : kf::sys::Behavior, kf::tools::Singleton<RemoteInterface
         };
 
         periphery.left_button.handler = []() { send(Code::Click); };
-
-        kf::espnow::Protocol::instance().setReceiveHandler([this](const kf::espnow::Mac &mac, const void *data, kf::u8 size) {
+        
+        periphery.espnow_node.on_receive = [this](const void *data, kf::u8 size) {
             const auto copy_size = std::min(size, static_cast<kf::u8>(text_buffer.size() - 1));
             std::memcpy(text_buffer.data(), data, copy_size);
             text_buffer[copy_size] = '\0';
-        });
+        };
 
         send(Code::Reload);
     }

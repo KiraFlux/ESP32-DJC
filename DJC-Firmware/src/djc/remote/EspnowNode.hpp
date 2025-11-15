@@ -1,14 +1,16 @@
 #pragma once
 
 #include <WiFi.h>
+#include <functional>
+#include <kf/Logger.hpp>
 #include <kf/espnow.hpp>
-#include "kf/Logger.hpp"
-
 
 namespace djc {
 
 struct EspnowNode {
     kf::espnow::Mac target;
+
+    std::function<void(const void *data, const kf::u8 len)> on_receive{nullptr};
 
     [[nodiscard]] bool init() const {
         if (not WiFiClass::mode(WIFI_MODE_STA)) {
@@ -22,6 +24,17 @@ struct EspnowNode {
         }
 
         if (const auto result = kf::espnow::Peer::add(target); result.fail()) {
+            kf_Logger_error(rs::toString(result.error));
+            return false;
+        }
+
+        auto handler = [this](const kf::espnow::Mac &mac, const void *data, kf::u8 len) {
+            if (on_receive == nullptr) { return; }
+            // if (mac != target) { return; }
+            on_receive(data, len);
+        };
+
+        if (const auto result = kf::espnow::Protocol::instance().setReceiveHandler(handler); result.fail()) {
             kf_Logger_error(rs::toString(result.error));
             return false;
         }
