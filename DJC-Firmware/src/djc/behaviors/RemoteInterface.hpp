@@ -12,7 +12,7 @@ namespace djc {
 struct RemoteInterface : kf::sys::Behavior, kf::tools::Singleton<RemoteInterface> {
     friend struct Singleton<RemoteInterface>;
 
-    enum class Code : rs::u8 {
+    enum class Code : kf::u8 {
         None = 0x00,
         Reload = 0x10,
         Click = 0x20,
@@ -46,8 +46,8 @@ struct RemoteInterface : kf::sys::Behavior, kf::tools::Singleton<RemoteInterface
 
         periphery.left_button.handler = []() { send(Code::Click); };
 
-        kf::espnow::Protocol::instance().setReceiveHandler([this](const kf::espnow::Mac &mac, const void *data, rs::u8 size) {
-            const auto copy_size = std::min(size, static_cast<rs::u8>(text_buffer.size() - 1));
+        kf::espnow::Protocol::instance().setReceiveHandler([this](const kf::espnow::Mac &mac, const void *data, kf::u8 size) {
+            const auto copy_size = std::min(size, static_cast<kf::u8>(text_buffer.size() - 1));
             std::memcpy(text_buffer.data(), data, copy_size);
             text_buffer[copy_size] = '\0';
         });

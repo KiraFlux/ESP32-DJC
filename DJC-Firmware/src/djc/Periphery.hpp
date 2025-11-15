@@ -1,7 +1,7 @@
 #pragma once
 
-#include "kf/Logger.hpp"
-#include "kf/tools/meta/Singleton.hpp"
+#include <kf/Logger.hpp>
+#include <kf/tools/meta/Singleton.hpp>
 #include <kf/Button.hpp>
 #include <kf/Joystick.hpp>
 #include <kf/JoystickListener.hpp>

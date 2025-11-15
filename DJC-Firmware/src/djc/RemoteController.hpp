@@ -1,11 +1,12 @@
 #pragma once
 
 #include <kf/sys.hpp>
-#include "kf/tools/meta/Singleton.hpp"
+#include <kf/tools/meta/Singleton.hpp>
 
 #include "djc/Periphery.hpp"
-#include "djc/behaviors/FlightControl.hpp"
+#include "djc/behaviors/SimpleControl.hpp"
 #include "djc/behaviors/RemoteInterface.hpp"
+#include "djc/behaviors/MavLinkControl.hpp"
 
 
 namespace djc {
@@ -54,7 +55,8 @@ private:
                 }
             },
             {
-                &FlightControl::instance(),
+                &MavLinkControl::instance(),
+                &SimpleControl::instance(),
                 &RemoteInterface::instance(),
             }
         } {}
