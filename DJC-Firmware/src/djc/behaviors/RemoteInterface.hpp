@@ -46,9 +46,9 @@ struct RemoteInterface : kf::sys::Behavior, kf::tools::Singleton<RemoteInterface
 
         periphery.left_button.handler = []() { send(Code::Click); };
         
-        periphery.espnow_node.on_receive = [this](const void *data, kf::u8 size) {
-            const auto copy_size = std::min(size, static_cast<kf::u8>(text_buffer.size() - 1));
-            std::memcpy(text_buffer.data(), data, copy_size);
+        periphery.espnow_node.on_receive = [this](kf::slice<const void> data) {
+            const auto copy_size = std::min(data.size, (text_buffer.size() - 1));
+            std::memcpy(text_buffer.data(), data.ptr, copy_size);
             text_buffer[copy_size] = '\0';
         };
 

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <MAVLink.h>
+#include <kf/String.hpp>
+#include <kf/aliases.hpp>
 #include <kf/sys.hpp>
 #include <kf/tools/meta/Singleton.hpp>
 #include <kf/tools/time/Timer.hpp>
@@ -45,12 +47,12 @@ struct MavLinkControl : kf::sys::Behavior, kf::tools::Singleton<MavLinkControl> 
     void onEntry() override {
         auto &periphery = Periphery::instance();
 
-        periphery.espnow_node.on_receive = [this](const void *data, kf::u8 size) {
+        periphery.espnow_node.on_receive = [this](kf::slice<const void> data) {
             mavlink_message_t message;
             mavlink_status_t status;
 
-            for (int i = 0; i < size; i += 1) {
-                if (mavlink_parse_char(MAVLINK_COMM_0, static_cast<const kf::u8 *>(data)[i], &message, &status)) {
+            for (int i = 0; i < data.size; i += 1) {
+                if (mavlink_parse_char(MAVLINK_COMM_0, static_cast<const kf::u8 *>(data.ptr)[i], &message, &status)) {
                     onMavLinkMessage(&message);
                 }
             }
@@ -59,7 +61,7 @@ struct MavLinkControl : kf::sys::Behavior, kf::tools::Singleton<MavLinkControl> 
         };
 
         periphery.left_button.handler = []() {
-
+            // todo serialControlSend("help")
         };
     }
 
@@ -82,7 +84,7 @@ private:
 
                 mavlink_msg_scaled_imu_decode(message, &imu);
 
-                rs::formatTo(
+                kf::formatTo(
                     text_buffer,
                     "A %.2f %.2f %.2f\n"
                     "G %d %d %d",
@@ -149,8 +151,10 @@ private:
 
         const auto len = mavlink_msg_to_send_buffer(buffer, &message);
 
-        auto &periphery = Periphery::instance();
-        (void) periphery.espnow_node.send(static_cast<const void *>(buffer), len);
+        (void) Periphery::instance().espnow_node.send(
+            kf::slice<const void>{
+                .ptr = static_cast<const void *>(buffer),
+                .size = len});
     }
 
     MavLinkControl() {
