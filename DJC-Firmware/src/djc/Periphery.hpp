@@ -1,11 +1,11 @@
 #pragma once
 
-#include <kf/Logger.hpp>
-#include <kf/tools/meta/Singleton.hpp>
 #include <kf/Button.hpp>
 #include <kf/Joystick.hpp>
 #include <kf/JoystickListener.hpp>
-#include <kf/SSD1306.h>
+#include <kf/Logger.hpp>
+#include <kf/SSD1306.hpp>
+#include <kf/tools/meta/Singleton.hpp>
 
 #include "djc/remote/EspnowNode.hpp"
 
@@ -73,7 +73,7 @@ struct Periphery : kf::tools::Singleton<Periphery> {
     }
 
     /// @brief Процедура блокирующей калибровки
-    /// @param joystick_samples 
+    /// @param joystick_samples
     void calibrate(int joystick_samples = 500) {
         left_joystick.calibrate(joystick_samples);
         right_joystick.calibrate(joystick_samples);
