@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <kf/Logger.hpp>
+#include <kf/tools/time/Timer.hpp>
 
 #include "djc/RemoteController.hpp"
 
@@ -12,7 +13,15 @@ void setup() {
 }
 
 void loop() {
-    behavior_manager.loop();
-    behavior_manager.display();
+    static kf::tools::Timer update_timer{static_cast<kf::Milliseconds>(1000 / 50)};
+    if (update_timer.ready()) {
+        behavior_manager.update();
+    }
+
+    static kf::tools::Timer display_timer{static_cast<kf::Milliseconds>(1000 / 20)};
+    if (display_timer.ready()) {
+        behavior_manager.display();
+    }
+
     delay(20);
 }

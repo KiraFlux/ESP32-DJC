@@ -40,20 +40,20 @@ struct Periphery : kf::tools::Singleton<Periphery> {
     //
 
     /// @brief Экран пульта
-    kf::SSD1306 screen_driver{};
+    kf::SSD1306 display_driver{};
 
     /// @brief Процедура инициализации аппаратных компонентов
     /// @returns true - Успешная инициализация всех аппаратных компонентов
     [[nodiscard]] bool init() {
         kf_Logger_info("init");
 
-        if (not screen_driver.init()) {
+        if (not display_driver.init()) {
             kf_Logger_error("Screen driver error");
             return false;
         }
 
         Wire.setClock(1000000u);
-        screen_driver.flush();
+        display_driver.flush();
 
         left_joystick.init();
         right_joystick.init();
