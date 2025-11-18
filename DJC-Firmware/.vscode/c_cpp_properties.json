@@ -10,7 +10,6 @@
             "includePath": [
                 "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/src",
                 "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
-                "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/lib/Fresh-EspNow/src",
                 "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/lib/KiraFlux-OLED/src",
                 "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/lib/KiraFlux-Input/src",
@@ -214,6 +213,7 @@
                 "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/dio_qspi/include",
                 "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                 "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/variants/esp32",
+                "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/lib/Fresh-EspNow/src",
                 "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/.pio/libdeps/esp32dev/KiraFlux-ToolBox/src",
                 "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                 "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
@@ -253,7 +253,6 @@
                 "path": [
                     "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/src",
                     "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
-                    "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/lib/Fresh-EspNow/src",
                     "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/lib/KiraFlux-OLED/src",
                     "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/lib/KiraFlux-Input/src",
@@ -457,6 +456,7 @@
                     "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/dio_qspi/include",
                     "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                     "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/variants/esp32",
+                    "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/lib/Fresh-EspNow/src",
                     "/home/kiraflux/Documents/ESP32-DJC/DJC-Firmware/.pio/libdeps/esp32dev/KiraFlux-ToolBox/src",
                     "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                     "/home/kiraflux/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
