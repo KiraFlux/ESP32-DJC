@@ -11,7 +11,6 @@
 namespace djc {
 
 /// @brief Описание поведения пульта
-/// @note Signeton
 struct RemoteController : kf::sys::BehaviorSystem, kf::tools::Singleton<RemoteController> {
     friend struct Singleton<RemoteController>;
 
@@ -27,7 +26,7 @@ struct RemoteController : kf::sys::BehaviorSystem, kf::tools::Singleton<RemoteCo
         periphery.display_driver.flush();
 
         periphery.configure();
-        periphery.right_button.handler = [this]() { next(); };
+        periphery.left_button.handler = [this]() { next(); };
 
         periphery.calibrate();
     }
@@ -44,7 +43,7 @@ struct RemoteController : kf::sys::BehaviorSystem, kf::tools::Singleton<RemoteCo
     void update() override {
         auto &periphery = Periphery::instance();
         //
-        periphery.right_button.poll();
+        periphery.left_button.poll();
         BehaviorSystem::update();
     }
 

@@ -23,5 +23,5 @@ void loop() {
         behavior_manager.display();
     }
 
-    delay(20);
+    delay(1);
 }

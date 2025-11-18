@@ -1,13 +1,16 @@
 #pragma once
 
+#include <cstring>
 #include <MAVLink.h>
-#include <kf/String.hpp>
-#include <kf/aliases.hpp>
+
 #include <kf/sys.hpp>
+#include <kf/aliases.hpp>
+#include <kf/String.hpp>
 #include <kf/tools/meta/Singleton.hpp>
 #include <kf/tools/time/Timer.hpp>
 
 #include "djc/Periphery.hpp"
+
 
 namespace djc {
 
@@ -19,6 +22,7 @@ struct MavLinkControl : kf::sys::Behavior, kf::tools::Singleton<MavLinkControl> 
 
     std::array<char, 70> text_buffer{"MAV Link"};
     kf::sys::TextComponent text_box{text_buffer.data()};
+    kf::tools::Timer heartbeat_timer{2000};
 
     void updateLayout(kf::gfx::Canvas &root) override {
         auto [up, down] = root.splitVertically<2>({4, 4});
@@ -36,31 +40,27 @@ struct MavLinkControl : kf::sys::Behavior, kf::tools::Singleton<MavLinkControl> 
 
         sendManualControl();
 
-        static kf::tools::Timer heartbeat_timer{2000};
         if (heartbeat_timer.ready()) {
             sendHeartBeat();
         }
 
-        periphery.left_button.poll();
+        periphery.right_button.poll();
     }
 
     void onEntry() override {
-        auto &periphery = Periphery::instance();
-
-        periphery.espnow_node.on_receive = [this](kf::slice<const void> data) {
+        kf::EspNow::instance().setUnknownReceiveHandler([this](const kf::EspNow::Mac &, const kf::slice<const void> &buffer) {
             mavlink_message_t message;
             mavlink_status_t status;
 
-            for (int i = 0; i < data.size; i += 1) {
-                if (mavlink_parse_char(MAVLINK_COMM_0, static_cast<const kf::u8 *>(data.ptr)[i], &message, &status)) {
+            for (int i = 0; i < buffer.size; i += 1) {
+                if (mavlink_parse_char(MAVLINK_COMM_0, static_cast<const kf::u8 *>(buffer.ptr)[i], &message, &status)) {
                     onMavLinkMessage(&message);
                 }
             }
+        });
 
-            // kf_Logger_debug("got %d bytes", size);
-        };
-
-        periphery.left_button.handler = []() {
+        auto &periphery = Periphery::instance();
+        periphery.right_button.handler = []() {
             // todo serialControlSend("help")
         };
     }
@@ -86,18 +86,18 @@ private:
 
                 kf::formatTo(
                     text_buffer,
-                    "A %.2f %.2f %.2f\n"
-                    "G %d %d %d",
-                    imu.xacc * 0.001f, imu.yacc * 0.001f, imu.zacc * 0.001f,
-                    imu.xgyro, imu.ygyro, imu.zgyro);
+                    "A %.2f %.2f %.2f",
+                    kf::f32(imu.xacc) * 0.001f,
+                    kf::f32(imu.yacc) * 0.001f,
+                    kf::f32(imu.zacc) * 0.001f
+                );
             }
 
-            default:
-                return;
+            default:return;
         }
     }
 
-    void sendSerialControl() {
+    static void sendSerialControl() {
         mavlink_message_t message;
         // mavlink_msg_serial_control_encode(
         //     127,
@@ -106,7 +106,7 @@ private:
         sendMavlinkToEspnow(message);
     }
 
-    void sendHeartBeat() {
+    static void sendHeartBeat() {
         mavlink_message_t message;
         mavlink_msg_heartbeat_pack(
             127,
@@ -146,15 +146,16 @@ private:
         sendMavlinkToEspnow(message);
     }
 
-    void sendMavlinkToEspnow(mavlink_message_t &message) {
+    static void sendMavlinkToEspnow(mavlink_message_t &message) {
         kf::u8 buffer[MAVLINK_MAX_PACKET_LEN];
 
         const auto len = mavlink_msg_to_send_buffer(buffer, &message);
 
-        (void) Periphery::instance().espnow_node.send(
+        (void) Periphery::instance().espnow_peer.value().sendBuffer(
             kf::slice<const void>{
                 .ptr = static_cast<const void *>(buffer),
-                .size = len});
+                .size = len
+            });
     }
 
     MavLinkControl() {

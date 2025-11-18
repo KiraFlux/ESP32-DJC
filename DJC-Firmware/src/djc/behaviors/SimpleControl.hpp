@@ -38,7 +38,7 @@ struct SimpleControl : kf::sys::Behavior, kf::tools::Singleton<SimpleControl> {
         right_joystick.x = periphery.right_joystick.axis_x.read();
         right_joystick.y = periphery.right_joystick.axis_y.read();
 
-        (void) periphery.espnow_node.send(SimpleControlPacket{
+        (void) periphery.espnow_peer.value().sendPacket(SimpleControlPacket{
             .left_x = left_joystick.x,
             .left_y = left_joystick.y,
             .right_x = right_joystick.x,

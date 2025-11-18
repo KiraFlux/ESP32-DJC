@@ -1,13 +1,14 @@
 #pragma once
 
-#include <kf/Button.hpp>
-#include <kf/Joystick.hpp>
-#include <kf/JoystickListener.hpp>
 #include <kf/Logger.hpp>
-#include <kf/SSD1306.hpp>
+#include <kf/Option.hpp>
 #include <kf/tools/meta/Singleton.hpp>
 
-#include "djc/remote/EspnowNode.hpp"
+#include <kf/Button.hpp>
+#include <kf/Joystick.hpp>
+#include <kf/SSD1306.hpp>
+#include <kf/EspNow.hpp>
+
 
 namespace djc {
 
@@ -16,17 +17,16 @@ struct Periphery : kf::tools::Singleton<Periphery> {
     friend struct Singleton<Periphery>;
 
     /// @brief Кнопка левого стика
+    /// @details Используется для смены режима
     kf::Button left_button{GPIO_NUM_15, kf::Button::Mode::PullUp};
 
     /// @brief Левый X-Y Джойстик
     kf::Joystick left_joystick{GPIO_NUM_32, GPIO_NUM_33, 0.5f};
 
-    /// @brief Обработчик дискретного ввода левого джойстика // todo Перенести в behavior
-    kf::JoystickListener left_joystick_listener{left_joystick};
-
     //
 
     /// @brief Кнопка правого стика
+    /// @details Произвольное использование в пользовательских режимах
     kf::Button right_button{GPIO_NUM_4, kf::Button::Mode::PullUp};
 
     /// @brief Правый X-Y Джойстик
@@ -35,7 +35,7 @@ struct Periphery : kf::tools::Singleton<Periphery> {
     //
 
     /// @brief Пир ESPNOW
-    EspnowNode espnow_node{{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}};
+    kf::Option<kf::EspNow::Peer> espnow_peer;
 
     //
 
@@ -49,7 +49,7 @@ struct Periphery : kf::tools::Singleton<Periphery> {
 
         if (not display_driver.init()) {
             kf_Logger_error("Screen driver error");
-            return false;
+//            return false;
         }
 
         Wire.setClock(1000000u);
@@ -60,7 +60,25 @@ struct Periphery : kf::tools::Singleton<Periphery> {
         left_button.init(kf::Button::PullType::Internal);
         right_button.init(kf::Button::PullType::Internal);
 
-        if (not espnow_node.init()) { return false; }
+        const auto espnow_init_result = kf::EspNow::init();
+        if (not espnow_init_result.isOk()) {
+            kf_Logger_error(
+                "Failed to initialize ESP-NOW: %s",
+                kf::EspNow::stringFromError(espnow_init_result.error().value()));
+            return false;
+        }
+        const kf::EspNow::Mac peer_mac{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+        const auto peer_result = kf::EspNow::Peer::add(peer_mac);
+
+        if (not peer_result.isOk()) {
+            kf_Logger_error(
+                "Espnow failed to add peer '%s': %s",
+                kf::EspNow::stringFromMac(peer_mac),
+                kf::EspNow::stringFromError(peer_result.error().value()));
+            return false;
+        }
+
+        espnow_peer = peer_result.ok();
 
         kf_Logger_info("OK");
         return true;
