@@ -18,7 +18,7 @@ void loop() {
         behavior_manager.update();
     }
 
-    static kf::tools::Timer display_timer{static_cast<kf::Milliseconds>(1000 / 20)};
+    static kf::tools::Timer display_timer{static_cast<kf::Hertz>(20)};
     if (display_timer.ready()) {
         behavior_manager.display();
     }
