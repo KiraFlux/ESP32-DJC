@@ -1,5 +1,5 @@
-/.idea
-/.pio
-/.vscode
+.idea
+.pio
+.vscode
 
-!/.vscode/extensions.json
+!./.vscode/extensions.json

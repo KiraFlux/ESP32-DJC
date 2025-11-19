@@ -16,3 +16,6 @@
 [submodule "DJC-Firmware/lib/KiraFlux-SYS"]
 	path = DJC-Firmware/lib/KiraFlux-SYS
 	url = https://github.com/KiraFlux/KiraFlux-SYS.git
+[submodule "DJC-Firmware/lib/KiraFlux-TUI"]
+	path = DJC-Firmware/lib/KiraFlux-TUI
+	url = https://github.com/KiraFlux/KiraFlux-TUI.git

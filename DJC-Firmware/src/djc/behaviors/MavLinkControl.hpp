@@ -22,7 +22,7 @@ struct MavLinkControl : kf::sys::Behavior, kf::tools::Singleton<MavLinkControl> 
 
     std::array<char, 70> text_buffer{"MAV Link"};
     kf::sys::TextComponent text_box{text_buffer.data()};
-    kf::tools::Timer heartbeat_timer{2000};
+    kf::tools::Timer heartbeat_timer{static_cast<kf::Milliseconds>(2000)};
 
     void updateLayout(kf::gfx::Canvas &root) override {
         auto [up, down] = root.splitVertically<2>({4, 4});

@@ -5,6 +5,7 @@
 
 #include "djc/Periphery.hpp"
 #include "djc/behaviors/MavLinkControl.hpp"
+#include "djc/behaviors/PongGame.hpp"
 #include "djc/behaviors/RemoteInterface.hpp"
 #include "djc/behaviors/SimpleControl.hpp"
 
@@ -55,6 +56,7 @@ private:
                     display_driver.buffer, display_driver.width(),
                     display_driver.width(), display_driver.height(), 0, 0}},
             {
+                &PongGame::instance(),
                 &MavLinkControl::instance(),
                 &SimpleControl::instance(),
                 &RemoteInterface::instance(),
