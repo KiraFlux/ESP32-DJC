@@ -13,7 +13,7 @@ void setup() {
 }
 
 void loop() {
-    static kf::tools::Timer update_timer{static_cast<kf::Milliseconds>(1000 / 50)};
+    static kf::tools::Timer update_timer{static_cast<kf::Hertz>(50)};
     if (update_timer.ready()) {
         behavior_manager.update();
     }
