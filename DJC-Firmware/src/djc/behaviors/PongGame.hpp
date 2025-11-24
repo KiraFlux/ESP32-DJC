@@ -113,16 +113,16 @@ public:
         scene_canvas = root;
     }
 
-    void display() override {
-        Behavior::display();
-
-        scene_canvas.line(0, 0, scene_canvas.maxX(), 0);
-        scene_canvas.line(0, scene_canvas.maxY(), scene_canvas.maxX(), scene_canvas.maxY());
-
-        ball.render(scene_canvas);
-        left_wall.render(scene_canvas);
-        right_wall.render(scene_canvas);
-    }
+//    void display() override {
+//        Behavior::display();
+//
+//        scene_canvas.line(0, 0, scene_canvas.maxX(), 0);
+//        scene_canvas.line(0, scene_canvas.maxY(), scene_canvas.maxX(), scene_canvas.maxY());
+//
+//        ball.render(scene_canvas);
+//        left_wall.render(scene_canvas);
+//        right_wall.render(scene_canvas);
+//    }
 
     void update() override {
         auto &periphery = Periphery::instance();

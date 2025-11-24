@@ -52,8 +52,8 @@ struct MavLinkControl : kf::sys::Behavior, kf::tools::Singleton<MavLinkControl> 
             mavlink_message_t message;
             mavlink_status_t status;
 
-            for (int i = 0; i < buffer.size; i += 1) {
-                if (mavlink_parse_char(MAVLINK_COMM_0, static_cast<const kf::u8 *>(buffer.ptr)[i], &message, &status)) {
+            for (int i = 0; i < buffer.size(); i += 1) {
+                if (mavlink_parse_char(MAVLINK_COMM_0, static_cast<const kf::u8 *>(buffer.data())[i], &message, &status)) {
                     onMavLinkMessage(&message);
                 }
             }

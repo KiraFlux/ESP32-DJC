@@ -6,6 +6,7 @@
 
 #include <kf/Button.hpp>
 #include <kf/Joystick.hpp>
+#include <kf/JoystickListener.hpp>
 #include <kf/SSD1306.hpp>
 #include <kf/EspNow.hpp>
 
@@ -31,6 +32,9 @@ struct Periphery : kf::tools::Singleton<Periphery> {
 
     /// @brief Правый X-Y Джойстик
     kf::Joystick right_joystick{GPIO_NUM_35, GPIO_NUM_34, 0.5f};
+
+    /// @brief Обработчик дискретного ввода джойстика
+    kf::JoystickListener joystick_listener{right_joystick};
 
     //
 

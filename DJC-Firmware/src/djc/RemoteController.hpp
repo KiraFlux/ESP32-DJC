@@ -5,9 +5,10 @@
 
 #include "djc/Periphery.hpp"
 #include "djc/behaviors/MavLinkControl.hpp"
-#include "djc/behaviors/PongGame.hpp"
-#include "djc/behaviors/RemoteInterface.hpp"
+#include "djc/behaviors/RemoteUI.hpp"
 #include "djc/behaviors/SimpleControl.hpp"
+#include "djc/behaviors/LocalUI.hpp"
+//#include "djc/behaviors/PongGame.hpp"
 
 namespace djc {
 
@@ -54,13 +55,17 @@ private:
             kf::gfx::Canvas{
                 kf::gfx::FrameView{
                     display_driver.buffer, display_driver.width(),
-                    display_driver.width(), display_driver.height(), 0, 0}},
+                    display_driver.width(), display_driver.height(), 0, 0
+                }
+            },
             {
-                &PongGame::instance(),
+                &LocalUI::instance(),
                 &MavLinkControl::instance(),
+//                &PongGame::instance(),
                 &SimpleControl::instance(),
-                &RemoteInterface::instance(),
-            }} {}
+                &RemoteUI::instance(),
+            }
+        } {}
 };
 
 }// namespace djc
