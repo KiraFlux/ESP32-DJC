@@ -2,13 +2,12 @@
 
 #include <cstring>
 
-#include <kf/sys.hpp>
 #include <kf/EspNow.hpp>
+#include <kf/sys.hpp>
 #include <kf/tools/meta/Singleton.hpp>
 #include <kf/ui/Event.hpp>
 
 #include "djc/Periphery.hpp"
-
 
 namespace djc {
 
@@ -17,7 +16,7 @@ struct RemoteUI : kf::sys::Behavior, kf::tools::Singleton<RemoteUI> {
 
     using Event = kf::ui::Event;
 
-    std::array<char, 250> text_buffer{"Waiting\nRemote Interface"};
+    std::array<char, 250> text_buffer{"Remote UI:\nIn Waiting..."};
     kf::sys::TextComponent text_display{text_buffer.data()};
 
     void updateLayout(kf::gfx::Canvas &root) override {
@@ -41,11 +40,11 @@ struct RemoteUI : kf::sys::Behavior, kf::tools::Singleton<RemoteUI> {
             using D = kf::JoystickListener::Direction;
             auto translate = [](D direction) -> Event {
                 switch (direction) {
-                    case D::Up:return Event{Event::Type::PageCursorMove, -1};
-                    case D::Down:return Event{Event::Type::PageCursorMove, +1};
-                    case D::Left:return Event{Event::Type::WidgetValueChange, +1};
-                    case D::Right:return Event{Event::Type::WidgetValueChange, -1};
-                    default:return Event{Event::Type::None};
+                    case D::Up: return Event::PageCursorMove(-1);
+                    case D::Down: return Event::PageCursorMove(+1);
+                    case D::Left: return Event::WidgetValueChange(+1);
+                    case D::Right: return Event::WidgetValueChange(-1);
+                    default: return Event::None();
                 }
             };
             const auto event = translate(dir);
@@ -64,7 +63,6 @@ struct RemoteUI : kf::sys::Behavior, kf::tools::Singleton<RemoteUI> {
     }
 
 private:
-
     static void send(Event event) {
         (void) djc::Periphery::instance().espnow_peer.value().sendPacket(event);
     }

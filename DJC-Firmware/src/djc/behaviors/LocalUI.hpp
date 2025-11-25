@@ -105,18 +105,17 @@ struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
 
         auto &periphery = djc::Periphery::instance();
         periphery.right_button.handler = []() {
-            ui.addEvent(E{E::Type::WidgetClick});
+            ui.addEvent(E::WidgetClick());
         };
         periphery.joystick_listener.handler = [](kf::JoystickListener::Direction dir) {
             using D = kf::JoystickListener::Direction;
             auto translate = [](D direction) -> E {
-                using T = E::Type;
                 switch (direction) {
-                    case D::Up:return E{T::PageCursorMove, -1};
-                    case D::Down:return E{T::PageCursorMove, +1};
-                    case D::Left:return E{T::WidgetValueChange, +1};
-                    case D::Right:return E{T::WidgetValueChange, -1};
-                    default:return E{T::None};
+                    case D::Up:return E::PageCursorMove(-1);
+                    case D::Down:return E::PageCursorMove(+1);
+                    case D::Left:return E::WidgetValueChange(+1);
+                    case D::Right:return E::WidgetValueChange(-1);
+                    default:return E::None();
                 }
             };
 
