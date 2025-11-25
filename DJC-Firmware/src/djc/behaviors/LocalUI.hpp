@@ -5,6 +5,7 @@
 #include <kf/Logger.hpp>
 
 #include <kf/UI.hpp>
+#include <kf/ui/TextRender.hpp>
 
 
 namespace djc {
@@ -12,13 +13,16 @@ namespace djc {
 struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
     friend struct Singleton<LocalUI>;
 
+    /// @brief Определение Textual UI
+    using TUI = kf::UI<kf::ui::TextRender>;
+
     std::array<char, 250> text_buffer{"null"};
     kf::sys::TextComponent text_component{text_buffer.data()};
 
-    struct TestPage : kf::UI::Page {
+    struct TestPage : TUI::Page {
         float value{12.3456};
 
-        using Boiler = kf::UI::Labeled<kf::UI::ComboBox<int, 3>>;
+        using Boiler = TUI::Labeled <TUI::ComboBox<int, 3>>;
 
         Boiler::Impl::Value item{0};
         Boiler boiler{
@@ -36,19 +40,19 @@ struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
             }
         };
 
-        kf::UI::Display<int> display_2{
+        TUI::Display<int> display_2{
             *this,
             item
         };
 
-        kf::UI::SpinBox<float> spin_box{
+        TUI::SpinBox<float> spin_box{
             *this,
             value,
             0.1f,
-            kf::UI::SpinBox<float>::Mode::Arithmetic
+            TUI::SpinBox<float>::Mode::Arithmetic
         };
 
-        kf::UI::Button button{
+        TUI::Button button{
             *this,
             "button",
             [this]() {
@@ -57,14 +61,14 @@ struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
             }
         };
 
-        kf::UI::CheckBox check_box{
+        TUI::CheckBox check_box{
             *this,
             [](bool state) {
                 kf_Logger_debug("state: %s", state ? "ON" : "OFF");
             }
         };
 
-        kf::UI::Display<float> display_1{
+        TUI::Display<float> display_1{
             *this,
             value
         };
@@ -78,7 +82,7 @@ struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
     void updateLayout(kf::gfx::Canvas &root) override {
         text_component.canvas = root;
 
-        auto &ui = kf::UI::instance();
+        auto &ui = TUI::instance();
         ui.bindPage(test_page_1);
 
         test_page_1.link(test_page_2);
@@ -95,9 +99,9 @@ struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
     }
 
     void onEntry() override {
-        using E = kf::UI::Event;
+        using E = TUI::Event;
 
-        static auto &ui = kf::UI::instance();
+        static auto &ui = TUI::instance();
 
         auto &periphery = djc::Periphery::instance();
         periphery.right_button.handler = []() {
@@ -124,7 +128,7 @@ struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
     }
 
     void update() override {
-        auto &ui = kf::UI::instance();
+        auto &ui = TUI::instance();
         ui.poll();
 
         auto &periphery = djc::Periphery::instance();
