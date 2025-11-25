@@ -2,10 +2,12 @@
 
 #include <kf/sys.hpp>
 #include <kf/tools/meta/Singleton.hpp>
+#include <kf/JoystickListener.hpp>
 #include <kf/Logger.hpp>
-
 #include <kf/UI.hpp>
 #include <kf/ui/TextRender.hpp>
+
+#include "djc/Periphery.hpp"
 
 
 namespace djc {
@@ -16,7 +18,7 @@ struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
     /// @brief Определение Textual UI
     using TUI = kf::UI<kf::ui::TextRender>;
 
-    std::array<char, 250> text_buffer{"null"};
+    std::array<char, 160> text_buffer{};
     kf::sys::TextComponent text_component{text_buffer.data()};
 
     struct TestPage : TUI::Page {
@@ -89,13 +91,13 @@ struct LocalUI : kf::tools::Singleton<LocalUI>, kf::sys::Behavior {
 
         auto &render_settings = ui.getRenderSettings();
         render_settings.buffer = {reinterpret_cast<kf::u8 *>(text_buffer.data()), text_buffer.size()};
-        render_settings.rows = root.widthInGlyph();
-        render_settings.cols = root.heightInGlyph();
+        render_settings.rows_total = root.heightInGlyph();
+        render_settings.row_max_length = root.widthInGlyph();
         render_settings.on_render_finish = [](const kf::slice<const kf::u8> &str) {
             Serial.printf("render (%d): %s\n", str.size(), str.data());
         };
 
-        ui.addEvent(kf::ui::Event{kf::ui::Event::Type::Update});
+        ui.addEvent(kf::ui::Event::Update());
     }
 
     void onEntry() override {
