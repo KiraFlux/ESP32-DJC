@@ -5,17 +5,15 @@
 #include "djc/RemoteController.hpp"
 
 
-void setup() {
-    auto &behavior_manager = djc::RemoteController::instance();
+static auto &behavior_manager = djc::RemoteController::instance();
 
+void setup() {
     Serial.begin(115200);
     kf_Logger_setWriter([](const kf::slice<const char> &str) { Serial.write(str.data(), str.size()); });
     behavior_manager.init();
 }
 
 void loop() {
-    auto &behavior_manager = djc::RemoteController::instance();
-
     static kf::tools::Timer update_timer{static_cast<kf::Hertz>(50)};
     if (update_timer.ready()) {
         behavior_manager.update();
