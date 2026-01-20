@@ -2,19 +2,19 @@
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
-#include <kf/tools/meta/Singleton.hpp>
-
-#include <kf/Button.hpp>
-#include <kf/Joystick.hpp>
-#include <kf/JoystickListener.hpp>
-#include <kf/SSD1306.hpp>
-#include <kf/EspNow.hpp>
+#include <kf/pattern/Singleton.hpp>
+#include <kf/core/attributes.hpp>
+#include <kf/drivers/input/Button.hpp>
+#include <kf/drivers/input/Joystick.hpp>
+#include <kf/drivers/input/JoystickListener.hpp>
+#include <kf/drivers/display/SSD1306.hpp>
+#include <kf/network/EspNow.hpp>
 
 
 namespace djc {
 
 /// @brief Аппаратное обеспечение пульта
-struct Periphery : kf::tools::Singleton<Periphery> {
+struct Periphery : kf::Singleton<Periphery> {
     friend struct Singleton<Periphery>;
 
     /// @brief Кнопка левого стика
@@ -34,7 +34,7 @@ struct Periphery : kf::tools::Singleton<Periphery> {
     kf::Joystick right_joystick{GPIO_NUM_35, GPIO_NUM_34, 0.5f};
 
     /// @brief Обработчик дискретного ввода джойстика
-    kf::JoystickListener joystick_listener{right_joystick};
+    kf::JoystickListener right_joystick_listener{right_joystick};
 
     //
 
@@ -48,16 +48,15 @@ struct Periphery : kf::tools::Singleton<Periphery> {
 
     /// @brief Процедура инициализации аппаратных компонентов
     /// @returns true - Успешная инициализация всех аппаратных компонентов
-    [[nodiscard]] bool init() {
+    kf_nodiscard bool init() {
         kf_Logger_info("init");
 
         if (not display_driver.init()) {
             kf_Logger_error("Screen driver error");
-//            return false;
         }
 
         Wire.setClock(1000000u);
-        display_driver.flush();
+        display_driver.send();
 
         left_joystick.init();
         right_joystick.init();
@@ -88,18 +87,6 @@ struct Periphery : kf::tools::Singleton<Periphery> {
         return true;
     }
 
-    /// @brief Процедура конфигурации
-    void configure() {
-        left_joystick.axis_x.inverted = true;
-        right_joystick.axis_y.inverted = true;
-    }
-
-    /// @brief Процедура блокирующей калибровки
-    /// @param joystick_samples
-    void calibrate(int joystick_samples = 500) {
-        left_joystick.calibrate(joystick_samples);
-        right_joystick.calibrate(joystick_samples);
-    }
 };
 
 }// namespace djc
