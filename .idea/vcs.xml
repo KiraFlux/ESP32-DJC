@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DJC-Firmware/lib/Fresh-EspNow" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DJC-Firmware/lib/KiraFlux-GFX" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DJC-Firmware/lib/KiraFlux-Input" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DJC-Firmware/lib/KiraFlux-OLED" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/DJC-Firmware/lib/KiraFlux-ToolBox" vcs="Git" />
+  </component>
+</project>
