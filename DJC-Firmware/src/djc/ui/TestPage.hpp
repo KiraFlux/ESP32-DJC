@@ -10,30 +10,26 @@
 namespace djc {
 
 struct TestPage : UI::Page {
-    float value{12.3456};
-
     using Boiler = UI::Labeled <UI::ComboBox<int, 3>>;
 
-    Boiler::Impl::Value item{0};
     Boiler boiler{
         *this,
         "Boiler",
         Boiler::Impl{
-            item,
             {
                 {
                     {"ice", 1},
                     {"water", 20},
                     {"steam", 300},
                 }
-            }
+            },
         }
     };
 
-    UI::Display<int> display_2{
-        *this,
-        item
-    };
+    float value{12.3456};
+    Boiler::Impl::Value item{0};
+
+    UI::Display<int> display_2{*this, item};
 
     UI::SpinBox<float> spin_box{
         *this,
@@ -51,20 +47,27 @@ struct TestPage : UI::Page {
         }
     };
 
-    UI::CheckBox check_box{
-        *this,
-        [](bool state) {
-            kf_Logger_debug("state: %s", state ? "ON" : "OFF");
-        }
-    };
+    UI::CheckBox check_box{*this};
 
-    UI::Display<float> display_1{
-        *this,
-        value
-    };
+    UI::Display<float> display_1{*this, value};
 
     explicit TestPage(const char *s) :
-        Page{s} {}
+        Page{s} {
+
+        boiler.impl.change_handler = [this](int v) {
+            item = v;
+            kf_Logger_debug("state: %d", v);
+        };
+
+        spin_box.change_handler = [this](float v) {
+            value = v;
+            kf_Logger_debug("value: %f", v);
+        };
+
+        check_box.change_handler = [](bool state) {
+            kf_Logger_debug("state: %s", state ? "ON" : "OFF");
+        };
+    }
 
 };
 

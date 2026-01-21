@@ -1,11 +1,11 @@
 #pragma once
 
 #include <kf/UI.hpp>
-#include <kf/ui/TextRender.hpp>
+#include <kf/ui/TextBufferRender.hpp>
 
 
 namespace djc {
 
-using UI = kf::UI<kf::ui::TextRender>;
+using UI = kf::UI<kf::ui::TextBufferRender<256>>;
 
 }

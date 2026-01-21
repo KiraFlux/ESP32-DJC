@@ -4,7 +4,6 @@
 #include <kf/math/time/Timer.hpp>
 #include <kf/gfx.hpp>
 #include <kf/memory/StringView.hpp>
-#include <kf/memory/ArrayString.hpp>
 
 #include "djc/Periphery.hpp"
 #include "djc/UI.hpp"
@@ -38,66 +37,62 @@ void setup() {
             case D::Home://
                 break;
             case D::Up://
-                ui.addEvent(E::PageCursorMove(-1));
+                ui.addEvent(E::pageCursorMove(-1));
                 break;
             case D::Down://
-                ui.addEvent(E::PageCursorMove(+1));
+                ui.addEvent(E::pageCursorMove(+1));
                 break;
             case D::Left://
-                ui.addEvent(E::WidgetValueChange(-1));
+                ui.addEvent(E::widgetValue(-1));
                 break;
             case D::Right://
-                ui.addEvent(E::WidgetValueChange(+1));
+                ui.addEvent(E::widgetValue(+1));
                 break;
         }
     };
     periphery.right_button.handler = []() {
-        ui.addEvent(E::WidgetClick());
+        ui.addEvent(E::widgetClick());
     };
     periphery.left_button.handler = []() {
         menu_navigation_enabled ^= 1;
-        ui.addEvent(E::Update());
+        ui.addEvent(E::update());
     };
 
     periphery.left_joystick.calibrate(100);
     periphery.right_joystick.calibrate(100);
 
     // Graphics setup
-    constexpr auto pixel_format{decltype(periphery.display_driver)::pixel_format};
-    auto &display = periphery.display_driver;
+    constexpr auto pixel_format{decltype(periphery.display)::pixel_format};
 
-    static kf::gfx::Canvas<pixel_format> canvas{
+    static kf::gfx::Canvas<pixel_format> root_canvas{
         kf::gfx::DynamicImage<pixel_format>{
             // buffer: data, stride
-            display.buffer().data(), display.width(),
+            periphery.display.buffer().data(), periphery.display.width(),
             // size: width, height
-            display.width(), display.height(),
+            periphery.display.width(), periphery.display.height(),
             // offset: x, y
             0, 0
         },
         // font
         kf::gfx::fonts::gyver_5x7_en
     };
-    canvas.setAutoNextLine(true);
+    root_canvas.setAutoNextLine(true);
 
     // Textual Render setup
-    static kf::ArrayString<256> text_buffer{};
-
-    ui.renderSettings() = {
-        .row_max_length = canvas.widthInGlyphs(),
-        .rows_total = canvas.heightInGlyphs(),
-        .buffer = kf::Slice<char>{text_buffer.data(), text_buffer.size()},
+    ui.renderConfig() = {
         .on_render_finish = [](kf::StringView str) {
-            canvas.fill();
-            canvas.text(0, 0, str.data());
+            root_canvas.fill();
+            root_canvas.text(0, 0, str.data());
 
             if (not menu_navigation_enabled) {
-                const auto h = static_cast<kf::Pixel>(canvas.glyphHeight() / 2);
-                canvas.line(0, h, canvas.maxX(), h);
+                const auto h = static_cast<kf::Pixel>(root_canvas.glyphHeight() / 2);
+                root_canvas.line(0, h, root_canvas.maxX(), h);
             }
 
-            periphery.display_driver.send();
-        }
+            periphery.display.send();
+        },
+        .row_max_length = root_canvas.widthInGlyphs(),
+        .rows_total = root_canvas.heightInGlyphs(),
     };
 
     // prepare UI
@@ -110,7 +105,7 @@ void setup() {
     main_page.link(test_page2);
 
     ui.bindPage(main_page);
-    ui.addEvent(djc::UI::Event::Update());
+    ui.addEvent(djc::UI::Event::update());
 }
 
 void loop() {

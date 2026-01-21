@@ -21,7 +21,7 @@ struct MavLinkControlPage : UI::Page {
 private:
 
     kf::Timer heartbeat_timer{static_cast<kf::Milliseconds>(2000)};
-    kf::ArrayString<64> text_buffer{"Waiting for message"};
+    kf::ArrayString<64> text_buffer{">>>\nWaiting\nfor\nMAV Link\nmessage..."};
     kf::StringView text_view{text_buffer.view()};
 
     UI::Display <kf::StringView> text_display{*this, text_view};
