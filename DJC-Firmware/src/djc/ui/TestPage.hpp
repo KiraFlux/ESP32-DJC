@@ -40,11 +40,7 @@ struct TestPage : UI::Page {
 
     UI::Button button{
         *this,
-        "button",
-        [this]() {
-            kf_Logger_debug("button click");
-            value = -value * 1.4f;
-        }
+        "button"
     };
 
     UI::CheckBox check_box{*this};
@@ -53,6 +49,11 @@ struct TestPage : UI::Page {
 
     explicit TestPage(const char *s) :
         Page{s} {
+
+        button.on_click = [this]() {
+            kf_Logger_debug("button click");
+            value = -value * 1.4f;
+        };
 
         boiler.impl.change_handler = [this](int v) {
             item = v;

@@ -50,13 +50,6 @@ void setup() {
                 break;
         }
     };
-    periphery.right_button.handler = []() {
-        ui.addEvent(E::widgetClick());
-    };
-    periphery.left_button.handler = []() {
-        menu_navigation_enabled ^= 1;
-        ui.addEvent(E::update());
-    };
 
     periphery.left_joystick.calibrate(100);
     periphery.right_joystick.calibrate(100);
@@ -111,14 +104,24 @@ void setup() {
 void loop() {
     static kf::Timer poll_timer{static_cast<kf::Hertz>(50)};
 
+    delay(1);
+
     if (not poll_timer.ready(millis())) { return; }
 
     ui.poll();
+
     periphery.left_button.poll();
+    if (periphery.left_button.clicked()) {
+        menu_navigation_enabled ^= 1;
+        ui.addEvent(djc::UI::Event::update());
+    }
 
     if (not menu_navigation_enabled) { return; }
 
     periphery.right_button.poll();
-    periphery.right_joystick_listener.poll();
+    if (periphery.right_button.clicked()) {
+        ui.addEvent(djc::UI::Event::widgetClick());
+    }
 
+    periphery.right_joystick_listener.poll();
 }
