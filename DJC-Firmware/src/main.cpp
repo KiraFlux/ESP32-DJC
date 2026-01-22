@@ -23,7 +23,7 @@ static bool menu_navigation_enabled{true};
 void setup() {
     // Logging setup
     Serial.begin(115200);
-    kf_Logger_setWriter([](kf::Slice<const char> str) { Serial.write(str.data(), str.size()); });
+    kf_Logger_setWriter([](kf::StringView str) { Serial.write(str.data(), str.size()); });
 
     // Periphery setup
     (void) periphery.init(); // ignoring failure
