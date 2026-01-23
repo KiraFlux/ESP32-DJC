@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
 #include <kf/Logger.hpp>
-#include <kf/math/time/Timer.hpp>
 #include <kf/gfx.hpp>
+#include <kf/math/time/Timer.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/Periphery.hpp"
@@ -10,7 +10,6 @@
 #include "djc/ui/MainPage.hpp"
 #include "djc/ui/MavLinkControlPage.hpp"
 #include "djc/ui/TestPage.hpp"
-
 
 static auto &ui = djc::UI::instance();
 
@@ -26,7 +25,7 @@ void setup() {
     kf_Logger_setWriter([](kf::StringView str) { Serial.write(str.data(), str.size()); });
 
     // Periphery setup
-    (void) periphery.init(); // ignoring failure
+    (void) periphery.init();// ignoring failure
     periphery.left_joystick.axis_x.inverted = true;
     periphery.right_joystick.axis_y.inverted = true;
 
@@ -43,11 +42,9 @@ void setup() {
             // size: width, height
             periphery.display.width(), periphery.display.height(),
             // offset: x, y
-            0, 0
-        },
+            0, 0},
         // font
-        kf::gfx::fonts::gyver_5x7_en
-    };
+        kf::gfx::fonts::gyver_5x7_en};
     root_canvas.setAutoNextLine(true);
 
     // Textual Render setup
@@ -67,8 +64,7 @@ void setup() {
         .rows_total = root_canvas.heightInGlyphs(),
     };
 
-    // prepare UI
-
+    // UI setup
     static djc::MavLinkControlPage mav_link_control{};
     main_page.link(mav_link_control);
 
@@ -81,46 +77,41 @@ void setup() {
 }
 
 void loop() {
-    using E = djc::UI::Event;
+    using Event = djc::UI::Event;
+
+    static constexpr Event direction_to_event_table[]{
+        Event::pageCursorMove(-1),// 0: Up
+        Event::pageCursorMove(+1),// 1: Down
+        Event::widgetValue(-1),   // 2: Left
+        Event::widgetValue(+1),   // 3: Right
+    };
 
     constexpr kf::Milliseconds loop_period{1000 / 50};
-
     delay(loop_period);
 
-    ui.poll();
-
     periphery.left_button.poll();
+    periphery.right_button.poll();
+    periphery.right_joystick_listener.poll(millis());
+
     if (periphery.left_button.clicked()) {
         menu_navigation_enabled ^= 1;
-        ui.addEvent(E::update());
+        ui.addEvent(Event::update());
     }
 
-    if (not menu_navigation_enabled) { return; }
-
-    periphery.right_button.poll();
     if (periphery.right_button.clicked()) {
-        ui.addEvent(E::widgetClick());
-    }
-
-    periphery.right_joystick_listener.poll(millis());
-    if (periphery.right_joystick_listener.changed()) {
-        using D = kf::JoystickListener::Direction;
-
-        switch (periphery.right_joystick_listener.direction()) {
-            case D::Home://
-                break;
-            case D::Up://
-                ui.addEvent(E::pageCursorMove(-1));
-                break;
-            case D::Down://
-                ui.addEvent(E::pageCursorMove(+1));
-                break;
-            case D::Left://
-                ui.addEvent(E::widgetValue(-1));
-                break;
-            case D::Right://
-                ui.addEvent(E::widgetValue(+1));
-                break;
+        if (menu_navigation_enabled) {
+            ui.addEvent(Event::widgetClick());
         }
     }
+
+    if (periphery.right_joystick_listener.changed()) {
+        const auto direction = periphery.right_joystick_listener.direction();
+        if (direction != kf::JoystickListener::Direction::Home) {
+            if (menu_navigation_enabled) {
+                ui.addEvent(direction_to_event_table[static_cast<kf::u8>(direction)]);
+            }
+        }
+    }
+
+    ui.poll();
 }
