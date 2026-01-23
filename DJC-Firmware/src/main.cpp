@@ -79,7 +79,7 @@ void setup() {
 void loop() {
     using Event = djc::UI::Event;
 
-    static constexpr Event direction_to_event_table[]{
+    static constexpr Event event_from_direction[]{
         Event::pageCursorMove(-1),// 0: Up
         Event::pageCursorMove(+1),// 1: Down
         Event::widgetValue(-1),   // 2: Left
@@ -108,7 +108,7 @@ void loop() {
         const auto direction = periphery.right_joystick_listener.direction();
         if (direction != kf::JoystickListener::Direction::Home) {
             if (menu_navigation_enabled) {
-                ui.addEvent(direction_to_event_table[static_cast<kf::u8>(direction)]);
+                ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
             }
         }
     }
