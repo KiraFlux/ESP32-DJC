@@ -1,7 +1,7 @@
 #pragma once
 
 // Define flag than djc periphery now using legacy (SSD1306 display driver) instead of ST7735
-//#define DJC_USE_LEGACY_DISPLAY_DRIVER
+// #define DJC_USE_LEGACY_DISPLAY_DRIVER
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
@@ -27,7 +27,7 @@
 
 namespace djc {
 
-/// @brief Аппаратное обеспечение пульта
+/// @brief ESP32-DJC Hardware / Periphery
 struct Periphery : kf::Singleton<Periphery> {
     friend struct Singleton<Periphery>;
 
@@ -57,28 +57,28 @@ struct Periphery : kf::Singleton<Periphery> {
 
     Config config{};
 
-    /// @brief Кнопка левого стика
-    /// @details Используется для смены режима
+    /// @brief Left Button
+    /// @note Uses to switch between moded
     kf::Button left_button{GPIO_NUM_14, kf::Button::Mode::PullUp};
 
-    /// @brief Левый X-Y Джойстик
+    /// @brief Left X-Y Stick 
     kf::Joystick left_joystick{GPIO_NUM_32, GPIO_NUM_33, 0.5f};
 
     //
 
-    /// @brief Кнопка правого стика
-    /// @details Произвольное использование в пользовательских режимах
+    /// @brief Right Button
+    /// @note Uses in UI context as 'click' input.
     kf::Button right_button{GPIO_NUM_4, kf::Button::Mode::PullUp};
 
-    /// @brief Правый X-Y Джойстик
+    /// @brief Right X-Y Stick
     kf::Joystick right_joystick{GPIO_NUM_35, GPIO_NUM_34, 0.5f};
 
-    /// @brief Обработчик дискретного ввода джойстика
+    /// @brief Right joystick discrete input listener
     kf::JoystickListener right_joystick_listener{right_joystick};
 
     //
 
-    /// @brief Пир ESPNOW
+    /// @brief ESPNOW Peer
     kf::Option<kf::EspNow::Peer> espnow_peer;
 
     //
@@ -89,10 +89,10 @@ struct Periphery : kf::Singleton<Periphery> {
     kf::ST7735 display{config.display, SPI};
 #endif
 
-    /// @brief Процедура инициализации аппаратных компонентов
-    /// @returns true - Успешная инициализация всех аппаратных компонентов
+    /// @brief Initialize all periphery
+    /// @returns true - init ok
     kf_nodiscard bool init() {
-        kf_Logger_info("init");
+        kf_Logger_info("start");
 
         if (not display.init()) {
             kf_Logger_error("Display driver init fail");

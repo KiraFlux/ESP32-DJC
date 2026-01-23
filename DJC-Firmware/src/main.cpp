@@ -68,7 +68,7 @@ void setup() {
     static djc::MavLinkControlPage mav_link_control{};
     main_page.link(mav_link_control);
 
-    static djc::TestPage test_page1{"Test 1"}, test_page2{"Test 2"};
+    static djc::TestPage test_page1{"Test 1"}, test_page2{"Test 2 (Super-Duper-Mega long name btw)"};
     main_page.link(test_page1);
     main_page.link(test_page2);
 

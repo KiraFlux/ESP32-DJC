@@ -7,27 +7,24 @@
 #include <cstring>
 
 #include <kf/Logger.hpp>
+#include <kf/math/time/Timer.hpp>
 #include <kf/memory/ArrayString.hpp>
 #include <kf/memory/StringView.hpp>
-#include <kf/math/time/Timer.hpp>
 
 #include "djc/UI.hpp"
-
 
 namespace djc {
 
 struct MavLinkControlPage : UI::Page {
 
 private:
-
     kf::Timer heartbeat_timer{static_cast<kf::Milliseconds>(2000)};
     kf::ArrayString<64> text_buffer{">>>\nWaiting\nfor\nMAV Link\nmessage..."};
     kf::StringView text_view{text_buffer.view()};
 
-    UI::Display <kf::StringView> text_display{*this, text_view};
+    UI::Display<kf::StringView> text_display{*this, text_view};
 
 public:
-
     explicit MavLinkControlPage() :
         Page{"MAV Link Control"} {}
 
@@ -36,8 +33,8 @@ public:
             mavlink_message_t message;
             mavlink_status_t status;
 
-            for (int i = 0; i < buffer.size(); i += 1) {
-                if (mavlink_parse_char(MAVLINK_COMM_0, buffer[i], &message, &status)) {
+            for (auto b: buffer) {
+                if (mavlink_parse_char(MAVLINK_COMM_0, b, &message, &status)) {
                     onMavLinkMessage(&message);
                 }
             }
@@ -53,7 +50,6 @@ public:
     }
 
 private:
-
     void onMavLinkMessage(mavlink_message_t *message) {
         kf_Logger_debug("%d", message->msgid);
 
@@ -77,24 +73,22 @@ private:
                     "A %.2f %.2f %.2f",
                     kf::f32(imu.xacc) * 0.001f,
                     kf::f32(imu.yacc) * 0.001f,
-                    kf::f32(imu.zacc) * 0.001f
-                );
-
+                    kf::f32(imu.zacc) * 0.001f);
             }
 
-            default: //
+            default://
                 return;
         }
     }
 
-//    static void sendSerialControl() {
-//        mavlink_message_t message;
-//        // mavlink_msg_serial_control_encode(
-//        //     127,
-//
-//        // );
-//        sendMavlinkToEspnow(message);
-//    }
+    //    static void sendSerialControl() {
+    //        mavlink_message_t message;
+    //        // mavlink_msg_serial_control_encode(
+    //        //     127,
+    //
+    //        // );
+    //        sendMavlinkToEspnow(message);
+    //    }
 
     static void sendHeartBeat() {
         mavlink_message_t message;
@@ -141,7 +135,6 @@ private:
         const auto len = mavlink_msg_to_send_buffer(buffer, &message);
         (void) Periphery::instance().espnow_peer.value().sendBuffer(kf::Slice<const kf::u8>{buffer, len});
     }
-
 };
 
-}
+}// namespace djc

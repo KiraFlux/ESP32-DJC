@@ -6,25 +6,21 @@
 
 #include "djc/UI.hpp"
 
-
 namespace djc {
 
 struct TestPage : UI::Page {
-    using Boiler = UI::Labeled <UI::ComboBox<int, 3>>;
+    using Boiler = UI::Labeled<UI::ComboBox<int, 3>>;
 
     Boiler boiler{
         *this,
         "Boiler",
         Boiler::Impl{
-            {
-                {
-                    {"ice", 1},
-                    {"water", 20},
-                    {"steam", 300},
-                }
-            },
-        }
-    };
+            {{
+                {"ice", 1},
+                {"water", 20},
+                {"steam", 300},
+            }},
+        }};
 
     float value{12.3456};
     Boiler::Impl::Value item{0};
@@ -35,13 +31,9 @@ struct TestPage : UI::Page {
         *this,
         value,
         0.1f,
-        UI::SpinBox<float>::Mode::Arithmetic
-    };
+        UI::SpinBox<float>::Mode::Arithmetic};
 
-    UI::Button button{
-        *this,
-        "button"
-    };
+    UI::Button button{*this, "button"};
 
     UI::CheckBox check_box{*this};
 
@@ -69,7 +61,6 @@ struct TestPage : UI::Page {
             kf_Logger_debug("state: %s", state ? "ON" : "OFF");
         };
     }
-
 };
 
-}
+}// namespace djc
