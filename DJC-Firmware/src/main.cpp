@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include <kf/gfx/ColorPalette.hpp>
 #include <kf/Logger.hpp>
 #include <kf/gfx.hpp>
 #include <kf/math/time/Timer.hpp>
@@ -10,6 +11,7 @@
 #include "djc/ui/MainPage.hpp"
 #include "djc/ui/MavLinkControlPage.hpp"
 #include "djc/ui/TestPage.hpp"
+
 
 static auto &ui = djc::UI::instance();
 
@@ -42,9 +44,11 @@ void setup() {
             // size: width, height
             periphery.display.width(), periphery.display.height(),
             // offset: x, y
-            0, 0},
+            0, 0
+        },
         // font
-        kf::gfx::fonts::gyver_5x7_en};
+        kf::gfx::fonts::gyver_5x7_en
+    };
     root_canvas.setAutoNextLine(true);
 
     // Textual Render setup
