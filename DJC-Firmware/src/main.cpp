@@ -29,27 +29,6 @@ void setup() {
     (void) periphery.init(); // ignoring failure
     periphery.left_joystick.axis_x.inverted = true;
     periphery.right_joystick.axis_y.inverted = true;
-    using D = kf::JoystickListener::Direction;
-    using E = djc::UI::Event;
-
-    periphery.right_joystick_listener.handler = [](D direction) {
-        switch (direction) {
-            case D::Home://
-                break;
-            case D::Up://
-                ui.addEvent(E::pageCursorMove(-1));
-                break;
-            case D::Down://
-                ui.addEvent(E::pageCursorMove(+1));
-                break;
-            case D::Left://
-                ui.addEvent(E::widgetValue(-1));
-                break;
-            case D::Right://
-                ui.addEvent(E::widgetValue(+1));
-                break;
-        }
-    };
 
     periphery.left_joystick.calibrate(100);
     periphery.right_joystick.calibrate(100);
@@ -102,26 +81,46 @@ void setup() {
 }
 
 void loop() {
-    static kf::Timer poll_timer{static_cast<kf::Hertz>(50)};
+    using E = djc::UI::Event;
 
-    delay(1);
+    constexpr kf::Milliseconds loop_period{1000 / 50};
 
-    if (not poll_timer.ready(millis())) { return; }
+    delay(loop_period);
 
     ui.poll();
 
     periphery.left_button.poll();
     if (periphery.left_button.clicked()) {
         menu_navigation_enabled ^= 1;
-        ui.addEvent(djc::UI::Event::update());
+        ui.addEvent(E::update());
     }
 
     if (not menu_navigation_enabled) { return; }
 
     periphery.right_button.poll();
     if (periphery.right_button.clicked()) {
-        ui.addEvent(djc::UI::Event::widgetClick());
+        ui.addEvent(E::widgetClick());
     }
 
-    periphery.right_joystick_listener.poll();
+    periphery.right_joystick_listener.poll(millis());
+    if (periphery.right_joystick_listener.changed()) {
+        using D = kf::JoystickListener::Direction;
+
+        switch (periphery.right_joystick_listener.direction()) {
+            case D::Home://
+                break;
+            case D::Up://
+                ui.addEvent(E::pageCursorMove(-1));
+                break;
+            case D::Down://
+                ui.addEvent(E::pageCursorMove(+1));
+                break;
+            case D::Left://
+                ui.addEvent(E::widgetValue(-1));
+                break;
+            case D::Right://
+                ui.addEvent(E::widgetValue(+1));
+                break;
+        }
+    }
 }
