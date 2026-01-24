@@ -1,9 +1,7 @@
 #include <Arduino.h>
 
-#include <kf/gfx/ColorPalette.hpp>
 #include <kf/Logger.hpp>
 #include <kf/gfx.hpp>
-#include <kf/math/time/Timer.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/Periphery.hpp"
@@ -11,7 +9,6 @@
 #include "djc/ui/MainPage.hpp"
 #include "djc/ui/MavLinkControlPage.hpp"
 #include "djc/ui/TestPage.hpp"
-
 
 static auto &ui = djc::UI::instance();
 
@@ -83,13 +80,6 @@ void setup() {
 void loop() {
     using Event = djc::UI::Event;
 
-    static constexpr Event event_from_direction[]{
-        Event::pageCursorMove(-1),// 0: Up
-        Event::pageCursorMove(+1),// 1: Down
-        Event::widgetValue(-1),   // 2: Left
-        Event::widgetValue(+1),   // 3: Right
-    };
-
     constexpr kf::Milliseconds loop_period{1000 / 50};
     delay(loop_period);
 
@@ -112,6 +102,13 @@ void loop() {
         const auto direction = periphery.right_joystick_listener.direction();
         if (direction != kf::JoystickListener::Direction::Home) {
             if (menu_navigation_enabled) {
+                static constexpr Event event_from_direction[]{
+                    Event::pageCursorMove(-1),// 0: Up
+                    Event::pageCursorMove(+1),// 1: Down
+                    Event::widgetValue(-1),   // 2: Left
+                    Event::widgetValue(+1),   // 3: Right
+                };
+
                 ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
             }
         }
