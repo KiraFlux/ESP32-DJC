@@ -35,7 +35,7 @@ public:
     explicit MavLinkControlPage() :
         Page{"MAV Link Control"} {}
 
-    void onEntry() override {
+    void onEntry() noexcept override {
         kf::EspNow::instance().setUnknownReceiveHandler([this](const kf::EspNow::Mac &, kf::Slice<const kf::u8> buffer) {
             mavlink_message_t message;
             mavlink_status_t status;
@@ -48,7 +48,7 @@ public:
         });
     }
 
-    void onUpdate() override {
+    void onUpdate() noexcept override {
         sendManualControl();
 
         if (heartbeat_timer.ready(millis())) {
