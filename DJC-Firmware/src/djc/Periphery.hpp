@@ -5,7 +5,6 @@
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
-#include <kf/pattern/Singleton.hpp>
 #include <kf/core/attributes.hpp>
 #include <kf/drivers/input/Button.hpp>
 #include <kf/drivers/input/Joystick.hpp>
@@ -28,12 +27,49 @@
 namespace djc {
 
 /// @brief ESP32-DJC Hardware / Periphery
-struct Periphery : kf::Singleton<Periphery> {
-    friend struct Singleton<Periphery>;
+struct Periphery {
 
-    // Periphery config
     struct Config {
 
+        kf::EspNow::Mac peer_mac{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+        // input
+
+        kf::Button::Config left_button{
+            GPIO_NUM_14,
+            kf::Button::Config::Mode::PullUp,
+            kf::Button::Config::PullType::Internal,
+        };
+
+        kf::Joystick::Config left_joystick{
+            .x={
+                GPIO_NUM_32,
+                kf::AnalogAxis::Config::Mode::Inverted,
+            },
+            .y={
+                GPIO_NUM_33,
+                kf::AnalogAxis::Config::Mode::Normal,
+            }
+        };
+
+        kf::Button::Config right_button{
+            GPIO_NUM_4,
+            kf::Button::Config::Mode::PullUp,
+            kf::Button::Config::PullType::Internal,
+        };
+
+        kf::Joystick::Config right_joystick{
+            .x={
+                GPIO_NUM_35,
+                kf::AnalogAxis::Config::Mode::Normal,
+            },
+            .y={
+                GPIO_NUM_34,
+                kf::AnalogAxis::Config::Mode::Inverted,
+            }
+        };
+
+        // display driver
 #ifdef DJC_USE_LEGACY_DISPLAY_DRIVER
         // SDA: 21
         // SCL: 22
@@ -41,13 +77,12 @@ struct Periphery : kf::Singleton<Periphery> {
             1000000u, // clock
         };
 #else
-        //MOSI: 23
-        //MISO: 19
-        //SCK : 18
+        // MOSI: 23
+        // MISO: 19
+        // SCK : 18
         kf::ST7735::Config display{
-            GPIO_NUM_5,// SPI: cs
-            GPIO_NUM_2, // dc
-            GPIO_NUM_15, // reset
+            // pins: spi_cs, dc, reset
+            GPIO_NUM_5, GPIO_NUM_2, GPIO_NUM_15,
             27000000, // SPI: frequency
             kf::ST7735::Orientation::ClockWise,
         };
@@ -58,20 +93,20 @@ struct Periphery : kf::Singleton<Periphery> {
     Config config{};
 
     /// @brief Left Button
-    /// @note Uses to switch between moded
-    kf::Button left_button{GPIO_NUM_14, kf::Button::Mode::PullUp};
+    /// @note Uses to switch between modes
+    kf::Button left_button{config.left_button};
 
     /// @brief Left X-Y Stick 
-    kf::Joystick left_joystick{GPIO_NUM_32, GPIO_NUM_33, 0.5f};
+    kf::Joystick left_joystick{config.left_joystick, 0.5f};
 
     //
 
     /// @brief Right Button
     /// @note Uses in UI context as 'click' input.
-    kf::Button right_button{GPIO_NUM_4, kf::Button::Mode::PullUp};
+    kf::Button right_button{config.right_button};
 
     /// @brief Right X-Y Stick
-    kf::Joystick right_joystick{GPIO_NUM_35, GPIO_NUM_34, 0.5f};
+    kf::Joystick right_joystick{config.right_joystick, 0.5f};
 
     /// @brief Right joystick discrete input listener
     kf::JoystickListener right_joystick_listener{right_joystick};
@@ -79,31 +114,33 @@ struct Periphery : kf::Singleton<Periphery> {
     //
 
     /// @brief ESPNOW Peer
-    kf::Option<kf::EspNow::Peer> espnow_peer;
+    kf::Option<kf::EspNow::Peer> espnow_peer{};
 
     //
 
 #ifdef DJC_USE_LEGACY_DISPLAY_DRIVER
-    kf::SSD1306 display{config.display, Wire};
+    using SelectedDisplayDriver = kf::SSD1306;
+    SelectedDisplayDriver display{config.display, Wire};
 #else
-    kf::ST7735 display{config.display, SPI};
+    using SelectedDisplayDriver = kf::ST7735;
+    SelectedDisplayDriver display{config.display, SPI};
 #endif
 
     /// @brief Initialize all periphery
     /// @returns true - init ok
-    kf_nodiscard bool init() {
+    kf_nodiscard bool init() noexcept {
         kf_Logger_info("start");
 
         if (not display.init()) {
             kf_Logger_error("Display driver init fail");
         }
 
-        display.send();
+//        display.send();
 
         left_joystick.init();
         right_joystick.init();
-        left_button.init(kf::Button::PullType::Internal);
-        right_button.init(kf::Button::PullType::Internal);
+        left_button.init();
+        right_button.init();
 
         const auto espnow_init_result = kf::EspNow::init();
         if (not espnow_init_result.isOk()) {
@@ -112,13 +149,13 @@ struct Periphery : kf::Singleton<Periphery> {
                 kf::EspNow::stringFromError(espnow_init_result.error().value()));
             return false;
         }
-        const kf::EspNow::Mac peer_mac{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-        const auto peer_result = kf::EspNow::Peer::add(peer_mac);
 
-        if (not peer_result.isOk()) {
+        const auto peer_result = kf::EspNow::Peer::add(config.peer_mac);
+
+        if (peer_result.isError()) {
             kf_Logger_error(
                 "Espnow failed to add peer '%s': %s",
-                kf::EspNow::stringFromMac(peer_mac),
+                kf::EspNow::stringFromMac(config.peer_mac),
                 kf::EspNow::stringFromError(peer_result.error().value()));
             return false;
         }
@@ -128,7 +165,6 @@ struct Periphery : kf::Singleton<Periphery> {
         kf_Logger_info("OK");
         return true;
     }
-
 };
 
 }// namespace djc

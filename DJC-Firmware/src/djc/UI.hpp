@@ -10,6 +10,6 @@ namespace djc {
 using UI = kf::UI<
     // Render Engine: Buffered Text UI render Engine
     kf::ui::TextBufferRender<256>,
-    // Event: 2 bits - Event::Type, 6 bits - Event::value
-    kf::ui::Event<2, 6>>;
+    // Event: 6-bit Event value
+    kf::ui::Event<6>>;
 }// namespace djc

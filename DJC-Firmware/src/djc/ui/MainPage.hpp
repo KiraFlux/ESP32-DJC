@@ -1,8 +1,6 @@
 #pragma once
 
-#include <Arduino.h>
-#include <kf/Logger.hpp>
-#include <kf/math/time/Timer.hpp>
+#include <kf/pattern/Singleton.hpp>
 
 #include "djc/UI.hpp"
 #include "djc/Periphery.hpp"
@@ -10,7 +8,8 @@
 
 namespace djc {
 
-struct MainPage : UI::Page {
+struct MainPage : UI::Page, kf::Singleton<MainPage> {
+    friend struct Singleton<MainPage>;
 
     explicit MainPage() :
         Page{"ESP32-DJC"} {}

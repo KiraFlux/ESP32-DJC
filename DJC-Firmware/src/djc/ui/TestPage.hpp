@@ -1,26 +1,27 @@
 #pragma once
 
-#include <Arduino.h>
-#include <kf/Logger.hpp>
-#include <kf/math/time/Timer.hpp>
-
 #include "djc/UI.hpp"
+#include "djc/ui/MainPage.hpp"
+
 
 namespace djc {
 
 struct TestPage : UI::Page {
-    using Boiler = UI::Labeled<UI::ComboBox<int, 3>>;
+    using Boiler = UI::Labeled <UI::ComboBox<int, 3>>;
 
     Boiler boiler{
         *this,
         "Boiler",
         Boiler::Impl{
-            {{
-                {"ice", 1},
-                {"water", 20},
-                {"steam", 300},
-            }},
-        }};
+            {
+                {
+                    {"ice", 1},
+                    {"water", 20},
+                    {"steam", 300},
+                }
+            },
+        }
+    };
 
     float value{12.3456};
     Boiler::Impl::Value item{0};
@@ -31,7 +32,8 @@ struct TestPage : UI::Page {
         *this,
         value,
         0.1f,
-        UI::SpinBox<float>::Mode::Arithmetic};
+        UI::SpinBox<float>::Mode::Arithmetic
+    };
 
     UI::Button button{*this, "button"};
 
@@ -41,6 +43,7 @@ struct TestPage : UI::Page {
 
     explicit TestPage(const char *s) :
         Page{s} {
+        link(MainPage::instance());
 
         button.on_click = [this]() {
             kf_Logger_debug("button click");

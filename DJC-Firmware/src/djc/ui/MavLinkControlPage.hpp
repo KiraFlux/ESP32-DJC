@@ -8,10 +8,13 @@
 
 #include <kf/Logger.hpp>
 #include <kf/math/time/Timer.hpp>
+#include <kf/math/units.hpp>
 #include <kf/memory/ArrayString.hpp>
 #include <kf/memory/StringView.hpp>
 
+#include "djc/Device.hpp"
 #include "djc/UI.hpp"
+#include "djc/ui/MainPage.hpp"
 
 
 namespace djc {
@@ -19,6 +22,7 @@ namespace djc {
 struct MavLinkControlPage : UI::Page {
 
 private:
+    kf::Timer test_timer{static_cast<kf::Milliseconds>(100)};
     kf::Timer heartbeat_timer{static_cast<kf::Milliseconds>(2000)};
     kf::ArrayString<256> text_buffer{
         ""
@@ -33,7 +37,9 @@ private:
 
 public:
     explicit MavLinkControlPage() :
-        Page{"MAV Link Control"} {}
+        Page{"MAV Link Control"} {
+        link(MainPage::instance());
+    }
 
     void onEntry() noexcept override {
         kf::EspNow::instance().setUnknownReceiveHandler([this](const kf::EspNow::Mac &, kf::Slice<const kf::u8> buffer) {
@@ -48,10 +54,10 @@ public:
         });
     }
 
-    void onUpdate() noexcept override {
+    void onUpdate(kf::Milliseconds now) noexcept override {
         sendManualControl();
 
-        if (heartbeat_timer.ready(millis())) {
+        if (heartbeat_timer.ready(now)) {
             sendHeartBeat();
         }
     }
@@ -111,14 +117,21 @@ private:
         sendMavlinkToEspnow(message);
     }
 
-    static void sendManualControl() {
+    void sendManualControl() {
         constexpr auto scale = 1000;
 
-        auto &periphery = Periphery::instance();
+        auto &periphery = Device::instance().periphery;
         const auto left_x = periphery.left_joystick.axis_x.read() * scale;
         const auto left_y = periphery.left_joystick.axis_y.read() * scale;
         const auto right_x = periphery.right_joystick.axis_x.read() * scale;
         const auto right_y = periphery.right_joystick.axis_y.read() * scale;
+
+        if (test_timer.ready(millis())) {
+            kf_Logger_debug(
+                "L: (%2.3f\t%2.3f)\tR: (%2.3f\t%2.3f)",
+                left_x, left_y, right_x, right_y
+            );
+        }
 
         mavlink_message_t message;
         mavlink_msg_manual_control_pack(
@@ -140,7 +153,7 @@ private:
     static void sendMavlinkToEspnow(mavlink_message_t &message) {
         kf::u8 buffer[MAVLINK_MAX_PACKET_LEN];
         const auto len = mavlink_msg_to_send_buffer(buffer, &message);
-        (void) Periphery::instance().espnow_peer.value().sendBuffer(kf::Slice<const kf::u8>{buffer, len});
+        (void) Device::instance().periphery.espnow_peer.value().sendBuffer(kf::Slice<const kf::u8>{buffer, len});
     }
 };
 
