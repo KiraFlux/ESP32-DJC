@@ -24,16 +24,10 @@ struct MavLinkControlPage : UI::Page {
 private:
     kf::Timer test_timer{static_cast<kf::Milliseconds>(100)};
     kf::Timer heartbeat_timer{static_cast<kf::Milliseconds>(2000)};
-    kf::ArrayString<256> text_buffer{
-        ""
-        "\xF0###\xF1###\xF2###\xF3###\xF4###\xF5###\xF6###\xF7###\n"
-        "\xF8###\xF9###\xFA###\xFB###\xFC###\xFD###\xFE###\xFF###\n"
-        "\xB0   \xB1   \xB2   \xB3   \xB4   \xB5   \xB6   \xB7   \n"
-        "\xB8   \xB9   \xBB   \xBB   \xBC   \xBD   \xBE   \xBF   "
-    };
-    kf::StringView text_view{text_buffer.view()};
+    kf::ArrayString<256> log_buffer{"\xB1""Wonderful emptiness..."};
+    kf::StringView log_view{log_buffer.view()};
 
-    UI::Display <kf::StringView> text_display{*this, text_view};
+    UI::Display <kf::StringView> log_display{*this, log_view};
 
 public:
     explicit MavLinkControlPage() :
@@ -72,8 +66,8 @@ private:
 
                 mavlink_msg_serial_control_decode(message, &serial_control);
 
-                std::memcpy(text_buffer.data(), serial_control.data, serial_control.count);
-                text_buffer[kf::min(kf::usize(serial_control.count), text_buffer.size() - 1)] = '\0';
+                std::memcpy(log_buffer.data(), serial_control.data, serial_control.count);
+                log_buffer[kf::min(kf::usize(serial_control.count), log_buffer.size() - 1)] = '\0';
             }
                 return;
 
@@ -82,7 +76,7 @@ private:
 
                 mavlink_msg_scaled_imu_decode(message, &imu);
 
-                (void) text_buffer.format(
+                (void) log_buffer.format(
                     "A %.2f %.2f %.2f",
                     kf::f32(imu.xacc) * 0.001f,
                     kf::f32(imu.yacc) * 0.001f,
@@ -120,11 +114,11 @@ private:
     void sendManualControl() {
         constexpr auto scale = 1000;
 
-        auto &periphery = Device::instance().periphery;
-        const auto left_x = periphery.left_joystick.axis_x.read() * scale;
-        const auto left_y = periphery.left_joystick.axis_y.read() * scale;
-        const auto right_x = periphery.right_joystick.axis_x.read() * scale;
-        const auto right_y = periphery.right_joystick.axis_y.read() * scale;
+        const auto &controller_values = Device::instance().controllerValues();
+        const auto left_x = controller_values.left_x * scale;
+        const auto left_y = controller_values.left_y * scale;
+        const auto right_x = controller_values.right_x * scale;
+        const auto right_y = controller_values.right_y * scale;
 
         if (test_timer.ready(millis())) {
             kf_Logger_debug(
@@ -153,7 +147,10 @@ private:
     static void sendMavlinkToEspnow(mavlink_message_t &message) {
         kf::u8 buffer[MAVLINK_MAX_PACKET_LEN];
         const auto len = mavlink_msg_to_send_buffer(buffer, &message);
-        (void) Device::instance().periphery.espnow_peer.value().sendBuffer(kf::Slice<const kf::u8>{buffer, len});
+        auto &o = Device::instance().espnowPeer();
+        if (o.hasValue()) {
+            (void) o.value().sendBuffer(kf::Slice<const kf::u8>{buffer, len});
+        }
     }
 };
 

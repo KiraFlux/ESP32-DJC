@@ -16,9 +16,7 @@ static auto &device = djc::Device::instance();
 
 kf_maybe_unused static djc::MavLinkControlPage mav_link_control{};
 
-kf_maybe_unused static djc::TestPage test_page_1{"Test 1"};
-
-kf_maybe_unused static djc::TestPage test_page_2{"Test 2 (Super-Duper-Mega long name btw)"};
+kf_maybe_unused static djc::TestPage test_page{"Test (Super-Duper-Mega long name btw)"};
 
 
 void setup() {

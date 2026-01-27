@@ -14,24 +14,34 @@ struct Device : kf::Singleton<Device> {
 
     using Event = djc::UI::Event;
 
-    static constexpr auto pixel_format{Periphery::SelectedDisplayDriver::pixel_format};
+    struct ControllerValues {
+        kf::f32 left_x{};
+        kf::f32 left_y{};
+        kf::f32 right_x{};
+        kf::f32 right_y{};
 
-    static constexpr Event event_from_direction[4]{
-        Event::pageCursorMove(-1),// 0: Up
-        Event::pageCursorMove(+1),// 1: Down
-        Event::widgetValue(-1),   // 2: Left
-        Event::widgetValue(+1),   // 3: Right
+        void reset() {
+            *this = ControllerValues{};
+        }
     };
 
-    Periphery periphery{};
+    static constexpr auto pixel_format{Periphery::SelectedDisplayDriver::pixel_format};
 
 private:
 
+    Periphery periphery{};
+
     kf::gfx::Canvas<pixel_format> root_canvas{};
+
+    ControllerValues controller_values{};
+
+    djc::UI &ui = djc::UI::instance();
 
     bool menu_navigation_enabled{true};
 
 public:
+
+    // setup and poll
 
     void setupPeriphery() noexcept {
         (void) periphery.init();// ignoring failure (for now...)
@@ -70,56 +80,70 @@ public:
             onLeftButtonClick();
         }
 
-        periphery.right_button.poll(now);
-        if (periphery.right_button.clicked()) {
-            onRightButtonClick();
-        }
-
-        periphery.right_joystick_listener.poll(now);
-        if (periphery.right_joystick_listener.changed()) {
-            const auto direction = periphery.right_joystick_listener.direction();
-            if (direction != kf::JoystickListener::Direction::Home) {
-                onRightJoystickDirection(direction);
+        if (menu_navigation_enabled) {
+            periphery.right_button.poll(now);
+            if (periphery.right_button.clicked()) {
+                onNavigationRightButtonClick();
             }
+
+            periphery.right_joystick_listener.poll(now);
+            if (periphery.right_joystick_listener.changed()) {
+                const auto direction = periphery.right_joystick_listener.direction();
+                if (direction != kf::JoystickListener::Direction::Home) {
+                    onNavigationRightJoystickDirection(direction);
+                }
+            }
+        } else {
+            controller_values.left_x = periphery.left_joystick.axis_x.read();
+            controller_values.left_y = periphery.left_joystick.axis_y.read();
+            controller_values.right_x = periphery.right_joystick.axis_x.read();
+            controller_values.right_y = periphery.right_joystick.axis_y.read();
         }
     }
+
+    // utility
+
+    kf_nodiscard const ControllerValues &controllerValues() const noexcept { return controller_values; }
+
+    kf_nodiscard kf::Option<kf::EspNow::Peer> &espnowPeer() noexcept { return periphery.espnow_peer; }
 
 private:
 
     // display
 
     void onRender(kf::StringView str) noexcept {
-        root_canvas.text(0, 0, str.data());
+        kf::Pixel y{0};
 
         if (not menu_navigation_enabled) {
-            const auto h = static_cast<kf::Pixel>(root_canvas.glyphHeight() / 2);
-            root_canvas.line(0, h, root_canvas.maxX(), h);
+            constexpr kf::StringView s{"\xB6""Controller Mode\n"};
+            root_canvas.text(0, 0, s.data());
+            y = root_canvas.glyphHeight();
         }
+
+        root_canvas.text(0, y, str.data());
     }
 
     // input
 
     void onLeftButtonClick() noexcept {
-        auto &ui = djc::UI::instance();
-
         menu_navigation_enabled = not menu_navigation_enabled;
+        controller_values.reset();
         ui.addEvent(Event::update());
     }
 
-    void onRightButtonClick() const noexcept {
-        if (menu_navigation_enabled) {
-            auto &ui = djc::UI::instance();
-
-            ui.addEvent(Event::widgetClick());
-        }
+    void onNavigationRightButtonClick() const noexcept {
+        ui.addEvent(Event::widgetClick());
     }
 
-    void onRightJoystickDirection(kf::JoystickListener::Direction direction) const noexcept {
-        if (menu_navigation_enabled) {
-            auto &ui = djc::UI::instance();
+    void onNavigationRightJoystickDirection(kf::JoystickListener::Direction direction) const noexcept {
+        static constexpr Event event_from_direction[4]{
+            Event::pageCursorMove(-1),// 0: Up
+            Event::pageCursorMove(+1),// 1: Down
+            Event::widgetValue(-1),   // 2: Left
+            Event::widgetValue(+1),   // 3: Right
+        };
 
-            ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
-        }
+        ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
     }
 
     //

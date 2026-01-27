@@ -135,8 +135,6 @@ struct Periphery {
             kf_Logger_error("Display driver init fail");
         }
 
-//        display.send();
-
         left_joystick.init();
         right_joystick.init();
         left_button.init();
