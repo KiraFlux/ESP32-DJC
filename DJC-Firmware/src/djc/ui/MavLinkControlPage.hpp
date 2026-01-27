@@ -1,7 +1,5 @@
 #pragma once
 
-#pragma once
-
 #include <Arduino.h>
 #include <MAVLink.h>
 #include <cstring>
@@ -19,8 +17,8 @@
 
 namespace djc {
 
+/// @brief MAVLink protocol control page for drone/vehicle control
 struct MavLinkControlPage : UI::Page {
-
 private:
     kf::Timer test_timer{static_cast<kf::Milliseconds>(100)};
     kf::Timer heartbeat_timer{static_cast<kf::Milliseconds>(2000)};
@@ -36,16 +34,18 @@ public:
     }
 
     void onEntry() noexcept override {
-        kf::EspNow::instance().setUnknownReceiveHandler([this](const kf::EspNow::Mac &, kf::Slice<const kf::u8> buffer) {
-            mavlink_message_t message;
-            mavlink_status_t status;
+        kf::EspNow::instance().setUnknownReceiveHandler(
+            [this](const kf::EspNow::Mac &, kf::Slice<const kf::u8> buffer) {
+                mavlink_message_t message;
+                mavlink_status_t status;
 
-            for (auto b: buffer) {
-                if (mavlink_parse_char(MAVLINK_COMM_0, b, &message, &status)) {
-                    onMavLinkMessage(&message);
+                for (auto b: buffer) {
+                    if (mavlink_parse_char(MAVLINK_COMM_0, b, &message, &status)) {
+                        onMavLinkMessage(&message);
+                    }
                 }
             }
-        });
+        );
     }
 
     void onUpdate(kf::Milliseconds now) noexcept override {
@@ -58,55 +58,47 @@ public:
 
 private:
     void onMavLinkMessage(mavlink_message_t *message) {
-        kf_Logger_debug("%d", message->msgid);
+        kf_Logger_debug("MAVLink message ID: %d", message->msgid);
 
         switch (message->msgid) {
             case MAVLINK_MSG_ID_SERIAL_CONTROL: {
                 mavlink_serial_control_t serial_control;
-
                 mavlink_msg_serial_control_decode(message, &serial_control);
 
                 std::memcpy(log_buffer.data(), serial_control.data, serial_control.count);
                 log_buffer[kf::min(kf::usize(serial_control.count), log_buffer.size() - 1)] = '\0';
+                break;
             }
-                return;
 
             case MAVLINK_MSG_ID_SCALED_IMU: {
                 mavlink_scaled_imu_t imu;
-
                 mavlink_msg_scaled_imu_decode(message, &imu);
 
                 (void) log_buffer.format(
-                    "A %.2f %.2f %.2f",
+                    "Accel: %.2f %.2f %.2f",
                     kf::f32(imu.xacc) * 0.001f,
                     kf::f32(imu.yacc) * 0.001f,
-                    kf::f32(imu.zacc) * 0.001f);
+                    kf::f32(imu.zacc) * 0.001f
+                );
+                break;
             }
 
-            default://
-                return;
+            default:
+                // Unhandled message type
+                break;
         }
     }
-
-    //    static void sendSerialControl() {
-    //        mavlink_message_t message;
-    //        // mavlink_msg_serial_control_encode(
-    //        //     127,
-    //
-    //        // );
-    //        sendMavlinkToEspnow(message);
-    //    }
 
     static void sendHeartBeat() {
         mavlink_message_t message;
         mavlink_msg_heartbeat_pack(
-            127,
-            MAV_COMP_ID_OSD,
+            127, // System ID
+            MAV_COMP_ID_OSD, // Component ID
             &message,
             MAV_TYPE_QUADROTOR,
             MAV_AUTOPILOT_GENERIC,
-            //
-            0, 0, 0);
+            0, 0, 0 // Custom mode, system status, MAVLink version
+        );
 
         sendMavlinkToEspnow(message);
     }
@@ -122,7 +114,7 @@ private:
 
         if (test_timer.ready(millis())) {
             kf_Logger_debug(
-                "L: (%2.3f\t%2.3f)\tR: (%2.3f\t%2.3f)",
+                "L: (%.3f, %.3f) R: (%.3f, %.3f)",
                 left_x, left_y, right_x, right_y
             );
         }
@@ -130,16 +122,17 @@ private:
         mavlink_message_t message;
         mavlink_msg_manual_control_pack(
             127, MAV_COMP_ID_PARACHUTE, &message, 1,
-            // x : pitch
+            // x: pitch (right Y)
             static_cast<kf::i16>(right_y),
-            // y : roll
+            // y: roll (right X)
             static_cast<kf::i16>(right_x),
-            // z : thrust
+            // z: thrust (left Y)
             static_cast<kf::i16>(left_y),
-            // r : yaw
+            // r: yaw (left X)
             static_cast<kf::i16>(left_x),
-            //
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            // Buttons (unused)
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        );
 
         sendMavlinkToEspnow(message);
     }
@@ -147,11 +140,12 @@ private:
     static void sendMavlinkToEspnow(mavlink_message_t &message) {
         kf::u8 buffer[MAVLINK_MAX_PACKET_LEN];
         const auto len = mavlink_msg_to_send_buffer(buffer, &message);
-        auto &o = Device::instance().espnowPeer();
-        if (o.hasValue()) {
-            (void) o.value().sendBuffer(kf::Slice<const kf::u8>{buffer, len});
+
+        auto &peer_opt = Device::instance().espnowPeer();
+        if (peer_opt.hasValue()) {
+            (void) peer_opt.value().sendBuffer(kf::Slice<const kf::u8>{buffer, len});
         }
     }
 };
 
-}// namespace djc
+} // namespace djc

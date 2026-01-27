@@ -3,11 +3,11 @@
 #include <kf/pattern/Singleton.hpp>
 
 #include "djc/UI.hpp"
-#include "djc/Periphery.hpp"
 
 
 namespace djc {
 
+/// @brief Main menu page for ESP32-DJC
 struct MainPage : UI::Page, kf::Singleton<MainPage> {
     friend struct Singleton<MainPage>;
 
@@ -15,4 +15,4 @@ struct MainPage : UI::Page, kf::Singleton<MainPage> {
         Page{"ESP32-DJC"} {}
 };
 
-}
+} // namespace djc
