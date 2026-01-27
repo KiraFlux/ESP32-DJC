@@ -41,7 +41,7 @@ struct TestPage : UI::Page {
 
     UI::Display<float> display_1{*this, value};
 
-    explicit TestPage(const char *s) :
+    explicit TestPage(kf::StringView s) :
         Page{s} {
         link(MainPage::instance());
 
