@@ -22,7 +22,7 @@ kf_maybe_unused static djc::TestPage test_page{"Test (Super-Duper-Mega long name
 void setup() {
     // Logging setup
     Serial.begin(115200);
-    kf_Logger_setWriter([](kf::StringView str) { Serial.write(str.data(), str.size()); });
+    kf::Logger::writer = [](kf::StringView str) { Serial.write(str.data(), str.size()); };
 
     // Device setup
     device.setupPeriphery();

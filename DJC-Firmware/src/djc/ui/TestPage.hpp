@@ -8,6 +8,11 @@ namespace djc {
 
 /// @brief Test page demonstrating various UI widgets
 struct TestPage : UI::Page {
+private:
+    static constexpr auto logger{kf::Logger::create("TestPage")};
+
+public:
+
     using Boiler = UI::Labeled <UI::ComboBox<int, 3>>;
 
     // UI Widgets
@@ -25,11 +30,21 @@ struct TestPage : UI::Page {
         }
     };
 
+    UI::ComboBox<kf::StringView, 4> string_combo_box{
+        *this,
+        {
+            "alpha",
+            "beta",
+            "gamma",
+            "delta",
+        }
+    };
+
     float value{12.3456};
     Boiler::Impl::Value item{0};
 
     UI::Display<int> display_2{*this, item};
-    UI::SpinBox<float> spin_box{*this, value, 0.1f, UI::SpinBox<float>::Mode::Arithmetic};
+    UI::SpinBox<float, UI::StepMode::Arithmetic> float_spinbox{*this, value, 0.1f};
     UI::Button button{*this, "button"};
     UI::CheckBox check_box{*this};
     UI::Display<float> display_1{*this, value};
@@ -51,22 +66,26 @@ struct TestPage : UI::Page {
 
         // Widget event handlers
         button.on_click = [this]() {
-            kf_Logger_debug("Button clicked");
+            logger.debug("Button clicked");
             value = -value * 1.4f;
         };
 
         boiler.impl.change_handler = [this](int v) {
             item = v;
-            kf_Logger_debug("Boiler state changed: %d", v);
+            logger.debug(kf::ArrayString<32>::formatted("Boiler state changed: %d", v).view());
         };
 
-        spin_box.change_handler = [this](float v) {
+        float_spinbox.change_handler = [this](float v) {
             value = v;
-            kf_Logger_debug("Spin box value: %.3f", v);
+            logger.debug(kf::ArrayString<32>::formatted("Spin box value: %.3f", v).view());
+        };
+
+        string_combo_box.change_handler = [](kf::StringView v) {
+            logger.debug(kf::ArrayString<32>::formatted("Combo box value: %s", v).view());
         };
 
         check_box.change_handler = [](bool state) {
-            kf_Logger_debug("Checkbox state: %s", state ? "ON" : "OFF");
+            logger.debug(kf::ArrayString<32>::formatted("Checkbox state: %s", state ? "ON" : "OFF").view());
         };
     }
 };

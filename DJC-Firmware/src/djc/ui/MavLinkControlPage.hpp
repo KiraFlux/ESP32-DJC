@@ -20,6 +20,8 @@ namespace djc {
 /// @brief MAVLink protocol control page for drone/vehicle control
 struct MavLinkControlPage : UI::Page {
 private:
+    static constexpr auto logger{kf::Logger::create("MavLink")};
+
     kf::Timer test_timer{static_cast<kf::Milliseconds>(100)};
     kf::Timer heartbeat_timer{static_cast<kf::Milliseconds>(2000)};
     kf::ArrayString<256> log_buffer{"\xB1""Wonderful emptiness..."};
@@ -58,7 +60,7 @@ public:
 
 private:
     void onMavLinkMessage(mavlink_message_t *message) {
-        kf_Logger_debug("MAVLink message ID: %d", message->msgid);
+        logger.debug(kf::ArrayString<32>::formatted("MAVLink message ID: %d", message->msgid).view());
 
         switch (message->msgid) {
             case MAVLINK_MSG_ID_SERIAL_CONTROL: {
@@ -113,10 +115,10 @@ private:
         const auto right_y = controller_values.right_y * scale;
 
         if (test_timer.ready(millis())) {
-            kf_Logger_debug(
+            logger.debug(kf::ArrayString<64>::formatted(
                 "L: (%.3f, %.3f) R: (%.3f, %.3f)",
                 left_x, left_y, right_x, right_y
-            );
+            ).view());
         }
 
         mavlink_message_t message;

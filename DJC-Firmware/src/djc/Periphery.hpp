@@ -15,7 +15,10 @@
 #ifdef DJC_USE_LEGACY_DISPLAY_DRIVER
 #include <kf/drivers/display/SSD1306.hpp>
 #else
+
 #include <kf/drivers/display/ST7735.hpp>
+
+
 #endif
 
 namespace djc {
@@ -103,10 +106,11 @@ struct Periphery {
     /// @brief Initialize all peripherals
     /// @returns true if initialization successful
     kf_nodiscard bool init() noexcept {
-        kf_Logger_info("Initializing peripherals");
+        constexpr auto logger = kf::Logger::create("Periphery");
+        logger.info("Initializing peripherals");
 
         if (not display.init()) {
-            kf_Logger_error("Display driver initialization failed");
+            logger.error("Display driver initialization failed");
         }
 
         left_joystick.init();
@@ -116,23 +120,27 @@ struct Periphery {
 
         const auto espnow_init_result = kf::EspNow::init();
         if (not espnow_init_result.isOk()) {
-            kf_Logger_error(
+            kf::ArrayString<64> buff{};
+            (void) buff.format(
                 "Failed to initialize ESP-NOW: %s",
                 kf::EspNow::stringFromError(espnow_init_result.error().value()));
+            logger.error(buff.view());
             return false;
         }
 
         const auto peer_result = kf::EspNow::Peer::add(config.peer_mac);
         if (peer_result.isError()) {
-            kf_Logger_error(
+            kf::ArrayString<64> buff{};
+            (void) buff.format(
                 "ESPNOW failed to add peer '%s': %s",
                 kf::EspNow::stringFromMac(config.peer_mac),
                 kf::EspNow::stringFromError(peer_result.error().value()));
+            logger.error(buff.view());
             return false;
         }
 
         espnow_peer = peer_result.ok();
-        kf_Logger_info("Peripherals initialized successfully");
+        logger.info("Peripherals initialized successfully");
         return true;
     }
 };
