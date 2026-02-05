@@ -27,11 +27,11 @@ struct Device : kf::Singleton<Device> {
         }
     };
 
-    static constexpr auto pixel_format{Periphery::SelectedDisplayDriver::pixel_format};
+    using PixelFormat = Periphery::SelectedDisplayDriver::PixelFormat;
 
 private:
     Periphery periphery{};
-    kf::gfx::Canvas<pixel_format> root_canvas{};
+    kf::gfx::Canvas<PixelFormat> root_canvas{};
     ControllerValues controller_values{};
     djc::UI &ui = djc::UI::instance();
     bool menu_navigation_enabled{true};
@@ -44,8 +44,8 @@ public:
     }
 
     void setupGraphics() noexcept {
-        root_canvas = kf::gfx::Canvas<pixel_format>{
-            kf::gfx::DynamicImage<pixel_format>{
+        root_canvas = kf::gfx::Canvas<PixelFormat>{
+            kf::gfx::DynamicImage<PixelFormat>{
                 // Buffer: data, stride
                 periphery.display.buffer().data(), periphery.display.width(),
                 // Size: width, height
