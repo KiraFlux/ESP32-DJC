@@ -46,8 +46,8 @@ public:
     void setupGraphics() noexcept {
         root_canvas = kf::gfx::Canvas<PixelFormat>{
             kf::gfx::DynamicImage<PixelFormat>{
-                // Buffer: data, stride
-                periphery.display.buffer().data(), periphery.display.width(),
+                // Buffer: data view, stride
+                periphery.display.buffer(), periphery.display.width(),
                 // Size: width, height
                 periphery.display.width(), periphery.display.height(),
                 // Offset: x, y

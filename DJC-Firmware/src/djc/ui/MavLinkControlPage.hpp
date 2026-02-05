@@ -24,7 +24,13 @@ private:
 
     kf::Timer test_timer{static_cast<kf::Milliseconds>(100)};
     kf::Timer heartbeat_timer{static_cast<kf::Milliseconds>(2000)};
-    kf::ArrayString<256> log_buffer{"\xB1""Wonderful emptiness..."};
+    kf::ArrayString<256> log_buffer{
+        "" // Extended ASCII characters for display testing
+        "\xF0#0#\xF1#1#\xF2#2#\xF3#3#\xF4#4#\xF5#5#\xF6#6#\xF7#7#\n"
+        "\xF8#8#\xF9#9#\xFA#A#\xFB#B#\xFC#C#\xFD#D#\xFE#E#\xFF#F#\n"
+        "\xB0 0 \xB1 1 \xB2 2 \xB3 3 \xB4 4 \xB5 5 \xB6 6 \xB7 7 \n"
+        "\xB8 8 \xB9 9 \xBB A \xBB B \xBC C \xBD D \xBE E \xBF F "
+    };
     kf::StringView log_view{log_buffer.view()};
 
     UI::Display <kf::StringView> log_display{*this, log_view};
