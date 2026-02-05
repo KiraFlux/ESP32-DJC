@@ -59,7 +59,7 @@ public:
         root_canvas.setAutoNextLine(true);
     }
 
-    void setupUiRenderConfig(UI::RenderConfig &config) noexcept {
+    void setupRender(UI::RenderConfig &config) noexcept {
         config.on_render_finish = [this](kf::StringView str) {
             root_canvas.fill();
             onRender(str);

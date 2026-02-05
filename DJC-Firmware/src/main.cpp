@@ -27,7 +27,7 @@ void setup() {
     // Device setup
     device.setupPeriphery();
     device.setupGraphics();
-    device.setupUiRenderConfig(ui.renderConfig());
+    device.setupRender(ui.renderConfig());
 
     // UI setup
     ui.bindPage(djc::MainPage::instance());
