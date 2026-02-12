@@ -5,7 +5,7 @@
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
-#include <kf/core/attributes.hpp>
+#include <kf/attributes.hpp>
 #include <kf/input/Button.hpp>
 #include <kf/input/Joystick.hpp>
 #include <kf/input/JoystickListener.hpp>
