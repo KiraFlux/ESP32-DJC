@@ -1,11 +1,10 @@
 #pragma once
 
-#include <kf/pattern/Singleton.hpp>
 #include <kf/gfx.hpp>
+#include <kf/pattern/Singleton.hpp>
 
 #include "djc/Periphery.hpp"
 #include "djc/UI.hpp"
-
 
 namespace djc {
 
@@ -39,16 +38,14 @@ private:
 public:
     // Setup methods
     void setupPeriphery() noexcept {
-        (void) periphery.init(); // Ignoring failure for now
-        tune(100); // Tune analog axes with 100 samples
+        (void) periphery.init();// Ignoring failure for now
+        tune(100);              // Tune analog axes with 100 samples
     }
 
     void setupGraphics() noexcept {
-        kf::image::DynamicImage<PixelImpl> screen_image{periphery.display.image()};
         root_canvas = kf::gfx::Canvas<PixelImpl>{
-            screen_image,
-            kf::gfx::fonts::gyver_5x7_en
-        };
+            kf::image::DynamicImage<PixelImpl>{periphery.display.image()},
+            kf::gfx::fonts::gyver_5x7_en};
         root_canvas.setAutoNextLine(true);
     }
 
@@ -113,7 +110,8 @@ private:
 
         // Show mode indicator
         if (not menu_navigation_enabled) {
-            constexpr kf::StringView mode_indicator{"\xB6""Controller Mode\n"};
+            constexpr kf::StringView mode_indicator{"\xB6"
+                                                    "Controller Mode\n"};
             root_canvas.text(0, 0, mode_indicator.data());
             y = root_canvas.glyphHeight();
         }
@@ -134,10 +132,10 @@ private:
 
     void onNavigationRightJoystickDirection(kf::JoystickListener::Direction direction) const noexcept {
         static constexpr Event event_from_direction[4] = {
-            Event::pageCursorMove(-1), // Up
-            Event::pageCursorMove(+1), // Down
-            Event::widgetValue(-1),    // Left
-            Event::widgetValue(+1),    // Right
+            Event::pageCursorMove(-1),// Up
+            Event::pageCursorMove(+1),// Down
+            Event::widgetValue(-1),   // Left
+            Event::widgetValue(+1),   // Right
         };
 
         ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
@@ -166,4 +164,4 @@ private:
     }
 };
 
-} // namespace djc
+}// namespace djc
