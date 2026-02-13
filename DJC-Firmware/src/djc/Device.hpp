@@ -27,11 +27,11 @@ struct Device : kf::Singleton<Device> {
         }
     };
 
-    using PixelFormat = Periphery::SelectedDisplayDriver::PixelFormat;
+    using PixelImpl = Periphery::SelectedDisplayDriver::PixelImpl;
 
 private:
     Periphery periphery{};
-    kf::gfx::Canvas<PixelFormat> root_canvas{};
+    kf::gfx::Canvas<PixelImpl> root_canvas{};
     ControllerValues controller_values{};
     djc::UI &ui = djc::UI::instance();
     bool menu_navigation_enabled{true};
@@ -44,16 +44,9 @@ public:
     }
 
     void setupGraphics() noexcept {
-        root_canvas = kf::gfx::Canvas<PixelFormat>{
-            kf::gfx::DynamicImage<PixelFormat>{
-                // Buffer: data view, stride
-                periphery.display.buffer(), periphery.display.width(),
-                // Size: width, height
-                periphery.display.width(), periphery.display.height(),
-                // Offset: x, y
-                0, 0
-            },
-            // Font
+        kf::image::DynamicImage<PixelImpl> screen_image{periphery.display.image()};
+        root_canvas = kf::gfx::Canvas<PixelImpl>{
+            screen_image,
             kf::gfx::fonts::gyver_5x7_en
         };
         root_canvas.setAutoNextLine(true);
@@ -116,7 +109,7 @@ public:
 private:
     // Display rendering
     void onRender(kf::StringView str) noexcept {
-        kf::Pixel y{0};
+        kf::Pixels y{0};
 
         // Show mode indicator
         if (not menu_navigation_enabled) {
