@@ -1,6 +1,3 @@
-[submodule "DJC-Firmware/lib/KiraFlux-Toolkit"]
-	path = DJC-Firmware/lib/KiraFlux-Toolkit
-	url = https://github.com/KiraFlux/KiraFlux-Toolkit.git
 [submodule "Scaffold"]
 	path = Scaffold
 	url = https://github.com/KiraFlux/Scaffold.git
