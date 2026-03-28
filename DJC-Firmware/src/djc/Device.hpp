@@ -1,18 +1,20 @@
+// Copyright (c) 2026 KiraFlux
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
-#include <kf/gfx.hpp>
-#include <kf/pattern/Singleton.hpp>
+#include <kf/gfx/Canvas.hpp>
+#include <kf/image/DynamicImage.hpp>
+#include <kf/mixin/Singleton.hpp>
+#include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/Periphery.hpp"
-#include "djc/UI.hpp"
+#include "djc/ui/UI.hpp"
 
 namespace djc {
 
 /// @brief Main device controller for ESP32-DJC
-struct Device : kf::Singleton<Device> {
-    friend struct Singleton<Device>;
-
-    using Event = djc::UI::Event;
+struct Device : kf::mixin::Singleton<Device>, kf::mixin::TimedPollable<Device> {
 
     /// @brief Controller values for manual control mode
     struct ControllerValues {
@@ -21,21 +23,11 @@ struct Device : kf::Singleton<Device> {
         kf::f32 right_x{};
         kf::f32 right_y{};
 
-        void reset() {
-            *this = ControllerValues{};
-        }
+        void reset() { *this = ControllerValues{}; }
     };
 
-    using PixelImpl = Periphery::SelectedDisplayDriver::PixelImpl;
+    using PixelImpl = DisplayDriver::PixelImpl;
 
-private:
-    Periphery periphery{};
-    kf::gfx::Canvas<PixelImpl> root_canvas{};
-    ControllerValues controller_values{};
-    djc::UI &ui = djc::UI::instance();
-    bool menu_navigation_enabled{true};
-
-public:
     // Setup methods
     void setupPeriphery() noexcept {
         (void) periphery.init();// Ignoring failure for now
@@ -46,21 +38,90 @@ public:
         root_canvas = kf::gfx::Canvas<PixelImpl>{
             kf::image::DynamicImage<PixelImpl>{periphery.display.image()},
             kf::gfx::fonts::gyver_5x7_en};
-        root_canvas.setAutoNextLine(true);
+        root_canvas.autoNextLine(true);
     }
 
     void setupRender(UI::RenderConfig &config) noexcept {
-        config.on_render_finish = [this](kf::StringView str) {
+        config.callback([this](kf::memory::StringView str) {
             root_canvas.fill();
             onRender(str);
-            periphery.display.send();
-        };
+            (void) periphery.display.send();
+        });
         config.row_max_length = root_canvas.widthInGlyphs();
         config.rows_total = root_canvas.heightInGlyphs();
     }
 
-    /// @brief Poll input devices and update state
-    void poll(kf::Milliseconds now) noexcept {
+    // Accessors
+    const ControllerValues &controllerValues() const noexcept { return controller_values; }
+
+    kf::Option<kf::network::EspNow::Peer> &espnowPeer() noexcept { return periphery.espnow_peer; }
+
+    bool isNavigationEnabled() const noexcept { return menu_navigation_enabled; }
+
+private:
+    Periphery periphery{};
+    kf::gfx::Canvas<PixelImpl> root_canvas{};
+    ControllerValues controller_values{};
+    UI &ui{UI::instance()};
+    bool menu_navigation_enabled{true};
+
+    // Display rendering
+    void onRender(kf::memory::StringView str) noexcept {
+        kf::math::Pixels y{0};
+
+        // Show mode indicator
+        if (not menu_navigation_enabled) {
+            constexpr kf::memory::StringView mode_indicator{"\xB6"
+                                                            "Controller Mode\n"};
+            root_canvas.text(0, 0, mode_indicator.data());
+            y = root_canvas.glyphHeight();
+        }
+
+        root_canvas.text(0, y, str.data());
+    }
+
+    // Input event handlers
+    void onLeftButtonClick() noexcept {
+        menu_navigation_enabled = not menu_navigation_enabled;
+        controller_values.reset();
+        ui.addEvent(UI::Event::update());
+    }
+
+    void onNavigationRightButtonClick() const noexcept {
+        ui.addEvent(UI::Event::widgetClick());
+    }
+
+    void onNavigationRightJoystickDirection(JoystickListener::Direction direction) const noexcept {
+        static constexpr UI::Event event_from_direction[4] = {
+            UI::Event::pageCursorMove(-1),// Up
+            UI::Event::pageCursorMove(+1),// Down
+            UI::Event::widgetValue(-1),   // Left
+            UI::Event::widgetValue(+1),   // Right
+        };
+
+        ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
+    }
+
+    // Analog axis calibration
+    void tune(kf::u16 samples) noexcept {
+        Joystick::Tuner left_tuner{periphery.config.left_joystick, periphery.left_joystick, samples};
+        Joystick::Tuner right_tuner{periphery.config.right_joystick, periphery.right_joystick, samples};
+
+        left_tuner.reset();
+        right_tuner.reset();
+
+        // Poll all axes until calibration complete
+        while (left_tuner.running() or right_tuner.running()) {
+            left_tuner.poll();
+            right_tuner.poll();
+            delay(1);
+        }
+    }
+
+    // impl
+
+    KF_IMPL_TIMED_POLLABLE(Device);
+    void pollImpl(kf::math::Milliseconds now) noexcept {
         // Left button (mode toggle)
         periphery.left_button.poll(now);
         if (periphery.left_button.clicked()) {
@@ -77,7 +138,7 @@ public:
             periphery.right_joystick_listener.poll(now);
             if (periphery.right_joystick_listener.changed()) {
                 const auto direction = periphery.right_joystick_listener.direction();
-                if (direction != kf::JoystickListener::Direction::Home) {
+                if (direction != JoystickListener::Direction::Home) {
                     onNavigationRightJoystickDirection(direction);
                 }
             }
@@ -87,79 +148,6 @@ public:
             controller_values.left_y = periphery.left_joystick.axis_y.read();
             controller_values.right_x = periphery.right_joystick.axis_x.read();
             controller_values.right_y = periphery.right_joystick.axis_y.read();
-        }
-    }
-
-    // Accessors
-    kf_nodiscard const ControllerValues &controllerValues() const noexcept {
-        return controller_values;
-    }
-
-    kf_nodiscard kf::Option<kf::EspNow::Peer> &espnowPeer() noexcept {
-        return periphery.espnow_peer;
-    }
-
-    kf_nodiscard bool isNavigationEnabled() const noexcept {
-        return menu_navigation_enabled;
-    }
-
-private:
-    // Display rendering
-    void onRender(kf::StringView str) noexcept {
-        kf::Pixels y{0};
-
-        // Show mode indicator
-        if (not menu_navigation_enabled) {
-            constexpr kf::StringView mode_indicator{"\xB6"
-                                                    "Controller Mode\n"};
-            root_canvas.text(0, 0, mode_indicator.data());
-            y = root_canvas.glyphHeight();
-        }
-
-        root_canvas.text(0, y, str.data());
-    }
-
-    // Input event handlers
-    void onLeftButtonClick() noexcept {
-        menu_navigation_enabled = not menu_navigation_enabled;
-        controller_values.reset();
-        ui.addEvent(Event::update());
-    }
-
-    void onNavigationRightButtonClick() const noexcept {
-        ui.addEvent(Event::widgetClick());
-    }
-
-    void onNavigationRightJoystickDirection(kf::JoystickListener::Direction direction) const noexcept {
-        static constexpr Event event_from_direction[4] = {
-            Event::pageCursorMove(-1),// Up
-            Event::pageCursorMove(+1),// Down
-            Event::widgetValue(-1),   // Left
-            Event::widgetValue(+1),   // Right
-        };
-
-        ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
-    }
-
-    // Analog axis calibration
-    void tune(kf::u16 samples) noexcept {
-        kf::AnalogAxis::AxisTuner lx{periphery.config.left_joystick.x, samples};
-        kf::AnalogAxis::AxisTuner ly{periphery.config.left_joystick.y, samples};
-        kf::AnalogAxis::AxisTuner rx{periphery.config.right_joystick.x, samples};
-        kf::AnalogAxis::AxisTuner ry{periphery.config.right_joystick.y, samples};
-
-        lx.start();
-        ly.start();
-        rx.start();
-        ry.start();
-
-        // Poll all axes until calibration complete
-        while (lx.running() or ly.running() or rx.running() or ry.running()) {
-            lx.poll(periphery.left_joystick.axis_x.readRaw());
-            ly.poll(periphery.left_joystick.axis_y.readRaw());
-            rx.poll(periphery.right_joystick.axis_x.readRaw());
-            ry.poll(periphery.right_joystick.axis_y.readRaw());
-            delay(1);
         }
     }
 };
