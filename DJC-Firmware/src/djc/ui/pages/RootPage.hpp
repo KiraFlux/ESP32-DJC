@@ -4,19 +4,19 @@
 #pragma once
 
 #include <kf/memory/Array.hpp>
-#include <kf/mixin/Singleton.hpp>
 
 #include "djc/ui/UI.hpp"
 
-namespace djc {
+namespace djc::ui::pages {
 
 /// @brief Main menu page for ESP32-DJC
-struct MainPage : UI::Page, kf::mixin::Singleton<MainPage> {
-    kf::memory::Array<UI::Widget *, 1> widget_layout{{
+struct RootPage : UI::Page {
+    kf::memory::Array<UI::Widget *, 2> widget_layout{{
         nullptr,// for MavLink link widget
+        nullptr,// for Config link widget
     }};
 
-    explicit constexpr MainPage() : Page{"ESP32-DJC"} {
+    explicit constexpr RootPage() : Page{"ESP32-DJC"} {
         widgets({widget_layout.data(), widget_layout.size()});
     }
 };

@@ -7,16 +7,14 @@
 #include <kf/memory/StringView.hpp>
 
 #include "djc/Device.hpp"
-#include "djc/ui/MainPage.hpp"
-#include "djc/ui/MavLinkControlPage.hpp"
 #include "djc/ui/UI.hpp"
+#include "djc/ui/pages/PageManager.hpp"
 
-static auto &ui = djc::UI::instance();
+static auto &ui = djc::ui::UI::instance();
 
 static auto &device = djc::Device::instance();
 
 // pages
-static djc::MavLinkControlPage mav_link_control{};
 
 void setup() {
     // Logging setup
@@ -29,11 +27,7 @@ void setup() {
     device.setupRender(ui.renderConfig());
 
     // UI setup
-    auto &main_page = djc::MainPage::instance();
-    main_page.widget_layout[0] = &mav_link_control.link();
-
-    ui.bindPage(main_page);
-    ui.addEvent(djc::UI::Event::update());
+    djc::ui::pages::PageManager::instance().init();
 }
 
 void loop() {

@@ -41,7 +41,7 @@ struct Device : kf::mixin::Singleton<Device>, kf::mixin::TimedPollable<Device> {
         root_canvas.autoNextLine(true);
     }
 
-    void setupRender(UI::RenderConfig &config) noexcept {
+    void setupRender(ui::UI::RenderConfig &config) noexcept {
         config.callback([this](kf::memory::StringView str) {
             root_canvas.fill();
             onRender(str);
@@ -62,7 +62,7 @@ private:
     Periphery periphery{};
     kf::gfx::Canvas<PixelImpl> root_canvas{};
     ControllerValues controller_values{};
-    UI &ui{UI::instance()};
+    ui::UI &ui{ui::UI::instance()};
     bool menu_navigation_enabled{true};
 
     // Display rendering
@@ -84,19 +84,19 @@ private:
     void onLeftButtonClick() noexcept {
         menu_navigation_enabled = not menu_navigation_enabled;
         controller_values.reset();
-        ui.addEvent(UI::Event::update());
+        ui.addEvent(ui::UI::Event::update());
     }
 
     void onNavigationRightButtonClick() const noexcept {
-        ui.addEvent(UI::Event::widgetClick());
+        ui.addEvent(ui::UI::Event::widgetClick());
     }
 
     void onNavigationRightJoystickDirection(JoystickListener::Direction direction) const noexcept {
-        static constexpr UI::Event event_from_direction[4] = {
-            UI::Event::pageCursorMove(-1),// Up
-            UI::Event::pageCursorMove(+1),// Down
-            UI::Event::widgetValue(-1),   // Left
-            UI::Event::widgetValue(+1),   // Right
+        static constexpr ui::UI::Event event_from_direction[4] = {
+            ui::UI::Event::pageCursorMove(-1),// Up
+            ui::UI::Event::pageCursorMove(+1),// Down
+            ui::UI::Event::widgetValue(-1),   // Left
+            ui::UI::Event::widgetValue(+1),   // Right
         };
 
         ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);

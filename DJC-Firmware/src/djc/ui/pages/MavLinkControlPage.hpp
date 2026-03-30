@@ -15,14 +15,18 @@
 #include <kf/memory/StringView.hpp>
 
 #include "djc/Device.hpp"
-#include "djc/ui/MainPage.hpp"
 #include "djc/ui/UI.hpp"
 
-namespace djc {
+namespace djc::ui::pages {
 
 /// @brief MAVLink protocol control page for drone/vehicle control
 struct MavLinkControlPage : UI::Page {
-    explicit MavLinkControlPage() : Page{"MAV Link Control"} {
+    explicit MavLinkControlPage(UI::Page &root) noexcept :
+        Page{"MAV Link Control"},
+        widget_layout{{
+            &root.link(),
+            &log_display,
+        }} {
         widgets({widget_layout.data(), widget_layout.size()});
 
         const auto now = millis();
@@ -67,11 +71,7 @@ private:
         "\xB8 8 \xB9 9 \xBB A \xBB B \xBC C \xBD D \xBE E \xBF F "};
 
     UI::Display<kf::memory::StringView> log_display{log_buffer.view()};
-
-    kf::memory::Array<UI::Widget *, 2> widget_layout{{
-        &MainPage::instance().link(),
-        &log_display,
-    }};
+    kf::memory::Array<UI::Widget *, 2> widget_layout;
 
     void onMavLinkMessage(mavlink_message_t *message) {
         logger.debug(kf::memory::ArrayString<32>::formatted("MAVLink message ID: %d", message->msgid).view());
@@ -114,7 +114,7 @@ private:
             &message,
             MAV_TYPE_QUADROTOR,
             MAV_AUTOPILOT_GENERIC,
-            0, 0, 0// Custom mode, system status, MAVLink version
+            0, 0, 0// Base mode, Custom mode, system status
         );
 
         sendMavlinkToEspnow(message);
@@ -165,4 +165,4 @@ private:
     }
 };
 
-}// namespace djc
+}// namespace djc::pages

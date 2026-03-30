@@ -7,7 +7,7 @@
 #include <kf/ui/UI.hpp>
 #include <kf/ui/render/ColoredTextRender.hpp>
 
-namespace djc {
+namespace djc::ui {
 
 // KiraFlux-Toolkit UI specialization for ESP32-DJC
 using UI = kf::ui::UI<
