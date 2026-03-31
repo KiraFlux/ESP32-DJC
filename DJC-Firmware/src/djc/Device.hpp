@@ -59,7 +59,8 @@ struct Device : kf::mixin::Singleton<Device>, kf::mixin::TimedPollable<Device> {
     bool isNavigationEnabled() const noexcept { return menu_navigation_enabled; }
 
 private:
-    Periphery periphery{};
+    Periphery::Config periphery_config{}; 
+    Periphery periphery{periphery_config};
     kf::gfx::Canvas<PixelImpl> root_canvas{};
     ControllerValues controller_values{};
     ui::UI &ui{ui::UI::instance()};
@@ -104,8 +105,8 @@ private:
 
     // Analog axis calibration
     void tune(kf::u16 samples) noexcept {
-        Joystick::Tuner left_tuner{periphery.config.left_joystick, periphery.left_joystick, samples};
-        Joystick::Tuner right_tuner{periphery.config.right_joystick, periphery.right_joystick, samples};
+        Joystick::Tuner left_tuner{periphery_config.left_joystick, periphery.left_joystick, samples};
+        Joystick::Tuner right_tuner{periphery_config.right_joystick, periphery.right_joystick, samples};
 
         left_tuner.reset();
         right_tuner.reset();
