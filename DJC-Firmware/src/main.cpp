@@ -12,7 +12,11 @@
 
 static auto &ui = djc::ui::UI::instance();
 
-static auto &device = djc::Device::instance();
+static djc::Periphery::Config periphery_config{};
+
+static djc::Periphery periphery{periphery_config};
+
+static djc::Device device{periphery};
 
 // pages
 
@@ -21,8 +25,10 @@ void setup() {
     Serial.begin(115200);
     kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
 
+    (void) periphery.init();
+    periphery.tune(periphery_config, 100); 
+
     // Device setup
-    device.setupPeriphery();
     device.setupGraphics();
     device.setupRender(ui.renderConfig());
 

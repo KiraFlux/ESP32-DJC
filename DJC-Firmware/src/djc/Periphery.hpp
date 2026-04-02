@@ -114,6 +114,22 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
         // SPI pins: MOSI=23, MISO=19, SCK=18
     };
 
+    // Analog axis calibration
+    void tune(Config &mut_config, kf::u16 samples) noexcept {
+        Joystick::Tuner left_tuner{mut_config.left_joystick, left_joystick, samples};
+        Joystick::Tuner right_tuner{mut_config.right_joystick, right_joystick, samples};
+
+        left_tuner.reset();
+        right_tuner.reset();
+
+        // Poll all axes until calibration complete
+        while (left_tuner.running() or right_tuner.running()) {
+            left_tuner.poll();
+            right_tuner.poll();
+            delay(1);
+        }
+    }
+
 private:
     static constexpr auto logger = kf::Logger::create("Periphery");
 
