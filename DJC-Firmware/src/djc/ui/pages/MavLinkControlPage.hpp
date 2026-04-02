@@ -28,33 +28,13 @@ struct MavLinkControlPage : UI::Page {
             &log_display,
         }} {
         widgets({widget_layout.data(), widget_layout.size()});
-
-        const auto now = millis();
-        debug_timer.start(now);
-        heartbeat_timer.start(now);
     }
 
     void onEntry() noexcept override {
-        EspNow::instance().onReceiveFromUnknown(
-            [this](const EspNow::Mac &, kf::memory::Slice<const kf::u8> buffer) {
-                mavlink_message_t message;
-                mavlink_status_t status;
-
-                for (auto b: buffer) {
-                    if (mavlink_parse_char(MAVLINK_COMM_0, b, &message, &status)) {
-                        onMavLinkMessage(&message);
-                    }
-                }
-            });
     }
 
     void onUpdate(kf::math::Milliseconds now) noexcept override {
-        sendManualControl(now);
-
-        if (heartbeat_timer.expired(now)) {
-            sendHeartBeat();
-            heartbeat_timer.start(now);
-        }
+        
     }
 
 private:
@@ -72,8 +52,6 @@ private:
 
     UI::Display<kf::memory::StringView> log_display{log_buffer.view()};
     kf::memory::Array<UI::Widget *, 2> widget_layout;
-
-
 };
 
 }// namespace djc::pages
