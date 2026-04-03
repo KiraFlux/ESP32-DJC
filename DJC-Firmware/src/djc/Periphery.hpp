@@ -17,48 +17,18 @@ namespace djc {
 
 namespace internal {
 
-struct PeripheryConfig {
-    // ESPNOW peer MAC address (broadcast by default)
-    EspNow::Mac peer_mac{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+struct PeripheryConfig final : kf::mixin::NonCopyable {
+    Button::Config button;
 
-    // Input devices configuration
-    Button::Config button{
-        .debounce = 50,
-    };
+    AxisInput::FilterImpl::Config axis_filter;
+    Joystick::Config left_joystick, right_joystick;
 
-    AxisInput::FilterImpl::Config axis_filter{
-        .factor = 0.5f,
-    };
+    Bus::Config bus;
+    Bus::Node::Config bus_node;
 
-    Joystick::Config left_joystick{
-        .x = {.inverted = true},
-        .y = {.inverted = false},
-    };
-
-    Joystick::Config right_joystick{
-        .x = {.inverted = false},
-        .y = {.inverted = true},
-    };
-
-    JoystickListener::Config joystick_listener{
-        .threshold = 0.6f,
-        .repeat_timeout = 100,
-        .delay = 400,
-    };
-
-    // Display configuration
-
-    Bus::Config bus{};// defaults
-
-    Bus::Node::Config bus_node{
-        GPIO_NUM_5,// CS
-        27000000,  // SPI frequency
-    };
-
-    DisplayDriver::Config display{
-        .init_orientation = kf::drivers::display::Orientation::ClockWise,
-    };
+    DisplayDriver::Config display;
 };
+
 }// namespace internal
 
 /// @brief ESP32-DJC Hardware Periphery
@@ -97,10 +67,6 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
         AdcInput{GPIO_NUM_34},
     };
 
-    JoystickListener right_joystick_listener{right_joystick, this->config().joystick_listener};
-
-    kf::Option<EspNow::Peer> espnow_peer{};
-
     Bus bus{
         this->config().bus,
         SPI,
@@ -111,7 +77,6 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
         bus.createNode(this->config().bus_node),
         DigitalOutput{GPIO_NUM_2}, // DC
         DigitalOutput{GPIO_NUM_15},// RESET
-        // SPI pins: MOSI=23, MISO=19, SCK=18
     };
 
     // Analog axis calibration
@@ -151,19 +116,6 @@ private:
             logger.error("Display driver initialization failed");
         }
 
-        const auto espnow_init_result = EspNow::instance().init();
-        if (espnow_init_result.isError()) {
-            logger.error("Failed to initialize ESP-NOW: %s");
-            return false;
-        }
-
-        auto peer_result = EspNow::Peer::add(this->config().peer_mac);
-        if (peer_result.isError()) {
-            logger.error("ESPNOW failed to add peer");
-            return false;
-        }
-
-        espnow_peer.value(std::move(peer_result.value()));
         logger.info("Peripherals initialized successfully");
         return true;
     }

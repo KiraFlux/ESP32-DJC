@@ -5,6 +5,7 @@
 
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
@@ -13,15 +14,21 @@
 
 namespace djc {
 
-struct UiManager final : kf::mixin::NonCopyable, kf::mixin::Initable<UiManager, void> {
+struct UiManager final : kf::mixin::NonCopyable, kf::mixin::Initable<UiManager, void>, kf::mixin::TimedPollable<UiManager> {
+
+    void addEvent(ui::UI::Event event) noexcept { ui.addEvent(event); }
+
+private:
+    // pages
+
     ui::pages::RootPage root{};
-
-    // User pages
-
     ui::pages::MavLinkControlPage mav_link_control{root};
     ui::pages::ConfigPage config{root};
 
-private:
+    ui::UI &ui{ui::UI::instance()};
+
+    // impl
+
     KF_IMPL_INITABLE(UiManager, void);
     void initImpl() noexcept {
         // apply page links
@@ -30,10 +37,12 @@ private:
         root.widget_layout[1] = &config.link();
 
         // prepare UI
-        auto &ui = ui::UI::instance();
         ui.bindPage(root);
         ui.addEvent(ui::UI::Event::update());
     }
+
+    KF_IMPL_TIMED_POLLABLE(UiManager);
+    void pollImpl(kf::math::Milliseconds now) noexcept { ui.poll(now); }
 };
 
 }// namespace djc
