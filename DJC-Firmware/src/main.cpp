@@ -71,7 +71,6 @@ void setup() {
         });
 
         input_handler.onRightButton([]() {
-            logger.debug("R");
             ui_manager.addEvent(E::widgetClick());
         });
 
