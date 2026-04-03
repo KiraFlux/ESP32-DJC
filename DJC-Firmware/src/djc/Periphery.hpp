@@ -88,7 +88,7 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
     Button right_button{
         this->config().button,
         DigitalInput{
-            GPIO_NUM_4,
+            GPIO_NUM_21,
             DigitalInput::Pull::InternalUp,
         },
     };

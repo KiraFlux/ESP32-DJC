@@ -14,6 +14,10 @@
 #include "djc/InputHandler.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/UiManager.hpp"
+#include "djc/ui/pages/ConfigPage.hpp"
+#include "djc/ui/pages/MavLinkControlPage.hpp"
+
+static constexpr auto logger{kf::Logger::create("root")};
 
 static djc::DeviceState device_state{
     .menu_navigation_enabled = true,
@@ -32,22 +36,24 @@ static djc::Control control{storage.config.control, device_state, input_handler}
 
 static djc::DisplayManager display_manager{periphery.display, device_state};
 
-static djc::UiManager ui_manager{control, storage};
+static djc::UiManager ui_manager{};
 
-static constexpr auto logger{kf::Logger::create("root")};
+static djc::ui::pages::MavLinkControlPage mav_link_control{ui_manager.root(), control};
+
+static djc::ui::pages::ConfigPage config{ui_manager.root(), storage};
 
 void setup() {
     Serial.begin(115200);
     kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
 
-    if (not storage.load()) {
+    // if (not storage.load()) {
         logger.warn("failed to load device config. Using defaults");
         storage.config = djc::DeviceConfig::defaults();
 
         if (not storage.save()) {
             logger.error("failed to save defaults");
         }
-    }
+    // }
 
     if (not periphery.init()) {
         logger.error("Periphery init failed. Resseting periphery config to defaults");
@@ -65,6 +71,7 @@ void setup() {
         });
 
         input_handler.onRightButton([]() {
+            logger.debug("R");
             ui_manager.addEvent(E::widgetClick());
         });
 
@@ -90,7 +97,14 @@ void setup() {
 
     (void) control.init();
     display_manager.init();
-    ui_manager.init();
+
+    {
+        // apply page links
+        // WARNING: before adding another link check RootPage::widget_layout LENGTH
+        ui_manager.root().widget_layout[0] = &mav_link_control.link();
+        ui_manager.root().widget_layout[1] = &config.link();
+        ui_manager.init();
+    }
 
     (void) control.activePeer(storage.config.activePeer());
 }
