@@ -15,6 +15,7 @@
 #include "djc/Periphery.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavLinkControlPage.hpp"
+#include "djc/ui/pages/RawControlPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
 
 static constexpr auto logger{kf::Logger::create("root")};
@@ -55,6 +56,11 @@ static djc::DisplayManager display_manager{
 static djc::ui::pages::RootPage root_page{};
 
 static djc::ui::pages::MavLinkControlPage mavlink_control_page{
+    root_page,
+    control,
+};
+
+static djc::ui::pages::RawControlPage raw_control_page{
     root_page,
     control,
 };
@@ -117,12 +123,14 @@ void setup() {
         // apply page links
         // WARNING: before adding another link check RootPage::widget_layout LENGTH
         root_page.widget_layout[0] = &mavlink_control_page.link();
-        root_page.widget_layout[1] = &config_page.link();
+        root_page.widget_layout[1] = &raw_control_page.link();
+        root_page.widget_layout[2] = &config_page.link();
+
         ui.bindPage(root_page);
         ui.addEvent(E::update());
     }
 
-    // (void) control.activePeer(storage.config().activePeer());
+    (void) control.activePeer(storage.config().selectedFavorite());
 }
 
 void loop() {

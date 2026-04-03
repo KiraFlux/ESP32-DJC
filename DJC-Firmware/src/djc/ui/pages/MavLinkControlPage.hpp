@@ -5,6 +5,7 @@
 
 #include <MAVLink.h>
 
+#include <kf/Logger.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
 #include <kf/memory/ArrayString.hpp>
@@ -28,6 +29,9 @@ struct MavLinkControlPage : UI::Page {
     }
 
     void onEntry() noexcept override {
+        logger.debug("entry");
+
+        _control.mode(Control::Mode::MavLink);
         _control.onMavlinkMessage([this](mavlink_message_t *message) {
             const bool need_update = onMavLinkMessage(message);
             if (need_update) {
@@ -37,12 +41,16 @@ struct MavLinkControlPage : UI::Page {
     }
 
     void onExit() noexcept override {
+        logger.debug("exit");
+
         _control.onMavlinkMessage(Control::MavLinkMessageCallback{nullptr});
     }
 
     void onUpdate(kf::math::Milliseconds now) noexcept override {}
 
 private:
+    static constexpr auto logger{kf::Logger::create("MavLinkControlPage")};
+
     Control &_control;
     kf::memory::ArrayString<256> log_buffer{
         ""// Extended ASCII characters for display testing
@@ -82,8 +90,7 @@ private:
                     "%+.3f %+.3f %+.3f",
                     imu.xacc * 1000,
                     imu.yacc * 1000,
-                    imu.zacc * 1000
-                );
+                    imu.zacc * 1000);
                 imu_display.value(imu_display_buffer.view());
 
                 return true;

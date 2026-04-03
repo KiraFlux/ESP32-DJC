@@ -20,10 +20,12 @@ struct Config {
 
     static constexpr auto favorite_max{8u};
     kf::memory::Array<Control::EspNow::Mac, favorite_max> favorites;
-    kf::u8 active_favorite_index;// 0 .. favorite_max-1
+    kf::u8 favorites_total, selected_favorite_index;// 0 .. favorite_max-1
 
-    [[nodiscard]] constexpr const Control::EspNow::Mac& activePeer() const noexcept {
-        return favorites[active_favorite_index];
+    kf::u16 version;
+
+    [[nodiscard]] constexpr const Control::EspNow::Mac& selectedFavorite() const noexcept {
+        return favorites[selected_favorite_index];
     }
 
     static constexpr Config defaults() noexcept {
@@ -34,7 +36,9 @@ struct Config {
             .favorites = {
                 {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},// broadcast
             },
-            .active_favorite_index = 0,// select broadcast as default
+            .favorites_total = 1,
+            .selected_favorite_index = 0,// select broadcast as default
+            .version = 1,
         };
     }
 };

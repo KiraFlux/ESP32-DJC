@@ -37,15 +37,14 @@ struct ControlConfig final : kf::mixin::NonCopyable {
     kf::math::Milliseconds heartbeat_period;
     kf::math::Milliseconds poll_period;
     kf::math::Milliseconds debug_log_period;
-
-    ControlMode mode;
+    ControlMode init_mode;
 
     static constexpr ControlConfig defaults() noexcept {
         return ControlConfig{
             .heartbeat_period = 2000,                                     // ms
             .poll_period = static_cast<kf::math::Milliseconds>(1000 / 50),// 50 Hz
             .debug_log_period = 200,                                      // ms
-            .mode = ControlMode::Raw,
+            .init_mode = ControlMode::Raw,
         };
     }
 };
@@ -53,12 +52,9 @@ struct ControlConfig final : kf::mixin::NonCopyable {
 }// namespace internal
 
 struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>, kf::mixin::Configurable<internal::ControlConfig>, kf::mixin::Initable<Control, bool> {
-
     using EspNow = kf::network::EspNow;
-
-    using Mode = internal::ControlMode;
     using Config = internal::ControlConfig;
-
+    using Mode = internal::ControlMode;
     using RawMessageCallback = kf::Function<void(kf::memory::Slice<const kf::u8>)>;
     using MavLinkMessageCallback = kf::Function<void(mavlink_message_t *)>;
 
@@ -132,6 +128,10 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 
     void onMavlinkMessage(MavLinkMessageCallback &&callback) noexcept { _mavlink_message_callback = std::move(callback); }
 
+    void mode(Mode new_mode) noexcept { _mode = new_mode; }
+
+    Mode mode() const noexcept { return _mode; }
+
 private:
     static constexpr auto logger{kf::Logger::create("Control")};
 
@@ -140,13 +140,14 @@ private:
     kf::Option<EspNow::Peer> _active_peer{};
     RawMessageCallback _raw_message_callback{};
     MavLinkMessageCallback _mavlink_message_callback{};
+    Mode _mode{this->config().init_mode};
 
     kf::math::Timer _poll_timer{this->config().poll_period};
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
     kf::math::Timer _debug_log_timer{this->config().debug_log_period};
 
     void onReceive(kf::memory::Slice<const kf::u8> buffer) noexcept {
-        switch (this->config().mode) {
+        switch (_mode) {
             case Mode::Raw:
                 onReceiveRaw(buffer);
                 return;
@@ -233,13 +234,14 @@ private:
             return false;
         }
 
-        logger.debug("init: ok");
-        
+        _mode = this->config().init_mode;
+
         const auto now = millis();
         _poll_timer.start(now);
         _debug_log_timer.start(now);
         _heartbear_timer.start(now);
 
+        logger.debug("init: ok");
         return true;
     }
 
@@ -261,7 +263,7 @@ private:
                         .view());
             }
 
-            switch (this->config().mode) {
+            switch (_mode) {
                 case Mode::Raw:
                     pollRaw(_active_peer.value(), now, raw);
                     return;
