@@ -36,6 +36,7 @@ enum class ControlMode : kf::u8 {
 struct ControlConfig final : kf::mixin::NonCopyable {
     kf::math::Milliseconds heartbeat_period;
     kf::math::Milliseconds poll_period;
+    kf::math::Milliseconds debug_log_period;
 
     ControlMode mode;
 
@@ -43,6 +44,7 @@ struct ControlConfig final : kf::mixin::NonCopyable {
         return ControlConfig{
             .heartbeat_period = 2000,                                     // ms
             .poll_period = static_cast<kf::math::Milliseconds>(1000 / 50),// 50 Hz
+            .debug_log_period = 200,                                      // ms
             .mode = ControlMode::Raw,
         };
     }
@@ -85,7 +87,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
         kf::mixin::Configurable<Config>{config},
         _device_state{device_state}, _input_handler{input_handler} {}
 
-    void activePeer(EspNow::Mac &mac) noexcept {
+    void activePeer(const EspNow::Mac &mac) noexcept {
         if (_active_peer.hasValue()) {
             auto &peer = _active_peer.value();
             if (peer.mac() == mac) { return; }// same -> leave
@@ -141,6 +143,7 @@ private:
 
     kf::math::Timer _poll_timer{this->config().poll_period};
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
+    kf::math::Timer _debug_log_timer{this->config().debug_log_period};
 
     void onReceive(kf::memory::Slice<const kf::u8> buffer) noexcept {
         switch (this->config().mode) {
@@ -231,6 +234,12 @@ private:
         }
 
         logger.debug("init: ok");
+        
+        const auto now = millis();
+        _poll_timer.start(now);
+        _debug_log_timer.start(now);
+        _heartbear_timer.start(now);
+
         return true;
     }
 
@@ -238,18 +247,19 @@ private:
     void pollImpl(kf::math::Milliseconds now) noexcept {
         if (_device_state.menu_navigation_enabled or not _active_peer.hasValue()) { return; }
 
-        // if (_debug_log_timer.expired(now)) {
-        //     logger.debug(kf::memory::ArrayString<64>::formatted(
-        //                      "L: (%.3f, %.3f) R: (%.3f, %.3f)",
-        //                      left_x, left_y, right_x, right_y)
-        //                      .view());
-        //     _debug_log_timer.start(now);
-        // }
-
         if (_poll_timer.expired(now)) {
             _poll_timer.start(now);
 
             const auto raw = RawData::fromControllerValues(_input_handler.controllerValues());
+
+            if (_debug_log_timer.expired(now)) {
+                _debug_log_timer.start(now);
+                logger.debug(
+                    kf::memory::ArrayString<64>::formatted(
+                        "L: (\t%d,\t%d)\tR: (\t%d,\t%d)",
+                        raw.left_x, raw.left_y, raw.right_x, raw.right_y)
+                        .view());
+            }
 
             switch (this->config().mode) {
                 case Mode::Raw:

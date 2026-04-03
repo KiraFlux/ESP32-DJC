@@ -49,14 +49,10 @@ struct PeripheryConfig final : kf::mixin::NonCopyable {
                 .x = {.inverted = false},
                 .y = {.inverted = true},
             },
-            .bus = djc::Bus::Config{
-                // defaults
-                // SPI pins: MOSI=23, MISO=19, SCK=18
-            },
-            .bus_node = djc::Bus::Node::Config{
-                GPIO_NUM_5,// CS
-                27000000,  // SPI frequency
-            },
+            // SPI default pins: MOSI=23, MISO=19, SCK=18
+            .bus = djc::Bus::Config::create(),                    
+            // CS, SPI frequency
+            .bus_node = djc::Bus::Node::Config::create(GPIO_NUM_5, 27000000),
             .display = {
                 .init_orientation = kf::drivers::display::Orientation::ClockWise,
             },

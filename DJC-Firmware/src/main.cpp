@@ -21,6 +21,7 @@ static djc::DeviceState device_state{
 
 static kf::memory::Storage<djc::DeviceConfig> storage{
     .key = "DC",
+    .config = djc::DeviceConfig::defaults(),
 };
 
 static djc::Periphery periphery{storage.config.periphery};
@@ -42,7 +43,7 @@ void setup() {
     if (not storage.load()) {
         logger.warn("failed to load device config. Using defaults");
         storage.config = djc::DeviceConfig::defaults();
-        
+
         if (not storage.save()) {
             logger.error("failed to save defaults");
         }
@@ -54,7 +55,7 @@ void setup() {
 
         (void) storage.save();
     }
-    
+
     {
         using E = djc::ui::UI::Event;
 
@@ -80,12 +81,18 @@ void setup() {
     }
 
     if (not storage.config.periphery.joystick_axes_tuned) {
+        logger.debug("Need axes tune");
         periphery.tune(storage.config.periphery);
+        logger.debug("Tune done!");
+    } else {
+        logger.debug("Axes already tuned");
     }
 
+    (void) control.init();
     display_manager.init();
     ui_manager.init();
-    (void) control.init();
+
+    (void) control.activePeer(storage.config.activePeer());
 }
 
 void loop() {

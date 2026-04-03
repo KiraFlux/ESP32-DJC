@@ -22,6 +22,10 @@ struct DeviceConfig {
     kf::memory::Array<Control::EspNow::Mac, favorite_max> favorites;
     kf::u8 active_favorite_index;// 0 .. favorite_max-1
 
+    [[nodiscard]] constexpr const Control::EspNow::Mac& activePeer() const noexcept {
+        return favorites[active_favorite_index];
+    }
+
     static constexpr DeviceConfig defaults() noexcept {
         return {
             .periphery = Periphery::Config::defaults(),
