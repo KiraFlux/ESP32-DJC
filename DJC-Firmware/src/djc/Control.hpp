@@ -38,6 +38,14 @@ struct ControlConfig final : kf::mixin::NonCopyable {
     kf::math::Milliseconds poll_period;
 
     ControlMode mode;
+
+    static constexpr ControlConfig defaults() noexcept {
+        return ControlConfig{
+            .heartbeat_period = 2000,                                     // ms
+            .poll_period = static_cast<kf::math::Milliseconds>(1000 / 50),// 50 Hz
+            .mode = ControlMode::Raw,
+        };
+    }
 };
 
 }// namespace internal

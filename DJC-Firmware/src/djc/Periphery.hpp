@@ -5,8 +5,11 @@
 
 #include <utility>
 
+#include <Arduino.h>// for delay
+
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
+#include <kf/aliases.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
@@ -27,6 +30,40 @@ struct PeripheryConfig final : kf::mixin::NonCopyable {
     Bus::Node::Config bus_node;
 
     DisplayDriver::Config display;
+    kf::u16 joystick_axes_tune_samples;
+    bool joystick_axes_tuned;
+
+    static constexpr PeripheryConfig defaults() noexcept {
+        return PeripheryConfig{
+            .button = {
+                .debounce = 50,// ms
+            },
+            .axis_filter = {
+                .factor = 0.5f,
+            },
+            .left_joystick = {
+                .x = {.inverted = true},
+                .y = {.inverted = false},
+            },
+            .right_joystick = {
+                .x = {.inverted = false},
+                .y = {.inverted = true},
+            },
+            .bus = djc::Bus::Config{
+                // defaults
+                // SPI pins: MOSI=23, MISO=19, SCK=18
+            },
+            .bus_node = djc::Bus::Node::Config{
+                GPIO_NUM_5,// CS
+                27000000,  // SPI frequency
+            },
+            .display = {
+                .init_orientation = kf::drivers::display::Orientation::ClockWise,
+            },
+            .joystick_axes_tune_samples = 100,
+            .joystick_axes_tuned = false,
+        };
+    }
 };
 
 }// namespace internal
@@ -80,9 +117,9 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
     };
 
     // Analog axis calibration
-    void tune(Config &mut_config, kf::u16 samples) noexcept {
-        Joystick::Tuner left_tuner{mut_config.left_joystick, left_joystick, samples};
-        Joystick::Tuner right_tuner{mut_config.right_joystick, right_joystick, samples};
+    void tune(Config &mut_config) noexcept {
+        Joystick::Tuner left_tuner{mut_config.left_joystick, left_joystick, mut_config.joystick_axes_tune_samples};
+        Joystick::Tuner right_tuner{mut_config.right_joystick, right_joystick, mut_config.joystick_axes_tune_samples};
 
         left_tuner.reset();
         right_tuner.reset();
@@ -93,6 +130,8 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
             right_tuner.poll();
             delay(1);
         }
+
+        mut_config.joystick_axes_tuned = true;
     }
 
 private:

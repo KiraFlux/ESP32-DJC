@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 #include <kf/Logger.hpp>
+#include <kf/memory/Storage.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/Control.hpp"
@@ -18,69 +19,42 @@ static djc::DeviceState device_state{
     .menu_navigation_enabled = true,
 };
 
-static djc::DeviceConfig device_config{
-    .periphery = {
-        .button = {
-            .debounce = 50,// ms
-        },
-        .axis_filter = {
-            .factor = 0.5f,
-        },
-        .left_joystick = {
-            .x = {.inverted = true},
-            .y = {.inverted = false},
-        },
-        .right_joystick = {
-            .x = {.inverted = false},
-            .y = {.inverted = true},
-        },
-        .bus = djc::Bus::Config{
-            // defaults
-            // SPI pins: MOSI=23, MISO=19, SCK=18
-        },
-        .bus_node = djc::Bus::Node::Config{
-            GPIO_NUM_5,// CS
-            27000000,  // SPI frequency
-        },
-        .display = {
-            .init_orientation = kf::drivers::display::Orientation::ClockWise,
-        },
-    },
-    .input_handler = {
-        .joystick_listener = {
-            .threshold = 0.6f,
-            .repeat_timeout = 100,// ms
-            .delay = 400,         // ms
-        },
-    },
-    .control = {
-        .heartbeat_period = 2000,                                     // ms
-        .poll_period = static_cast<kf::math::Milliseconds>(1000 / 50),// 50 Hz
-        .mode = djc::Control::Mode::Raw,
-    },
-    .favorites = {
-        {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},// broadcast
-    },
-    .active_favorite_index = 0,// select broadcast as default
+static kf::memory::Storage<djc::DeviceConfig> storage{
+    .key = "DC",
 };
 
-static djc::Periphery periphery{device_config.periphery};
+static djc::Periphery periphery{storage.config.periphery};
 
-static djc::InputHandler input_handler{periphery, device_state, device_config.input_handler};
+static djc::InputHandler input_handler{periphery, device_state, storage.config.input_handler};
 
-static djc::Control control{device_config.control, device_state, input_handler};
+static djc::Control control{storage.config.control, device_state, input_handler};
 
 static djc::DisplayManager display_manager{periphery.display, device_state};
 
 static djc::UiManager ui_manager{};
 
+static constexpr auto logger{kf::Logger::create("root")};
+
 void setup() {
     Serial.begin(115200);
     kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
 
-    (void) periphery.init();
-    periphery.tune(device_config.periphery, 100);
+    if (not storage.load()) {
+        logger.warn("failed to load device config. Using defaults");
+        storage.config = djc::DeviceConfig::defaults();
+        
+        if (not storage.save()) {
+            logger.error("failed to save defaults");
+        }
+    }
 
+    if (not periphery.init()) {
+        logger.error("Periphery init failed. Resseting periphery config to defaults");
+        storage.config.periphery = djc::Periphery::Config::defaults();
+
+        (void) storage.save();
+    }
+    
     {
         using E = djc::ui::UI::Event;
 
@@ -103,6 +77,10 @@ void setup() {
 
             ui_manager.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
         });
+    }
+
+    if (not storage.config.periphery.joystick_axes_tuned) {
+        periphery.tune(storage.config.periphery);
     }
 
     display_manager.init();

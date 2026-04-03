@@ -25,6 +25,16 @@ struct InputHandler final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Inp
 
     struct Config {
         JoystickListener::Config joystick_listener;
+
+        static constexpr Config defaults() noexcept {
+            return Config{
+                .joystick_listener = JoystickListener::Config{
+                    .threshold = 0.6f,
+                    .repeat_timeout = 100,// ms
+                    .delay = 400,         // ms
+                },
+            };
+        }
     };
 
     /// @brief Controller values for manual control mode
