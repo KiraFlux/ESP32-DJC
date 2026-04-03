@@ -7,6 +7,7 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
+#include "djc/Control.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavLinkControlPage.hpp"
@@ -18,11 +19,13 @@ struct UiManager final : kf::mixin::NonCopyable, kf::mixin::Initable<UiManager, 
 
     void addEvent(ui::UI::Event event) noexcept { ui.addEvent(event); }
 
+    explicit UiManager(Control &control) noexcept : mav_link_control{root, control} {}
+
 private:
     // pages
 
     ui::pages::RootPage root{};
-    ui::pages::MavLinkControlPage mav_link_control{root};
+    ui::pages::MavLinkControlPage mav_link_control;
     ui::pages::ConfigPage config{root};
 
     ui::UI &ui{ui::UI::instance()};
