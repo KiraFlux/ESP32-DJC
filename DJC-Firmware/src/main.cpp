@@ -13,11 +13,13 @@
 #include "djc/DisplayManager.hpp"
 #include "djc/InputHandler.hpp"
 #include "djc/Periphery.hpp"
-#include "djc/UiManager.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavLinkControlPage.hpp"
+#include "djc/ui/pages/RootPage.hpp"
 
 static constexpr auto logger{kf::Logger::create("root")};
+
+static auto &ui{djc::ui::UI::instance()};
 
 static djc::DeviceState device_state{
     .menu_navigation_enabled = true,
@@ -28,32 +30,55 @@ static kf::memory::Storage<djc::DeviceConfig> storage{
     .config = djc::DeviceConfig::defaults(),
 };
 
-static djc::Periphery periphery{storage.config.periphery};
+// services
 
-static djc::InputHandler input_handler{periphery, device_state, storage.config.input_handler};
+static djc::Periphery periphery{
+    storage.config.periphery,
+};
 
-static djc::Control control{storage.config.control, device_state, input_handler};
+static djc::InputHandler input_handler{
+    periphery,
+    device_state,
+    storage.config.input_handler,
+};
 
-static djc::DisplayManager display_manager{periphery.display, device_state};
+static djc::Control control{
+    storage.config.control,
+    device_state,
+    input_handler,
+};
 
-static djc::UiManager ui_manager{};
+static djc::DisplayManager display_manager{
+    periphery.display,
+    device_state,
+};
 
-static djc::ui::pages::MavLinkControlPage mav_link_control{ui_manager.root(), control};
+// pages
 
-static djc::ui::pages::ConfigPage config{ui_manager.root(), storage};
+static djc::ui::pages::RootPage root{};
+
+static djc::ui::pages::MavLinkControlPage mav_link_control{
+    root,
+    control,
+};
+
+static djc::ui::pages::ConfigPage config{
+    root,
+    storage,
+};
 
 void setup() {
     Serial.begin(115200);
     kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
 
-    // if (not storage.load()) {
+    if (not storage.load()) {
         logger.warn("failed to load device config. Using defaults");
         storage.config = djc::DeviceConfig::defaults();
 
         if (not storage.save()) {
             logger.error("failed to save defaults");
         }
-    // }
+    }
 
     if (not periphery.init()) {
         logger.error("Periphery init failed. Resseting periphery config to defaults");
@@ -62,16 +87,16 @@ void setup() {
         (void) storage.save();
     }
 
-    {
-        using E = djc::ui::UI::Event;
+    using E = djc::ui::UI::Event;
 
+    {
         input_handler.onLeftButton([]() {
             device_state.menu_navigation_enabled ^= 1;// toggle
-            ui_manager.addEvent(E::update());
+            ui.addEvent(E::update());
         });
 
         input_handler.onRightButton([]() {
-            ui_manager.addEvent(E::widgetClick());
+            ui.addEvent(E::widgetClick());
         });
 
         input_handler.onDirection([](djc::InputHandler::JoystickListener::Direction direction) {
@@ -82,7 +107,7 @@ void setup() {
                 E::widgetValue(+1),   // Right
             };
 
-            ui_manager.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
+            ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
         });
     }
 
@@ -90,6 +115,8 @@ void setup() {
         logger.debug("Need axes tune");
         periphery.tune(storage.config.periphery);
         logger.debug("Tune done!");
+
+        (void) storage.save();
     } else {
         logger.debug("Axes already tuned");
     }
@@ -100,12 +127,13 @@ void setup() {
     {
         // apply page links
         // WARNING: before adding another link check RootPage::widget_layout LENGTH
-        ui_manager.root().widget_layout[0] = &mav_link_control.link();
-        ui_manager.root().widget_layout[1] = &config.link();
-        ui_manager.init();
+        root.widget_layout[0] = &mav_link_control.link();
+        root.widget_layout[1] = &config.link();
+        ui.bindPage(root);
+        ui.addEvent(E::update());
     }
 
-    (void) control.activePeer(storage.config.activePeer());
+    // (void) control.activePeer(storage.config.activePeer());
 }
 
 void loop() {
@@ -115,5 +143,5 @@ void loop() {
     const auto now = millis();
     input_handler.poll(now);
     control.poll(now);
-    ui_manager.poll(now);
+    ui.poll(now);
 }
