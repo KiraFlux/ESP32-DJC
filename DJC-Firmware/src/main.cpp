@@ -32,7 +32,7 @@ static djc::Control control{storage.config.control, device_state, input_handler}
 
 static djc::DisplayManager display_manager{periphery.display, device_state};
 
-static djc::UiManager ui_manager{control};
+static djc::UiManager ui_manager{control, storage};
 
 static constexpr auto logger{kf::Logger::create("root")};
 

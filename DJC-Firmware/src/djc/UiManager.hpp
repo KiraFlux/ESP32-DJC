@@ -3,11 +3,13 @@
 
 #pragma once
 
+#include <kf/memory/Storage.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/Control.hpp"
+#include "djc/DeviceConfig.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavLinkControlPage.hpp"
@@ -19,14 +21,15 @@ struct UiManager final : kf::mixin::NonCopyable, kf::mixin::Initable<UiManager, 
 
     void addEvent(ui::UI::Event event) noexcept { ui.addEvent(event); }
 
-    explicit UiManager(Control &control) noexcept : mav_link_control{root, control} {}
+    explicit UiManager(Control &control, kf::memory::Storage<DeviceConfig> &storage) noexcept :
+        mav_link_control{root, control}, config{root, storage} {}
 
 private:
     // pages
 
     ui::pages::RootPage root{};
     ui::pages::MavLinkControlPage mav_link_control;
-    ui::pages::ConfigPage config{root};
+    ui::pages::ConfigPage config;
 
     ui::UI &ui{ui::UI::instance()};
 
