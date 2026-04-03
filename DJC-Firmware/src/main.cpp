@@ -7,8 +7,8 @@
 #include <kf/memory/Storage.hpp>
 #include <kf/memory/StringView.hpp>
 
+#include "djc/ConfigManager.hpp"
 #include "djc/Control.hpp"
-#include "djc/DeviceConfig.hpp"
 #include "djc/DeviceState.hpp"
 #include "djc/DisplayManager.hpp"
 #include "djc/InputHandler.hpp"
@@ -25,25 +25,22 @@ static djc::DeviceState device_state{
     .menu_navigation_enabled = true,
 };
 
-static kf::memory::Storage<djc::DeviceConfig> storage{
-    .key = "DC",
-    .config = djc::DeviceConfig::defaults(),
-};
+static djc::ConfigManager storage{};
 
 // services
 
 static djc::Periphery periphery{
-    storage.config.periphery,
+    storage.config().periphery,
 };
 
 static djc::InputHandler input_handler{
     periphery,
     device_state,
-    storage.config.input_handler,
+    storage.config().input_handler,
 };
 
 static djc::Control control{
-    storage.config.control,
+    storage.config().control,
     device_state,
     input_handler,
 };
@@ -55,15 +52,15 @@ static djc::DisplayManager display_manager{
 
 // pages
 
-static djc::ui::pages::RootPage root{};
+static djc::ui::pages::RootPage root_page{};
 
-static djc::ui::pages::MavLinkControlPage mav_link_control{
-    root,
+static djc::ui::pages::MavLinkControlPage mavlink_control_page{
+    root_page,
     control,
 };
 
-static djc::ui::pages::ConfigPage config{
-    root,
+static djc::ui::pages::ConfigPage config_page{
+    root_page,
     storage,
 };
 
@@ -71,20 +68,12 @@ void setup() {
     Serial.begin(115200);
     kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
 
-    if (not storage.load()) {
-        logger.warn("failed to load device config. Using defaults");
-        storage.config = djc::DeviceConfig::defaults();
-
-        if (not storage.save()) {
-            logger.error("failed to save defaults");
-        }
-    }
+    storage.load();
 
     if (not periphery.init()) {
         logger.error("Periphery init failed. Resseting periphery config to defaults");
-        storage.config.periphery = djc::Periphery::Config::defaults();
-
-        (void) storage.save();
+        storage.config().periphery = djc::Periphery::Config::defaults();
+        storage.save();
     }
 
     using E = djc::ui::UI::Event;
@@ -111,12 +100,12 @@ void setup() {
         });
     }
 
-    if (not storage.config.periphery.joystick_axes_tuned) {
+    if (not storage.config().periphery.joystick_axes_tuned) {
         logger.debug("Need axes tune");
-        periphery.tune(storage.config.periphery);
+        periphery.tune(storage.config().periphery);
         logger.debug("Tune done!");
 
-        (void) storage.save();
+        storage.save();
     } else {
         logger.debug("Axes already tuned");
     }
@@ -127,13 +116,13 @@ void setup() {
     {
         // apply page links
         // WARNING: before adding another link check RootPage::widget_layout LENGTH
-        root.widget_layout[0] = &mav_link_control.link();
-        root.widget_layout[1] = &config.link();
-        ui.bindPage(root);
+        root_page.widget_layout[0] = &mavlink_control_page.link();
+        root_page.widget_layout[1] = &config_page.link();
+        ui.bindPage(root_page);
         ui.addEvent(E::update());
     }
 
-    // (void) control.activePeer(storage.config.activePeer());
+    // (void) control.activePeer(storage.config().activePeer());
 }
 
 void loop() {

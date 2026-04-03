@@ -4,45 +4,42 @@
 #pragma once
 
 #include <kf/memory/Array.hpp>
-#include <kf/memory/Storage.hpp>
 
-#include "djc/DeviceConfig.hpp"
+#include "djc/ConfigManager.hpp"
 #include "djc/ui/UI.hpp"
 
 namespace djc::ui::pages {
 
 struct ConfigPage : UI::Page {
 
-    explicit ConfigPage(UI::Page &root, kf::memory::Storage<DeviceConfig> &storage) noexcept :
+    explicit ConfigPage(UI::Page &root, ConfigManager &storage) noexcept :
         Page{"Config"},
         widget_layout{{
             &root.link(),
             &_save_storage,
             &_load_storage,
-            &_erase_storage,
-        }}, _storage{storage} {
+            &_reset_storage,
+        }} {
         widgets({widget_layout.data(), widget_layout.size()});
 
-        _save_storage.callback([&storage](){
+        _save_storage.callback([&storage]() {
             storage.save();
         });
 
-        _load_storage.callback([&storage](){
+        _load_storage.callback([&storage]() {
             storage.load();
         });
 
-        _erase_storage.callback([&storage](){
-            storage.erase();
+        _reset_storage.callback([&storage]() {
+            storage.reset();
         });
     }
 
 private:
-    kf::memory::Storage<DeviceConfig> &_storage;
-    
     // widgets
     UI::Button _save_storage{"Save"};
     UI::Button _load_storage{"Load"};
-    UI::Button _erase_storage{"Erase"};
+    UI::Button _reset_storage{"Reset"};
     kf::memory::Array<UI::Widget *, 4> widget_layout;
 };
 

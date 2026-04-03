@@ -12,7 +12,7 @@
 
 namespace djc {
 
-struct DeviceConfig {
+struct Config {
 
     Periphery::Config periphery;
     InputHandler::Config input_handler;
@@ -26,7 +26,7 @@ struct DeviceConfig {
         return favorites[active_favorite_index];
     }
 
-    static constexpr DeviceConfig defaults() noexcept {
+    static constexpr Config defaults() noexcept {
         return {
             .periphery = Periphery::Config::defaults(),
             .input_handler = InputHandler::Config::defaults(),

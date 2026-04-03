@@ -42,15 +42,15 @@ struct PeripheryConfig final : kf::mixin::NonCopyable {
                 .factor = 0.5f,
             },
             .left_joystick = {
-                .x = {.inverted = true},
-                .y = {.inverted = false},
+                .x = axisDefaults(true),
+                .y = axisDefaults(false),
             },
             .right_joystick = {
-                .x = {.inverted = false},
-                .y = {.inverted = true},
+                .x = axisDefaults(false),
+                .y = axisDefaults(true),
             },
             // SPI default pins: MOSI=23, MISO=19, SCK=18
-            .bus = djc::Bus::Config::create(),                    
+            .bus = djc::Bus::Config::create(),
             // CS, SPI frequency
             .bus_node = djc::Bus::Node::Config::create(GPIO_NUM_5, 27000000),
             .display = {
@@ -58,6 +58,16 @@ struct PeripheryConfig final : kf::mixin::NonCopyable {
             },
             .joystick_axes_tune_samples = 100,
             .joystick_axes_tuned = false,
+        };
+    }
+
+private:
+    static constexpr AxisInput::Config axisDefaults(bool inverted) noexcept {
+        return AxisInput::Config {
+            .inverted = inverted,
+            .dead_zone = 200,
+            .range_positive = 2000,
+            .range_negative = 2000,
         };
     }
 };
