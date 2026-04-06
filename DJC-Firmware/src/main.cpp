@@ -130,6 +130,9 @@ void setup() {
         ui.addEvent(E::update());
     }
 
+    logger.debug(djc::Control::stringFromMode(control.mode()));
+
+    // TODO peer's page
     (void) control.activePeer(storage.config().selectedFavorite());
 }
 
