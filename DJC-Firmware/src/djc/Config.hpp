@@ -34,9 +34,9 @@ struct Config {
             .input_handler = InputHandler::Config::defaults(),
             .control = Control::Config::defaults(),
             .favorites = {
-                {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},// broadcast
+                // nothing
             },
-            .favorites_total = 1,
+            .favorites_total = 0,
             .selected_favorite_index = 0,// select broadcast as default
             .version = 1,
         };
