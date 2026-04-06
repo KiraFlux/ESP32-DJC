@@ -132,6 +132,10 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 
     Mode mode() const noexcept { return _mode; }
 
+    static constexpr kf::memory::StringView stringFromMode(Mode mode) noexcept {
+        return (mode == Mode::Raw) ? "Raw" : "MavLink";
+    }
+
 private:
     static constexpr auto logger{kf::Logger::create("Control")};
 
