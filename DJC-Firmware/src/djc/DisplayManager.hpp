@@ -40,21 +40,18 @@ private:
             (void) _display.send();
         });
         config.row_max_length = _canvas.widthInGlyphs();
-        config.rows_total = _canvas.heightInGlyphs();
+        config.rows_total = _canvas.heightInGlyphs() - 1;
     }
 
     void onRender(kf::memory::StringView str) noexcept {
-        kf::math::Pixels y{0};
 
         // Show mode indicator
         if (not _device_state.menu_navigation_enabled) {
-            constexpr kf::memory::StringView mode_indicator{"\xB6"
-                                                            "Controller Mode\n"};
-            _canvas.text(0, 0, mode_indicator.data());
-            y = _canvas.glyphHeight();
+            auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
+            _canvas.text(0, y, "\xB2\xF0 Control Enabled");
         }
 
-        _canvas.text(0, y, str.data());
+        _canvas.text(0, 0, str.data());
     }
 };
 
