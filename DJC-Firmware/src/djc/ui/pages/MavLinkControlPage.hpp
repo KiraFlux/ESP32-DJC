@@ -88,9 +88,9 @@ private:
 
                 (void) imu_display_buffer.format(
                     "%+.3f %+.3f %+.3f",
-                    imu.xacc * 1000,
-                    imu.yacc * 1000,
-                    imu.zacc * 1000);
+                    float(imu.xacc * 0.001f),
+                    float(imu.yacc * 0.001f),
+                    float(imu.zacc * 0.001f));
                 imu_display.value(imu_display_buffer.view());
 
                 return true;
