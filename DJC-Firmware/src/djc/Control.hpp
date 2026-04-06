@@ -52,9 +52,12 @@ struct ControlConfig final : kf::mixin::NonCopyable {
 }// namespace internal
 
 struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>, kf::mixin::Configurable<internal::ControlConfig>, kf::mixin::Initable<Control, bool> {
-    using EspNow = kf::network::EspNow;
     using Config = internal::ControlConfig;
     using Mode = internal::ControlMode;
+
+    using EspNow = kf::network::EspNow;
+    using LogString = kf::memory::ArrayString<64>;
+
     using RawMessageCallback = kf::Function<void(kf::memory::Slice<const kf::u8>)>;
     using MavLinkMessageCallback = kf::Function<void(mavlink_message_t *)>;
     using ReceiveFromUnknownCallback = EspNow::ReceiveFromUnknownHandler;
@@ -93,7 +96,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
             if (peer.exist()) {
                 const auto result = peer.del();
                 logger.error(
-                    kf::memory::ArrayString<64>::formatted(
+                    LogString::formatted(
                         "Failed to delete peer [%s] : %s",
                         EspNow::stringFromMac(peer.mac()).data(),
                         EspNow::stringFromError(result.error()))
@@ -101,19 +104,26 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
             }
         }
 
-        auto result = EspNow::Peer::add(mac);
-        if (result.isError()) {
+        auto peer_result = EspNow::Peer::add(mac);
+        if (peer_result.isError()) {
             logger.error(
-                kf::memory::ArrayString<64>::formatted(
+                LogString::formatted(
                     "Failed to add peer [%s] :%s",
                     EspNow::stringFromMac(mac).data(),
-                    EspNow::stringFromError(result.error()))
+                    EspNow::stringFromError(peer_result.error()))
                     .view());
             return;
         }
 
-        _active_peer.value(std::move(result.value()));
-        _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer){onReceive(buffer);});
+        _active_peer.value(std::move(peer_result.value()));
+
+        const auto receive_setup_result = _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer) { onReceive(buffer); });
+        if (receive_setup_result.isError()) {
+            logger.error("failed to attach receive callback");
+            return;
+        }
+
+        logger.info(LogString::formatted("Peer '%s' added", EspNow::stringFromMac(mac).data()).view());
     }
 
     kf::Option<EspNow::Mac> activePeer() noexcept {
@@ -243,10 +253,10 @@ private:
         {
             auto result = EspNow::Peer::add(
                 EspNow::Mac{0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
-    
+
             if (result.isError()) {
                 logger.error(
-                    kf::memory::ArrayString<64>::formatted(
+                    LogString::formatted(
                         "Failed to add broadcast peer: %s",
                         EspNow::stringFromError(result.error()))
                         .view());
@@ -280,7 +290,7 @@ private:
             if (_debug_log_timer.expired(now)) {
                 _debug_log_timer.start(now);
                 logger.debug(
-                    kf::memory::ArrayString<64>::formatted(
+                    LogString::formatted(
                         "L: (\t%d,\t%d)\tR: (\t%d,\t%d)",
                         raw.left_x, raw.left_y, raw.right_x, raw.right_y)
                         .view());

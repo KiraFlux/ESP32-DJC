@@ -11,16 +11,22 @@ namespace djc::ui::pages {
 
 /// @brief Main menu page for ESP32-DJC
 struct RootPage : UI::Page {
-    kf::memory::Array<UI::Widget *, 4> widget_layout{{
-        nullptr,// for MavLinkControl link widget
-        nullptr,// for RawControl link widget
-        nullptr,// for PeersPage link widget
-        nullptr,// for Config link widget
-    }};
+    static constexpr auto max_items{4};
 
-    explicit constexpr RootPage() noexcept : Page{"ESP32-DJC"} {
-        widgets({widget_layout.data(), widget_layout.size()});
+    explicit constexpr RootPage() noexcept : Page{"ESP32-DJC"} {}
+
+    void attach(UI::Page &page) noexcept {
+        if (_items >= _layout.size()) { return; }
+
+        _layout[_items] = &page.link();
+
+        _items += 1;
+        widgets({_layout.data(), _items});
     }
+
+private:
+    kf::usize _items{0};
+    kf::memory::Array<UI::Widget *, max_items> _layout{};
 };
 
-}// namespace djc
+}// namespace djc::ui::pages

@@ -15,9 +15,9 @@
 #include "djc/Periphery.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavLinkControlPage.hpp"
+#include "djc/ui/pages/PeersPage.hpp"
 #include "djc/ui/pages/RawControlPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
-#include "djc/ui/pages/PeersPage.hpp"
 
 static constexpr auto logger{kf::Logger::create("root")};
 
@@ -127,18 +127,14 @@ void setup() {
 
     {
         // apply page links
-        // WARNING: before adding another link check RootPage::widget_layout LENGTH
-        root_page.widget_layout[0] = &mavlink_control_page.link();
-        root_page.widget_layout[1] = &raw_control_page.link();
-        root_page.widget_layout[2] = &peers_page.link();
-        root_page.widget_layout[3] = &config_page.link();
+        root_page.attach(mavlink_control_page);
+        root_page.attach(raw_control_page);
+        root_page.attach(peers_page);
+        root_page.attach(config_page);
 
         ui.bindPage(root_page);
         ui.addEvent(E::update());
     }
-
-    // TODO peer's page
-    // (void) control.activePeer(storage.config().selectedFavorite());
 }
 
 void loop() {
