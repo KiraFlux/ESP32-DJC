@@ -28,7 +28,7 @@ struct RawControlPage : UI::Page {
         _control.onRawMessage([](kf::memory::Slice<const kf::u8> buffer) {
             logger.info(
                 kf::memory::ArrayString<64>::formatted(
-                    "Got %d bytes from primaty peer",
+                    "Got %d bytes from primary peer",
                     buffer.size())
                     .view());
         });
