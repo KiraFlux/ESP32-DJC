@@ -17,8 +17,8 @@
 namespace djc::ui::pages {
 
 /// @brief MAVLink protocol control page for drone/vehicle control
-struct MavLinkControlPage : UI::Page {
-    explicit MavLinkControlPage(UI::Page &root, Control &control) noexcept :
+struct MavLinkPage : UI::Page {
+    explicit MavLinkPage(UI::Page &root, Control &control) noexcept :
         Page{"MAV Link Control"}, _control{control},
         widget_layout{{
             &root.link(),
@@ -49,7 +49,7 @@ struct MavLinkControlPage : UI::Page {
     void onUpdate(kf::math::Milliseconds now) noexcept override {}
 
 private:
-    static constexpr auto logger{kf::Logger::create("MavLinkControlPage")};
+    static constexpr auto logger{kf::Logger::create("MavLinkPage")};
 
     Control &_control;
     kf::memory::ArrayString<256> log_buffer{

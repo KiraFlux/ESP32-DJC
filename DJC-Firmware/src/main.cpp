@@ -14,8 +14,8 @@
 #include "djc/InputHandler.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
-#include "djc/ui/pages/MavLinkControlPage.hpp"
-#include "djc/ui/pages/PeersPage.hpp"
+#include "djc/ui/pages/MavLinkPage.hpp"
+#include "djc/ui/pages/PeerExplorerPage.hpp"
 #include "djc/ui/pages/RawControlPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
 
@@ -56,7 +56,7 @@ static djc::DisplayManager display_manager{
 
 static djc::ui::pages::RootPage root_page{};
 
-static djc::ui::pages::MavLinkControlPage mavlink_control_page{
+static djc::ui::pages::MavLinkPage mavlink_page{
     root_page,
     control,
 };
@@ -66,7 +66,7 @@ static djc::ui::pages::RawControlPage raw_control_page{
     control,
 };
 
-static djc::ui::pages::PeersPage peers_page{
+static djc::ui::pages::PeerExplorerPage peer_explorer_page{
     root_page,
     control,
 };
@@ -127,9 +127,9 @@ void setup() {
 
     {
         // apply page links
-        root_page.attach(mavlink_control_page);
+        root_page.attach(mavlink_page);
         root_page.attach(raw_control_page);
-        root_page.attach(peers_page);
+        root_page.attach(peer_explorer_page);
         root_page.attach(config_page);
 
         ui.bindPage(root_page);
