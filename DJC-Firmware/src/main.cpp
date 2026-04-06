@@ -17,6 +17,7 @@
 #include "djc/ui/pages/MavLinkControlPage.hpp"
 #include "djc/ui/pages/RawControlPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
+#include "djc/ui/pages/PeersPage.hpp"
 
 static constexpr auto logger{kf::Logger::create("root")};
 
@@ -61,6 +62,11 @@ static djc::ui::pages::MavLinkControlPage mavlink_control_page{
 };
 
 static djc::ui::pages::RawControlPage raw_control_page{
+    root_page,
+    control,
+};
+
+static djc::ui::pages::PeersPage peers_page{
     root_page,
     control,
 };
@@ -124,7 +130,8 @@ void setup() {
         // WARNING: before adding another link check RootPage::widget_layout LENGTH
         root_page.widget_layout[0] = &mavlink_control_page.link();
         root_page.widget_layout[1] = &raw_control_page.link();
-        root_page.widget_layout[2] = &config_page.link();
+        root_page.widget_layout[2] = &peers_page.link();
+        root_page.widget_layout[3] = &config_page.link();
 
         ui.bindPage(root_page);
         ui.addEvent(E::update());
