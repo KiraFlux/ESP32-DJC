@@ -16,6 +16,7 @@ struct ConfigPage : UI::Page {
         Page{"Config"},
         widget_layout{{
             &root.link(),
+            &_init_mode_selector_label,
             &_save_storage,
             &_load_storage,
             &_reset_storage,
@@ -33,14 +34,38 @@ struct ConfigPage : UI::Page {
         _reset_storage.callback([&storage]() {
             storage.reset();
         });
+
+        _init_mode_selector.callback([&storage](Control::Mode init_mode){
+            storage.config().control.init_mode = init_mode;
+        });
     }
 
 private:
+    using ControlModeSelectWidget = UI::ComboBox<Control::Mode>;
+
     // widgets
     UI::Button _save_storage{"Save"};
     UI::Button _load_storage{"Load"};
     UI::Button _reset_storage{"Reset"};
-    kf::memory::Array<UI::Widget *, 4> widget_layout;
+
+    kf::memory::Array<ControlModeSelectWidget::Item, 2> _control_mode_options{
+        {
+            {Control::stringFromMode(Control::Mode::Raw), Control::Mode::Raw},
+            {Control::stringFromMode(Control::Mode::MavLink), Control::Mode::MavLink},
+        }
+    };
+
+    ControlModeSelectWidget::Config _control_mode_config{
+        .items = {_control_mode_options.data(), _control_mode_options.size()},
+    };
+
+    // TODO: set init value from storage
+    ControlModeSelectWidget _init_mode_selector{_control_mode_config};
+
+    UI::Labeled _init_mode_selector_label{"Init Control", _init_mode_selector};
+
+    // layout
+    kf::memory::Array<UI::Widget *, 5> widget_layout;
 };
 
 }// namespace djc::ui::pages
