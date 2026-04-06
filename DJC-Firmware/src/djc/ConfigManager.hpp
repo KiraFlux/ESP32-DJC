@@ -29,14 +29,18 @@ struct ConfigManager final : kf::mixin::NonCopyable {
         logger.info("Loading config from NVS");
 
         if (not _storage.load()) {
-            logger.warn("Failed to load config. Using defaults");
-            _storage.config = Config::defaults();
-            save();
+            logger.error("Failed to load config");
+            reset();
+        }
+
+        if (not _storage.config.isLatestVersion()) {
+            logger.error("Config version is outdated");
+            reset();
         }
     }
 
     void reset() noexcept {
-        logger.info("Set RAM config to defaults");
+        logger.info("Resetting config to defaults");
 
         _storage.config = djc::Config::defaults();
         save();

@@ -9,36 +9,31 @@
 #include "djc/Control.hpp"
 #include "djc/InputHandler.hpp"
 #include "djc/Periphery.hpp"
+#include "djc/memory/Box.hpp"
 
 namespace djc {
 
 struct Config {
+    using PeerFavoritesConfig = djc::memory::Box<Control::EspNow::Mac, kf::u8, 8>;
+
+    static constexpr auto latest_version{2};
+
+    kf::u16 version;
 
     Periphery::Config periphery;
     InputHandler::Config input_handler;
     Control::Config control;
+    PeerFavoritesConfig peer_favorites;
 
-    static constexpr auto favorite_max{8u};
-    kf::memory::Array<Control::EspNow::Mac, favorite_max> favorites;
-    kf::u8 favorites_total, selected_favorite_index;// 0 .. favorite_max-1
-
-    kf::u16 version;
-
-    [[nodiscard]] constexpr const Control::EspNow::Mac& selectedFavorite() const noexcept {
-        return favorites[selected_favorite_index];
-    }
+    [[nodiscard]] bool isLatestVersion() const noexcept { return version == latest_version; }
 
     static constexpr Config defaults() noexcept {
         return {
+            .version = latest_version,
             .periphery = Periphery::Config::defaults(),
             .input_handler = InputHandler::Config::defaults(),
             .control = Control::Config::defaults(),
-            .favorites = {
-                // nothing
-            },
-            .favorites_total = 0,
-            .selected_favorite_index = 0,// select broadcast as default
-            .version = 1,
+            .peer_favorites = PeerFavoritesConfig::defaults(),
         };
     }
 };
