@@ -142,7 +142,7 @@ private:
 
     DeviceState &_device_state;
     InputHandler &_input_handler;
-    kf::Option<EspNow::Peer> _active_peer{};
+    kf::Option<EspNow::Peer> _active_peer{}, _broadcast_peer{};
     RawMessageCallback _raw_message_callback{};
     MavLinkMessageCallback _mavlink_message_callback{};
     Mode _mode{this->config().init_mode};
@@ -239,6 +239,22 @@ private:
             return false;
         }
 
+        {
+            auto result = EspNow::Peer::add(
+                EspNow::Mac{0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
+    
+            if (result.isError()) {
+                logger.error(
+                    kf::memory::ArrayString<64>::formatted(
+                        "Failed to add broadcast peer: %s",
+                        EspNow::stringFromError(result.error()))
+                        .view());
+                return false;
+            }
+
+            _broadcast_peer.value(std::move(result.value()));
+        }
+
         _mode = this->config().init_mode;
 
         const auto now = millis();
@@ -246,6 +262,7 @@ private:
         _debug_log_timer.start(now);
         _heartbear_timer.start(now);
 
+        logger.debug(stringFromMode(_mode));
         logger.debug("init: ok");
         return true;
     }
