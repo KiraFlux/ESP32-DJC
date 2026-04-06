@@ -17,3 +17,6 @@ monitor:
 	pio device monitor
 
 m: monitor
+
+s:
+	python ./snapshot.py
