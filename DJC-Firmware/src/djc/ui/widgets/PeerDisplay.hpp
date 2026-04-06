@@ -26,9 +26,7 @@ struct PeerDisplay final : UI::Widget {
 
     void control(Control &control) noexcept { _control = &control; }
 
-    bool matches(const Control::EspNow::Mac &mac) const noexcept {
-        return (not _mac_option.hasValue()) or (_mac_option.hasValue() and _mac_option.value() == mac);
-    }
+    const kf::Option<Control::EspNow::Mac> &mac() const noexcept { return _mac_option; }
 
     void update(const Control::EspNow::Mac &mac, kf::math::Milliseconds now) noexcept {
         _mac_clear_timer.start(now);
@@ -67,7 +65,7 @@ struct PeerDisplay final : UI::Widget {
         if (_mac_option.hasValue()) {
             const auto &mac = _mac_option.value();
 
-            if (_control != nullptr and _control->activePeer().hasValue() and _control->activePeer().value() == mac) {
+            if (_control != nullptr and _control->activeMac().hasValue() and _control->activeMac().value() == mac) {
                 render.arrow();
             }
 
@@ -88,7 +86,7 @@ struct PeerDisplay final : UI::Widget {
 
         if (_control != nullptr) {
             // TODO: add to favorites?
-            _control->activePeer(_mac_option.value());
+            _control->connect(_mac_option.value());
         }
 
         return true;
