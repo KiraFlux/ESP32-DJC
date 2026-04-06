@@ -57,6 +57,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
     using Mode = internal::ControlMode;
     using RawMessageCallback = kf::Function<void(kf::memory::Slice<const kf::u8>)>;
     using MavLinkMessageCallback = kf::Function<void(mavlink_message_t *)>;
+    using ReceiveFromUnknownCallback = EspNow::ReceiveFromUnknownHandler;
 
     struct RawData {
         using Unit = kf::i16;
@@ -122,7 +123,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
         }
     }
 
-    void onReceiveFromUnknown(EspNow::ReceiveFromUnknownHandler &&callback) noexcept { EspNow::instance().onReceiveFromUnknown(std::move(callback)); }
+    void onReceiveFromUnknown(ReceiveFromUnknownCallback &&callback) noexcept { EspNow::instance().onReceiveFromUnknown(std::move(callback)); }
 
     void onRawMessage(RawMessageCallback &&callback) noexcept { _raw_message_callback = std::move(callback); }
 
