@@ -113,6 +113,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
         }
 
         _active_peer.value(std::move(result.value()));
+        _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer){onReceive(buffer);});
     }
 
     kf::Option<EspNow::Mac> activePeer() noexcept {

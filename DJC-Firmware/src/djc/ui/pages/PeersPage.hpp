@@ -10,6 +10,7 @@
 
 #include "djc/ui/UI.hpp"
 #include "djc/Control.hpp"
+#include "djc/ui/widgets/PeerDisplay.hpp"
 
 namespace djc::ui::pages {
 
@@ -21,6 +22,7 @@ struct PeersPage : UI::Page {
         _control{control},
         _layout{{
             &root.link(),
+            &_peer_display,
         }}
 
     {
@@ -30,7 +32,7 @@ struct PeersPage : UI::Page {
     void onEntry() noexcept override {
         logger.debug("entry");
 
-        _control.onReceiveFromUnknown([](const Control::EspNow::Mac &mac, kf::memory::Slice<const kf::u8> data){
+        _control.onReceiveFromUnknown([this](const Control::EspNow::Mac &mac, kf::memory::Slice<const kf::u8> data){
             logger.info(
                 kf::memory::ArrayString<64>::formatted(
                     "Got %d bytes from %s",
@@ -38,6 +40,10 @@ struct PeersPage : UI::Page {
                     Control::EspNow::stringFromMac(mac).data()
                 )
             );
+
+            _peer_display.update(mac, millis());
+
+            UI::instance().addEvent(UI::Event::update());
         });
     }
 
@@ -47,6 +53,9 @@ struct PeersPage : UI::Page {
         _control.onReceiveFromUnknown(Control::ReceiveFromUnknownCallback{nullptr});
     }
 
+    void onUpdate(kf::math::Milliseconds now) noexcept override {
+        _peer_display.checkForClear(now);
+    }
 
 private:
     static constexpr auto logger{kf::Logger::create("PeersPage")};
@@ -55,8 +64,10 @@ private:
 
     // widgets
 
+    widgets::PeerDisplay _peer_display{_control};
+
     // layout
-    kf::memory::Array<UI::Widget *, 1> _layout;
+    kf::memory::Array<UI::Widget *, 2> _layout;
 };
 
 }// namespace djc::ui::pages
