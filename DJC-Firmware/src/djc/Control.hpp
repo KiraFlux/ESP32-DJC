@@ -44,7 +44,7 @@ struct ControlConfig final : kf::mixin::NonCopyable {
             .heartbeat_period = 2000,                                     // ms
             .poll_period = static_cast<kf::math::Milliseconds>(1000 / 50),// 50 Hz
             .debug_log_period = 200,                                      // ms
-            .init_mode = ControlMode::Raw,
+            .init_mode = ControlMode::MavLink,
         };
     }
 };
