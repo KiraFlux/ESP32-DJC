@@ -19,13 +19,13 @@ namespace djc::ui::pages {
 /// @brief MAVLink protocol control page for drone/vehicle control
 struct MavLinkPage : UI::Page {
     explicit MavLinkPage(UI::Page &root, Control &control) noexcept :
-        Page{"MAV Link Control"}, _control{control},
-        widget_layout{{
+        Page{"MAV Link"}, _control{control},
+        _layout{{
             &root.link(),
-            &imu_display_labeled,
-            &log_display,
+            &_imu_display_labeled,
+            &_attitude_display_labeled,
         }} {
-        widgets({widget_layout.data(), widget_layout.size()});
+        widgets({_layout.data(), _layout.size()});
     }
 
     void onEntry() noexcept override {
@@ -33,10 +33,7 @@ struct MavLinkPage : UI::Page {
 
         _control.mode(Control::Mode::MavLink);
         _control.onMavlinkMessage([this](mavlink_message_t *message) {
-            const bool need_update = onMavLinkMessage(message);
-            if (need_update) {
-                UI::instance().addEvent(UI::Event::update());
-            }
+            need_update |= onMavLinkMessage(message);
         });
     }
 
@@ -46,52 +43,70 @@ struct MavLinkPage : UI::Page {
         _control.onMavlinkMessage(Control::MavLinkMessageCallback{nullptr});
     }
 
-    void onUpdate(kf::math::Milliseconds now) noexcept override {}
+    void onUpdate(kf::math::Milliseconds now) noexcept override {
+        if (need_update) {
+            need_update = false;
+            UI::instance().addEvent(UI::Event::update());
+        }
+    }
 
 private:
     static constexpr auto logger{kf::Logger::create("MavLinkPage")};
 
     Control &_control;
-    kf::memory::ArrayString<256> log_buffer{
-        ""// Extended ASCII characters for display testing
-        "\xF0#0#\xF1#1#\xF2#2#\xF3#3#\xF4#4#\xF5#5#\xF6#6#\xF7#7#\n"
-        "\xF8#8#\xF9#9#\xFA#A#\xFB#B#\xFC#C#\xFD#D#\xFE#E#\xFF#F#\n"
-        "\xB0 0 \xB1 1 \xB2 2 \xB3 3 \xB4 4 \xB5 5 \xB6 6 \xB7 7 \n"
-        "\xB8 8 \xB9 9 \xBB A \xBB B \xBC C \xBD D \xBE E \xBF F "};
+    bool need_update{false}; 
 
-    kf::memory::ArrayString<64> imu_display_buffer{"..."};
+    // widgets
 
-    UI::Display<kf::memory::StringView> log_display{log_buffer.view()};
-    UI::Display<kf::memory::StringView> imu_display{imu_display_buffer.view()};
-    UI::Labeled imu_display_labeled{"IMU", imu_display};
+    kf::memory::ArrayString<64> _attitude_buffer{"..."};
+    kf::memory::ArrayString<64> _imu_display_buffer{"..."};
 
-    kf::memory::Array<UI::Widget *, 3> widget_layout;
+    UI::Display<kf::memory::StringView> _attitude_display{_attitude_buffer.view()};
+    UI::Labeled _attitude_display_labeled{"ATT", _attitude_display};
+
+    UI::Display<kf::memory::StringView> _imu_display{_imu_display_buffer.view()};
+    UI::Labeled _imu_display_labeled{"IMU", _imu_display};
+
+    kf::memory::Array<UI::Widget *, 3> _layout;
 
     [[nodiscard]] bool onMavLinkMessage(mavlink_message_t *message) noexcept {
         switch (message->msgid) {
-            case MAVLINK_MSG_ID_SERIAL_CONTROL: {
-                mavlink_serial_control_t serial_control;
-                mavlink_msg_serial_control_decode(message, &serial_control);
+            case MAVLINK_MSG_ID_ATTITUDE_QUATERNION: {
 
-                constexpr auto len{sizeof(serial_control.data)};
-                serial_control.data[len - 1] = '\0';
+                mavlink_attitude_quaternion_t attitude_quaternion;
+                mavlink_msg_attitude_quaternion_decode(message, &attitude_quaternion);
 
-                std::copy(serial_control.data, serial_control.data + serial_control.count, log_buffer.data());
-                log_display.value(log_buffer.view());
+                (void) _attitude_buffer.format(
+                    "%+.2f %+.2f %+.2f %+.2f",
+                    float(attitude_quaternion.q1),
+                    float(attitude_quaternion.q2),
+                    float(attitude_quaternion.q3),
+                    float(attitude_quaternion.q4));
+                _attitude_display.value(_attitude_buffer.view());
 
                 return true;
             }
+
+            // case MAVLINK_MSG_ID_SERIAL_CONTROL: {
+                // mavlink_serial_control_t serial_control;
+                // mavlink_msg_serial_control_decode(message, &serial_control);
+                // constexpr auto len{sizeof(serial_control.data)};
+                // serial_control.data[len - 1] = '\0';
+                // std::copy(serial_control.data, serial_control.data + serial_control.count, _attitude_buffer.data());
+                // _attitude_display.value(_attitude_buffer.view());
+                // return true;
+            // }
 
             case MAVLINK_MSG_ID_SCALED_IMU: {
                 mavlink_scaled_imu_t imu;
                 mavlink_msg_scaled_imu_decode(message, &imu);
 
-                (void) imu_display_buffer.format(
+                (void) _imu_display_buffer.format(
                     "%+.3f %+.3f %+.3f",
                     float(imu.xacc * 0.001f),
                     float(imu.yacc * 0.001f),
                     float(imu.zacc * 0.001f));
-                imu_display.value(imu_display_buffer.view());
+                _imu_display.value(_imu_display_buffer.view());
 
                 return true;
             }
