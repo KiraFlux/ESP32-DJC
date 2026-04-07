@@ -85,8 +85,8 @@ struct PeerDisplay final : UI::Widget {
         if (not _mac_option.hasValue()) { return false; }
 
         if (_control != nullptr) {
-            // TODO: add to favorites?
             _control->connect(_mac_option.value());
+            _mac_option = {};
         }
 
         return true;
