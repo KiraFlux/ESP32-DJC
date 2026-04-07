@@ -63,13 +63,7 @@ struct PeerDisplay final : UI::Widget {
         }
 
         if (_mac_option.hasValue()) {
-            const auto &mac = _mac_option.value();
-
-            if (_control != nullptr and _control->activeMac().hasValue() and _control->activeMac().value() == mac) {
-                render.arrow();
-            }
-
-            render.value(EspNow::stringFromMac(mac).view());
+            render.value(EspNow::stringFromMac(_mac_option.value()).view());
         } else {
             render.value(kf::memory::StringView{"\xF8    -    -    "});
         }
