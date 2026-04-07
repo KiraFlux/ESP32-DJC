@@ -46,7 +46,7 @@ private:
     void onRender(kf::memory::StringView str) noexcept {
 
         // Show mode indicator
-        if (_device_state.control_enabled) {
+        if (_device_state.controlEnabled()) {
             auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
             _canvas.text(0, y, "\xB2\xF0 Control Enabled");
         }

@@ -312,7 +312,7 @@ private:
             disconnect();
         }
 
-        if (_device_state.control_enabled and _poll_timer.expired(now)) {
+        if (_device_state.controlEnabled() and _poll_timer.expired(now)) {
             _poll_timer.start(now);
 
             const auto raw = RawData::fromControllerValues(_input_handler.controllerValues());

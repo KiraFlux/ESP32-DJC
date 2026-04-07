@@ -80,7 +80,7 @@ private:
             if (_periphery.left_button.clicked()) { _left_click_callback(); }
         }
 
-        if (_device_state.control_enabled) {
+        if (_device_state.controlEnabled()) {
             _controller_values.left_x = _periphery.left_joystick.axis_x.read();
             _controller_values.left_y = _periphery.left_joystick.axis_y.read();
             _controller_values.right_x = _periphery.right_joystick.axis_x.read();

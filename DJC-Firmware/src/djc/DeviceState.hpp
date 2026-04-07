@@ -8,7 +8,14 @@
 namespace djc {
 
 struct DeviceState final : kf::mixin::NonCopyable {
-    bool control_enabled;    
+    enum class Mode {
+        UiNavigation,
+        Control,
+    };
+
+    Mode mode;
+
+    [[nodiscard]] bool controlEnabled() const noexcept { return mode == Mode::Control; }    
 };
 
 }// namespace djc

@@ -23,10 +23,10 @@ static constexpr auto logger{kf::Logger::create("root")};
 
 static auto &ui{djc::ui::UI::instance()};
 
-static auto &storage = djc::ConfigManager::instance();
+static auto &storage{djc::ConfigManager::instance()};
 
 static djc::DeviceState device_state{
-    .control_enabled = false,
+    .mode = djc::DeviceState::Mode::UiNavigation,
 };
 
 // services
@@ -91,7 +91,12 @@ void setup() {
 
     {
         input_handler.onLeftButton([]() {
-            device_state.control_enabled ^= 1;// toggle
+            if (device_state.controlEnabled()) {
+                device_state.mode = djc::DeviceState::Mode::UiNavigation;
+            } else {
+                device_state.mode = djc::DeviceState::Mode::Control;
+            }
+
             ui.addEvent(E::update());
         });
 
@@ -100,14 +105,14 @@ void setup() {
         });
 
         input_handler.onDirection([](djc::InputHandler::JoystickListener::Direction direction) {
-            static constexpr E event_from_direction[4] = {
+            static constexpr E navigation_event_from_direction[4] = {
                 E::pageCursorMove(-1),// Up
                 E::pageCursorMove(+1),// Down
                 E::widgetValue(-1),   // Left
                 E::widgetValue(+1),   // Right
             };
 
-            ui.addEvent(event_from_direction[static_cast<kf::u8>(direction)]);
+            ui.addEvent(navigation_event_from_direction[static_cast<kf::u8>(direction)]);
         });
     }
 
