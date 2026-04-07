@@ -49,11 +49,10 @@ private:
     UI::Button _load_storage{"Load"};
     UI::Button _reset_storage{"Reset"};
 
-    kf::memory::Array<ControlModeSelectWidget::Item, 2> _control_mode_options{
-        {
-            {Control::stringFromMode(Control::Mode::MavLink), Control::Mode::MavLink},
-            {Control::stringFromMode(Control::Mode::Raw), Control::Mode::Raw},
-        }};
+    kf::memory::Array<ControlModeSelectWidget::Item, 2> _control_mode_options{{
+        {Control::stringFromMode(Control::Mode::MavLink), Control::Mode::MavLink},
+        {Control::stringFromMode(Control::Mode::Raw), Control::Mode::Raw},
+    }};
 
     ControlModeSelectWidget::Config _control_mode_config{
         .items = {_control_mode_options.data(), _control_mode_options.size()},
