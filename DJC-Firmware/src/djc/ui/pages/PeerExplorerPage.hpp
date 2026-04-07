@@ -52,10 +52,8 @@ struct PeerExplorerPage : UI::Page {
     }
 
     void onEntry() noexcept override {
-        logger.debug("entry");
-
         _control.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::memory::Slice<const kf::u8> data) {
-            logger.info(
+            logger.debug(
                 kf::memory::ArrayString<64>::formatted(
                     "Got %d bytes from %s",
                     data.size(),
@@ -66,8 +64,6 @@ struct PeerExplorerPage : UI::Page {
     }
 
     void onExit() noexcept override {
-        logger.debug("exit");
-
         _control.onReceiveFromUnknown(Control::ReceiveFromUnknownCallback{nullptr});
     }
 
@@ -81,7 +77,7 @@ struct PeerExplorerPage : UI::Page {
 
             if (_control.activeMac().hasValue()) {
                 (void) _connection_button_label.format(
-                    "\xF2""OK: %s\x80",
+                    "\xFA""OK: %s\x80",
                     EspNow::stringFromMac(_control.activeMac().value()).data());
                 _connection_button.label(_connection_button_label.view());
             } else {
