@@ -31,19 +31,20 @@ struct ConfigManager final : kf::mixin::Singleton<ConfigManager> {
         if (not _storage.load()) {
             logger.error("Failed to load config");
             reset();
+            save();
         }
 
         if (not _storage.config.isLatestVersion()) {
             logger.error("Config version is outdated");
             reset();
+            save();
         }
     }
 
     void reset() noexcept {
-        logger.info("Resetting config to defaults");
+        logger.info("Resetting RAM config cache to defaults");
 
         _storage.config = djc::Config::defaults();
-        save();
     }
 
 private:
