@@ -39,6 +39,8 @@ struct InputHandler final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Inp
 
     /// @brief Controller values for manual control mode
     struct ControllerValues final : kf::mixin::NonCopyable, kf::mixin::Resettable<ControllerValues> {
+        using Unit = kf::f32;
+
         kf::f32 left_x;
         kf::f32 left_y;
         kf::f32 right_x;
@@ -46,7 +48,7 @@ struct InputHandler final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Inp
 
     private:
         KF_IMPL_RESETTABLE(ControllerValues);
-        void resetImpl() noexcept { left_x = left_y = right_x = right_y = 0.0f; }
+        void resetImpl() noexcept { left_x = left_y = right_x = right_y = Unit{}; }
     };
 
     explicit InputHandler(Periphery &periphery, const DeviceState &device_state, const Config &config) noexcept :
@@ -73,13 +75,19 @@ private:
 
     KF_IMPL_TIMED_POLLABLE(InputHandler);
     void pollImpl(kf::math::Milliseconds now) noexcept {
-
         if (_left_click_callback) {
             _periphery.left_button.poll(now);
             if (_periphery.left_button.clicked()) { _left_click_callback(); }
         }
 
-        if (_device_state.menu_navigation_enabled) {
+        if (_device_state.control_enabled) {
+            _controller_values.left_x = _periphery.left_joystick.axis_x.read();
+            _controller_values.left_y = _periphery.left_joystick.axis_y.read();
+            _controller_values.right_x = _periphery.right_joystick.axis_x.read();
+            _controller_values.right_y = _periphery.right_joystick.axis_y.read();
+        } else {
+            _controller_values.reset();// todo make once with flag
+
             if (_right_click_callback) {
                 _periphery.right_button.poll(now);
                 if (_periphery.right_button.clicked()) { _right_click_callback(); }
@@ -92,15 +100,6 @@ private:
                     _direction_callback(direction);
                 }
             }
-
-            // todo make once with flag
-            _controller_values.reset();
-
-        } else {
-            _controller_values.left_x = _periphery.left_joystick.axis_x.read();
-            _controller_values.left_y = _periphery.left_joystick.axis_y.read();
-            _controller_values.right_x = _periphery.right_joystick.axis_x.read();
-            _controller_values.right_y = _periphery.right_joystick.axis_y.read();
         }
     }
 };

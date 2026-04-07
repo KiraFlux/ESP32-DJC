@@ -15,6 +15,7 @@
 #include "djc/Control.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/widgets/PeerDisplay.hpp"
+#include "djc/prelude.hpp"
 
 namespace djc::ui::pages {
 
@@ -53,12 +54,12 @@ struct PeerExplorerPage : UI::Page {
     void onEntry() noexcept override {
         logger.debug("entry");
 
-        _control.onReceiveFromUnknown([this](const Control::EspNow::Mac &mac, kf::memory::Slice<const kf::u8> data) {
+        _control.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::memory::Slice<const kf::u8> data) {
             logger.info(
                 kf::memory::ArrayString<64>::formatted(
                     "Got %d bytes from %s",
                     data.size(),
-                    Control::EspNow::stringFromMac(mac).data()));
+                    EspNow::stringFromMac(mac).data()));
 
             getMatched(mac).update(mac, millis());
         });
@@ -81,7 +82,7 @@ struct PeerExplorerPage : UI::Page {
             if (_control.activeMac().hasValue()) {
                 (void) _connection_button_label.format(
                     "\xF2""OK: %s\x80",
-                    Control::EspNow::stringFromMac(_control.activeMac().value()).data());
+                    EspNow::stringFromMac(_control.activeMac().value()).data());
                 _connection_button.label(_connection_button_label.view());
             } else {
                 _connection_button.label("\xF9""Disconnected\x80");
@@ -110,7 +111,7 @@ private:
     // layout
     kf::memory::Array<UI::Widget *, (peer_display_start_index + max_peer_display)> _layout;
 
-    widgets::PeerDisplay &getMatched(const Control::EspNow::Mac &mac) noexcept {
+    widgets::PeerDisplay &getMatched(const EspNow::Mac &mac) noexcept {
         for (auto &_peer_display: _peer_displays) {
             if (not _peer_display.mac().hasValue()) { return _peer_display; }
             if (_peer_display.mac().value() == mac) { return _peer_display; }

@@ -19,10 +19,10 @@
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
-#include <kf/network/EspNow.hpp>
 
 #include "djc/DeviceState.hpp"
 #include "djc/InputHandler.hpp"
+#include "djc/prelude.hpp"
 
 namespace djc {
 
@@ -55,7 +55,6 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
     using Config = internal::ControlConfig;
     using Mode = internal::ControlMode;
 
-    using EspNow = kf::network::EspNow;
     using LogString = kf::memory::ArrayString<64>;
 
     using RawMessageCallback = kf::Function<void(kf::memory::Slice<const kf::u8>)>;
@@ -111,7 +110,9 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
             return;
         }
 
-        disconnect();
+        if (not _active_peer.hasValue()) {
+            disconnect();
+        }
 
         _active_peer = addPeer(mac);
         if (not _active_peer.hasValue()) { return; }
@@ -297,7 +298,7 @@ private:
 
     KF_IMPL_TIMED_POLLABLE(Control);
     void pollImpl(kf::math::Milliseconds now) noexcept {
-        if (_device_state.menu_navigation_enabled or not _active_peer.hasValue()) { return; }
+        if (not(_device_state.control_enabled and _active_peer.hasValue())) { return; }
 
         if (_poll_timer.expired(now)) {
             _poll_timer.start(now);

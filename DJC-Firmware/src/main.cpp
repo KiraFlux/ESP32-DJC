@@ -24,7 +24,7 @@ static constexpr auto logger{kf::Logger::create("root")};
 static auto &ui{djc::ui::UI::instance()};
 
 static djc::DeviceState device_state{
-    .menu_navigation_enabled = true,
+    .control_enabled = false,
 };
 
 static djc::ConfigManager storage{};
@@ -92,7 +92,7 @@ void setup() {
 
     {
         input_handler.onLeftButton([]() {
-            device_state.menu_navigation_enabled ^= 1;// toggle
+            device_state.control_enabled ^= 1;// toggle
             ui.addEvent(E::update());
         });
 

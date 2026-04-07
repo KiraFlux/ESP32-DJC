@@ -26,9 +26,9 @@ struct PeerDisplay final : UI::Widget {
 
     void control(Control &control) noexcept { _control = &control; }
 
-    const kf::Option<Control::EspNow::Mac> &mac() const noexcept { return _mac_option; }
+    const kf::Option<EspNow::Mac> &mac() const noexcept { return _mac_option; }
 
-    void update(const Control::EspNow::Mac &mac, kf::math::Milliseconds now) noexcept {
+    void update(const EspNow::Mac &mac, kf::math::Milliseconds now) noexcept {
         _mac_clear_timer.start(now);
         _mac_option.value(mac);
     }
@@ -69,7 +69,7 @@ struct PeerDisplay final : UI::Widget {
                 render.arrow();
             }
 
-            render.value(Control::EspNow::stringFromMac(mac).view());
+            render.value(EspNow::stringFromMac(mac).view());
         } else {
             render.value(kf::memory::StringView{"\xF8    -    -    "});
         }
@@ -94,7 +94,7 @@ struct PeerDisplay final : UI::Widget {
 
 private:
     Control *_control{nullptr};
-    kf::Option<Control::EspNow::Mac> _mac_option{};
+    kf::Option<EspNow::Mac> _mac_option{};
     kf::math::Timer _mac_clear_timer{clear_timeout};
     State _state{State::Cleared};
 };

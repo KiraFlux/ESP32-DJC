@@ -8,7 +8,7 @@
 namespace djc {
 
 struct DeviceState final : kf::mixin::NonCopyable {
-    bool menu_navigation_enabled;    
+    bool control_enabled;    
 };
 
 }// namespace djc
