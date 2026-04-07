@@ -12,7 +12,7 @@ namespace djc::ui::pages {
 
 struct ConfigPage : UI::Page {
 
-    explicit ConfigPage(UI::Page &root, ConfigManager &storage) noexcept :
+    explicit ConfigPage(UI::Page &root) noexcept :
         Page{"Config"},
         widget_layout{{
             &root.link(),
@@ -22,20 +22,21 @@ struct ConfigPage : UI::Page {
             &_reset_storage,
         }} {
         widgets({widget_layout.data(), widget_layout.size()});
+        static auto &storage = djc::ConfigManager::instance();
 
-        _save_storage.callback([&storage]() {
+        _save_storage.callback([]() {
             storage.save();
         });
 
-        _load_storage.callback([&storage]() {
+        _load_storage.callback([]() {
             storage.load();
         });
 
-        _reset_storage.callback([&storage]() {
+        _reset_storage.callback([]() {
             storage.reset();
         });
 
-        _init_mode_selector.callback([&storage](Control::Mode init_mode){
+        _init_mode_selector.callback([](Control::Mode init_mode) {
             storage.config().control.init_mode = init_mode;
         });
     }
@@ -52,8 +53,7 @@ private:
         {
             {Control::stringFromMode(Control::Mode::Raw), Control::Mode::Raw},
             {Control::stringFromMode(Control::Mode::MavLink), Control::Mode::MavLink},
-        }
-    };
+        }};
 
     ControlModeSelectWidget::Config _control_mode_config{
         .items = {_control_mode_options.data(), _control_mode_options.size()},

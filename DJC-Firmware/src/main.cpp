@@ -23,11 +23,11 @@ static constexpr auto logger{kf::Logger::create("root")};
 
 static auto &ui{djc::ui::UI::instance()};
 
+static auto &storage = djc::ConfigManager::instance();
+
 static djc::DeviceState device_state{
     .control_enabled = false,
 };
-
-static djc::ConfigManager storage{};
 
 // services
 
@@ -73,7 +73,6 @@ static djc::ui::pages::PeerExplorerPage peer_explorer_page{
 
 static djc::ui::pages::ConfigPage config_page{
     root_page,
-    storage,
 };
 
 void setup() {

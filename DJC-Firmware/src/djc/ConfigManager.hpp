@@ -5,13 +5,13 @@
 
 #include <kf/Logger.hpp>
 #include <kf/memory/Storage.hpp>
-#include <kf/mixin/NonCopyable.hpp>
+#include <kf/mixin/Singleton.hpp>
 
 #include "djc/Config.hpp"
 
 namespace djc {
 
-struct ConfigManager final : kf::mixin::NonCopyable {
+struct ConfigManager final : kf::mixin::Singleton<ConfigManager> {
 
     [[nodiscard]] const Config &config() const noexcept { return _storage.config; }
 
