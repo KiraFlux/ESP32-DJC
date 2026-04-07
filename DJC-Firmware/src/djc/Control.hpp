@@ -36,14 +36,14 @@ enum class ControlMode : kf::u8 {
 struct ControlConfig final : kf::mixin::NonCopyable {
     kf::math::Milliseconds heartbeat_period;
     kf::math::Milliseconds poll_period;
-    kf::math::Milliseconds debug_log_period;
+    kf::math::Milliseconds receive_timeout;
     ControlMode init_mode;
 
     static constexpr ControlConfig defaults() noexcept {
         return ControlConfig{
             .heartbeat_period = 2000,                                     // ms
             .poll_period = static_cast<kf::math::Milliseconds>(1000 / 50),// 50 Hz
-            .debug_log_period = 200,                                      // ms
+            .receive_timeout = 30'000,                                    // ms
             .init_mode = ControlMode::MavLink,
         };
     }
@@ -105,12 +105,12 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
     }
 
     void connect(const EspNow::Mac &mac) noexcept {
-        if (_active_peer.hasValue() and _active_peer.value().mac() == mac) {
-            logger.debug("Already connected to active peer");
-            return;
-        }
+        if (_active_peer.hasValue()) {
+            if (_active_peer.value().mac() == mac) {
+                logger.debug("Already connected to active peer");
+                return;
+            }
 
-        if (not _active_peer.hasValue()) {
             disconnect();
         }
 
@@ -123,6 +123,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
             return;
         }
 
+        _got_packet = true;
         logger.info("Connected: OK");
     }
 
@@ -157,10 +158,11 @@ private:
     RawMessageCallback _raw_message_callback{};
     MavLinkMessageCallback _mavlink_message_callback{};
     Mode _mode{this->config().init_mode};
+    volatile bool _got_packet{false};
 
     kf::math::Timer _poll_timer{this->config().poll_period};
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
-    kf::math::Timer _debug_log_timer{this->config().debug_log_period};
+    kf::math::Timer _receice_disconnect_timer{this->config().receive_timeout};
 
     static kf::Option<EspNow::Peer> addPeer(const EspNow::Mac &mac) noexcept {
         auto peer_result = EspNow::Peer::add(mac);
@@ -195,6 +197,7 @@ private:
     }
 
     void onReceive(kf::memory::Slice<const kf::u8> buffer) noexcept {
+        _got_packet = true;
         switch (_mode) {
             case Mode::Raw:
                 onReceiveRaw(buffer);
@@ -288,7 +291,6 @@ private:
 
         const auto now = millis();
         _poll_timer.start(now);
-        _debug_log_timer.start(now);
         _heartbear_timer.start(now);
 
         logger.debug(stringFromMode(_mode));
@@ -298,21 +300,22 @@ private:
 
     KF_IMPL_TIMED_POLLABLE(Control);
     void pollImpl(kf::math::Milliseconds now) noexcept {
-        if (not(_device_state.control_enabled and _active_peer.hasValue())) { return; }
+        if (not _active_peer.hasValue()) { return; }
 
-        if (_poll_timer.expired(now)) {
+        if (_got_packet) {
+            _got_packet = false;
+            _receice_disconnect_timer.start(now);
+        }
+
+        if (_receice_disconnect_timer.expired(now)) {
+            logger.info("Timeout");
+            disconnect();
+        }
+
+        if (_device_state.control_enabled and _poll_timer.expired(now)) {
             _poll_timer.start(now);
 
             const auto raw = RawData::fromControllerValues(_input_handler.controllerValues());
-
-            if (_debug_log_timer.expired(now)) {
-                _debug_log_timer.start(now);
-                logger.debug(
-                    LogString::formatted(
-                        "L: (\t%d,\t%d)\tR: (\t%d,\t%d)",
-                        raw.left_x, raw.left_y, raw.right_x, raw.right_y)
-                        .view());
-            }
 
             switch (_mode) {
                 case Mode::Raw:
