@@ -91,10 +91,10 @@ void setup() {
 
     {
         input_handler.onLeftButton([]() {
-            if (device_state.controlEnabled()) {
-                device_state.mode = djc::DeviceState::Mode::UiNavigation;
+            if (djc::DeviceState::Mode::UiNavigation == device_state.mode) {
+                device_state.mode = djc::DeviceState::Mode::Control;// from navigation to control
             } else {
-                device_state.mode = djc::DeviceState::Mode::Control;
+                device_state.mode = djc::DeviceState::Mode::UiNavigation;// from any to navigation
             }
 
             ui.addEvent(E::update());
