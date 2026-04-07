@@ -51,8 +51,8 @@ private:
 
     kf::memory::Array<ControlModeSelectWidget::Item, 2> _control_mode_options{
         {
-            {Control::stringFromMode(Control::Mode::Raw), Control::Mode::Raw},
             {Control::stringFromMode(Control::Mode::MavLink), Control::Mode::MavLink},
+            {Control::stringFromMode(Control::Mode::Raw), Control::Mode::Raw},
         }};
 
     ControlModeSelectWidget::Config _control_mode_config{
