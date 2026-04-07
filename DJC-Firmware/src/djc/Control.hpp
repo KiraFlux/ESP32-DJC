@@ -152,17 +152,21 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 private:
     static constexpr auto logger{kf::Logger::create("Control")};
 
-    DeviceState &_device_state;
-    InputHandler &_input_handler;
-    kf::Option<EspNow::Peer> _active_peer{}, _broadcast_peer{};
     RawMessageCallback _raw_message_callback{};
     MavLinkMessageCallback _mavlink_message_callback{};
-    Mode _mode{this->config().init_mode};
-    volatile bool _got_packet{false};
+
+    kf::Option<EspNow::Peer> _active_peer{};
+    kf::Option<EspNow::Peer> _broadcast_peer{};
 
     kf::math::Timer _poll_timer{this->config().poll_period};
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
     kf::math::Timer _receice_disconnect_timer{this->config().receive_timeout};
+
+    DeviceState &_device_state;
+    InputHandler &_input_handler;
+
+    Mode _mode{this->config().init_mode};
+    volatile bool _got_packet{false};
 
     static kf::Option<EspNow::Peer> addPeer(const EspNow::Mac &mac) noexcept {
         auto peer_result = EspNow::Peer::add(mac);
@@ -176,11 +180,8 @@ private:
             return {};
         }
 
-        auto &peer = peer_result.value();
-
         logger.info(LogString::formatted("Peer '%s' added", EspNow::stringFromMac(mac).data()).view());
-
-        return {std::move(peer)};
+        return {std::move(peer_result.value())};
     }
 
     static void delPeer(EspNow::Peer &peer) noexcept {
