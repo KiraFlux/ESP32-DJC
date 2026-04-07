@@ -25,8 +25,8 @@ struct RootPage : UI::Page {
     }
 
 private:
-    kf::usize _items{0};
     kf::memory::Array<UI::Widget *, max_items> _layout{};
+    kf::usize _items{0};
 };
 
 }// namespace djc::ui::pages
