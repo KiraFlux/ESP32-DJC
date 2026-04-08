@@ -51,9 +51,9 @@ private:
     void onRender(kf::memory::StringView str) noexcept {
         _canvas.background(P::black);
         _canvas.foreground(P::white);
-        
+
         _canvas.fill();
-        
+
         if (_device_state.keyboardInputEnabled()) {
             _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _keyboard.available(), _keyboard.text().size()).data());
             _canvas.text(0, _canvas.glyphHeight(), _keyboard.text().data());
@@ -82,6 +82,9 @@ private:
 
         char c[2]{0, 0};
         _canvas.background(P::bright_black);
+        _canvas.foreground(P::bright_black);
+        _canvas.rect(0, start_y, _canvas.maxX(), _canvas.maxY(), true);
+
         for (auto row = 0; row < _keyboard.rowsTotal(); row += 1) {
             const auto y = start_y + row * key_height;
             const auto cols = Keyboard::keys_in_row[row];
@@ -91,10 +94,16 @@ private:
             for (auto col = 0; col < cols; col += 1) {
                 const auto x = col * key_width + x_offset;
 
-                _canvas.foreground(P::bright_black);
-                _canvas.rect(x, y, x + key_width, y + key_height, true);
-
-                _canvas.foreground((row == _keyboard.row() and col == _keyboard.col()) ? P::white : P::black);
+                if (row == _keyboard.row() and col == _keyboard.col()) {
+                    _canvas.foreground(P::blue);
+                    _canvas.rect(x, y, x + key_width, y + key_height, true);
+                    
+                    _canvas.background(P::blue);
+                    _canvas.foreground(P::bright_white);
+                } else {
+                    _canvas.background(P::bright_black);
+                    _canvas.foreground(P::black);
+                }
 
                 c[0] = Keyboard::keys[Keyboard::selectedIndex(row, col)].value;
                 _canvas.text(x + glyph_offset, y, c);
