@@ -4,6 +4,7 @@
 #pragma once
 
 #include <kf/gfx/Canvas.hpp>
+#include <kf/gfx/Palette.hpp>
 #include <kf/image/DynamicImage.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/ArrayString.hpp>
@@ -23,6 +24,8 @@ struct DisplayManager final : kf::mixin::NonCopyable, kf::mixin::Initable<Displa
         _display{display}, _device_state{device_state}, _keyboard{keyboard} {}
 
 private:
+    using P = kf::gfx::Palette<DisplayDriver::PixelImpl>;
+
     DisplayDriver &_display;
     const DeviceState &_device_state;
     const Keyboard &_keyboard;
@@ -38,7 +41,6 @@ private:
 
         auto &config = ui::UI::instance().renderConfig();
         config.callback([this](kf::memory::StringView str) {
-            _canvas.fill();
             onRender(str);
             (void) _display.send();
         });
@@ -47,50 +49,57 @@ private:
     }
 
     void onRender(kf::memory::StringView str) noexcept {
+        _canvas.background(P::black);
+        _canvas.foreground(P::white);
+        
+        _canvas.fill();
+        
         if (_device_state.keyboardInputEnabled()) {
-
-            _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted(
-                "\xBC\xF0Text Input: %d / %d\x80\n", 
-                _keyboard.available(),
-                _keyboard.text().size()).data()
-            );
-
+            _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _keyboard.available(), _keyboard.text().size()).data());
             _canvas.text(0, _canvas.glyphHeight(), _keyboard.text().data());
 
-            const auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
-
-            kf::memory::ArrayString<64> keys_buffer{};
-            (void) keys_buffer.push('\xB8');
-
-            for (auto i = 0; i < Keyboard::keys.size(); i += 1) {
-                const bool selected{i == _keyboard.selectedButtonIndex()};
-                
-                if (selected) {
-                    (void) keys_buffer.push('\xF0');
-                    (void) keys_buffer.push('\xBF');
-                }
-
-                (void) keys_buffer.push(Keyboard::keys[i].value);
-                (void) keys_buffer.push(' ');
-
-                if (selected) {
-                    (void) keys_buffer.push('\x80');
-                }
-            
-            }
-
-            _canvas.text(0, y, keys_buffer.data());
-
+            renderKeyboard();
             return;
         }
 
-        // Show mode indicator
+        // Control mode overlay
         if (_device_state.controlEnabled()) {
-            auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
-            _canvas.text(0, y, "\xB2\xF0 Control Enabled");
+            _canvas.text(0, static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight()), "\xB2\xF0 Control Enabled");
         }
 
+        _canvas.background(P::black);
+        _canvas.foreground(P::white);
         _canvas.text(0, 0, str.data());
+    }
+
+    void renderKeyboard() noexcept {
+        const auto key_height = _canvas.glyphHeight();
+        const auto start_y = _canvas.maxY() - key_height * _keyboard.rowsTotal();
+        const auto longest_row = Keyboard::keys_in_row[0];
+
+        const auto key_width = _canvas.width() / longest_row;
+        const auto glyph_offset = (key_width - _canvas.glyphWidth()) / 2;
+
+        char c[2]{0, 0};
+        _canvas.background(P::bright_black);
+        for (auto row = 0; row < _keyboard.rowsTotal(); row += 1) {
+            const auto y = start_y + row * key_height;
+            const auto cols = Keyboard::keys_in_row[row];
+
+            const auto x_offset = ((longest_row - cols) * key_width) / 2;
+
+            for (auto col = 0; col < cols; col += 1) {
+                const auto x = col * key_width + x_offset;
+
+                _canvas.foreground(P::bright_black);
+                _canvas.rect(x, y, x + key_width, y + key_height, true);
+
+                _canvas.foreground((row == _keyboard.row() and col == _keyboard.col()) ? P::white : P::black);
+
+                c[0] = Keyboard::keys[Keyboard::selectedIndex(row, col)].value;
+                _canvas.text(x + glyph_offset, y, c);
+            }
+        }
     }
 };
 

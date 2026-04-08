@@ -27,10 +27,22 @@ struct Keyboard final : kf::mixin::NonCopyable {
         char value;
     };
 
-    static constexpr auto keys_total{10};
+    static constexpr auto keys_total{38};
 
     static constexpr kf::memory::Array<Key, keys_total> keys{{
-        // row: 1
+        // row 0: 10 keys
+        {'1'},
+        {'2'},
+        {'3'},
+        {'4'},
+        {'5'},
+        {'6'},
+        {'7'},
+        {'8'},
+        {'9'},
+        {'0'},
+
+        // row 1: 10 keys
         {'Q'},
         {'W'},
         {'E'},
@@ -42,23 +54,66 @@ struct Keyboard final : kf::mixin::NonCopyable {
         {'O'},
         {'P'},
 
+        // row 2: 9 keys
+        {'A'},
+        {'S'},
+        {'D'},
+        {'F'},
+        {'G'},
+        {'H'},
+        {'J'},
+        {'K'},
+        {'L'},
+
+        // row 3: (7 + 2 wide) keys
+        {'^'},// mock SHIFT
+        {'Z'},
+        {'X'},
+        {'C'},
+        {'V'},
+        {'B'},
+        {'N'},
+        {'M'},
+        {'<'},// mock BACKSPACE
     }};
+
+    static constexpr kf::memory::Array<kf::u8, 4> keys_in_row{{10, 10, 9, 9}};
 
     explicit constexpr Keyboard(DeviceState &device_state) noexcept : _device_state{device_state} {}
 
-    bool active() const noexcept { return _device_state.keyboardInputEnabled(); }
+    kf::u8 rowsTotal() const noexcept { return keys_in_row.size(); }
 
-    kf::memory::StringView text() const noexcept { return {_text_source.data(), _text_source.size()}; }
+    kf::u8 row() const noexcept { return _selected_key_row; }
 
-    kf::usize available() const noexcept {
-        if (_text_cursor < _text_source.size()) {
-            return _text_source.size() - _text_cursor;
+    kf::u8 colsTotal() const noexcept { return keys_in_row[_selected_key_row]; }
+
+    kf::u8 col() const noexcept { return _selected_key_col; }
+
+    static kf::u8 selectedIndex(kf::i8 rr, kf::i8 cc) noexcept {
+        auto ret = 0;
+
+        for (auto r = 0; r < rr; r += 1) {
+            ret += keys_in_row[r];
         }
 
-        return 0;
+        return ret + cc;
     }
 
-    kf::i8 selectedButtonIndex() const noexcept { return _selected_button_index; }
+    kf::u8 selectedIndex() const noexcept {
+        return selectedIndex(row(), col());
+    }
+
+    [[nodiscard]] bool active() const noexcept { return _device_state.keyboardInputEnabled(); }
+
+    [[nodiscard]] kf::memory::StringView text() const noexcept { return {_text_source.data(), _text_source.size()}; }
+
+    [[nodiscard]] kf::usize available() const noexcept {
+        if (_text_cursor < _text_source.size()) {
+            return _text_source.size() - _text_cursor;
+        } else {
+            return 0;
+        }
+    }
 
     void begin(kf::memory::Slice<char> text_source) noexcept {
         _device_state.mode = DeviceState::Mode::KeyboardInput;
@@ -67,34 +122,32 @@ struct Keyboard final : kf::mixin::NonCopyable {
         _text_cursor = text().find('\0').value();
     }
 
-    void quit() noexcept {
-        _device_state.mode = DeviceState::Mode::UiNavigation;
-
-        _text_source = {};
-    }
-
     void click() noexcept {
         if (available() == 0) { return; }
 
-        _text_source[_text_cursor] = keys[_selected_button_index].value;
-
+        _text_source[_text_cursor] = keys[selectedIndex()].value;
         _text_cursor += 1;
+        _text_source[_text_cursor] = '\0';
     }
 
     void move(Direction direction) noexcept {
         switch (direction) {
             case Direction::Down:
-            case Direction::Up:
-                _text_cursor = kf::max(0u, _text_cursor - 1);
+                // backspace functional here is a temp. solution
+                _text_cursor = kf::max(0, _text_cursor - 1);
                 _text_source[_text_cursor] = '\0';
                 return;
 
+            case Direction::Up:
+                moveCursorRow(-1);
+                return;
+
             case Direction::Left:
-                moveCursor(-1);
+                moveCursorCol(-1);
                 return;
 
             case Direction::Right:
-                moveCursor(+1);
+                moveCursorCol(+1);
                 return;
         }
     }
@@ -102,12 +155,15 @@ struct Keyboard final : kf::mixin::NonCopyable {
 private:
     DeviceState &_device_state;
     kf::memory::Slice<char> _text_source{};
-    kf::usize _text_cursor{};
-    kf::i8 _selected_button_index{0};
+    kf::isize _text_cursor{};
+    kf::i8 _selected_key_row{0}, _selected_key_col{0};
 
-    void moveCursor(kf::i8 delta) noexcept {
-        using T = decltype(_selected_button_index);
-        _selected_button_index = kf::clamp<T>(static_cast<T>(_selected_button_index + delta), 0, keys.size() - 1);
+    void moveCursorRow(kf::i8 delta) noexcept {
+        _selected_key_row = (_selected_key_row + delta + rowsTotal()) % rowsTotal();
+    }
+
+    void moveCursorCol(kf::i8 delta) noexcept {
+        _selected_key_col = (_selected_key_col + delta + colsTotal()) % colsTotal();
     }
 };
 
