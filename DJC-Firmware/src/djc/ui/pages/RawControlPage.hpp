@@ -22,8 +22,6 @@ struct RawControlPage : UI::Page {
     }
 
     void onEntry() noexcept override {
-        logger.debug("entry");
-
         _control.mode(Control::Mode::Raw);
         _control.onRawMessage([](kf::memory::Slice<const kf::u8> buffer) {
             logger.info(
@@ -35,8 +33,6 @@ struct RawControlPage : UI::Page {
     }
 
     void onExit() noexcept override {
-        logger.debug("exit");
-
         _control.onRawMessage(Control::RawMessageCallback{nullptr});
     }
 

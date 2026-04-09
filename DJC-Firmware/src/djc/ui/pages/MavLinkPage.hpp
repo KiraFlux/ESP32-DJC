@@ -29,8 +29,6 @@ struct MavLinkPage : UI::Page {
     }
 
     void onEntry() noexcept override {
-        logger.debug("entry");
-
         _control.mode(Control::Mode::MavLink);
         _control.onMavlinkMessage([this](mavlink_message_t *message) {
             _need_update |= onMavLinkMessage(message);
@@ -38,8 +36,6 @@ struct MavLinkPage : UI::Page {
     }
 
     void onExit() noexcept override {
-        logger.debug("exit");
-
         _control.onMavlinkMessage(Control::MavLinkMessageCallback{nullptr});
     }
 
