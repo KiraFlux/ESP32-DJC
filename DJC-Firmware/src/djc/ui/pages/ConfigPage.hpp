@@ -17,7 +17,7 @@ struct ConfigPage : UI::Page {
         Page{"Config"},
         _layout{{
             &root.link(),
-            &_test_input,
+            &_device_name_input,
             &_init_mode_selector_label,
             &_save_storage,
             &_load_storage,
@@ -25,10 +25,7 @@ struct ConfigPage : UI::Page {
         }} {
         widgets({_layout.data(), _layout.size()});
 
-        static auto &storage = djc::ConfigManager::instance();
-
-        static kf::memory::Array<char, 100> f{"12345"};
-        _test_input.source({f.data(), f.size()});
+        _device_name_input.source({storage.config().device_name.data(), storage.config().device_name.size()});
 
         _save_storage.callback([]() {
             storage.save();
@@ -50,8 +47,10 @@ struct ConfigPage : UI::Page {
 private:
     using ControlModeSelectWidget = UI::ComboBox<Control::Mode>;
 
+    inline static auto &storage{djc::ConfigManager::instance()};
+
     // widgets
-    widgets::TextInput _test_input{};
+    widgets::TextInput _device_name_input{};
     UI::Button _save_storage{"Save"};
     UI::Button _load_storage{"Load"};
     UI::Button _reset_storage{"Reset"};

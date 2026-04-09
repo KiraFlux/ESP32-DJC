@@ -13,7 +13,7 @@ namespace djc {
 
 struct ConfigManager final : kf::mixin::Singleton<ConfigManager> {
 
-    [[nodiscard]] const Config &config() const noexcept { return _storage.config; }
+    [[nodiscard]] constexpr const Config &config() const noexcept { return _storage.config; }
 
     [[nodiscard]] Config &config() noexcept { return _storage.config; }
 

@@ -14,6 +14,10 @@ namespace djc::ui::widgets {
 
 struct TextInput final : UI::Widget {
 
+    constexpr TextInput() noexcept : _text_source{} {}
+
+    explicit constexpr TextInput(kf::memory::Slice<char> source) noexcept : _text_source{source} {}
+
     void source(kf::memory::Slice<char> new_source) noexcept { _text_source = new_source; }
 
     bool available() const noexcept { return nullptr != _text_source.data(); }
@@ -25,13 +29,12 @@ struct TextInput final : UI::Widget {
         }
 
         const kf::memory::StringView s{_text_source.data(), _text_source.size()};
-        render.value(s.sub(0, s.find('\0').value()));
+        const auto end_index = s.find('\0');
+        render.value(end_index.hasValue() ? s.sub(0, end_index.value()) : s);
     }
 
     bool onClick() noexcept override {
         if (not available()) { return false; }
-
-        auto &virtual_keyboard = input::VirtualKeyboard::instance();
 
         if (virtual_keyboard.active()) {
             virtual_keyboard.click();
@@ -43,8 +46,6 @@ struct TextInput final : UI::Widget {
     }
 
     bool onEventValue(UI::Event::Value event_value) noexcept {
-        auto &virtual_keyboard = input::VirtualKeyboard::instance();
-
         if (virtual_keyboard.active()) {
             virtual_keyboard.move(static_cast<input::VirtualKeyboard::Direction>(event_value));
             return true;
@@ -54,7 +55,9 @@ struct TextInput final : UI::Widget {
     }
 
 private:
-    kf::memory::Slice<char> _text_source{};
+    inline static auto &virtual_keyboard{input::VirtualKeyboard::instance()};
+
+    kf::memory::Slice<char> _text_source;
 };
 
 }// namespace djc::ui::widgets
