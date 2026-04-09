@@ -26,6 +26,8 @@ struct DisplayManager final : kf::mixin::NonCopyable, kf::mixin::Initable<Displa
 private:
     using P = kf::gfx::Palette<DisplayDriver::PixelImpl>;
 
+    inline static const auto &virtual_keyboard = input::VirtualKeyboard::instance();
+
     DisplayDriver &_display;
     const DeviceState &_device_state;
     kf::gfx::Canvas<DisplayDriver::PixelImpl> _canvas{};
@@ -53,14 +55,18 @@ private:
 
         _canvas.fill();
 
-        if (_device_state.VirtualKeyboardInputEnabled()) {
+        if (virtual_keyboard.active()) {
             renderVirtualKeyboard();
-            return;
+        } else {
+            renderUi(str);
         }
+    }
 
+    void renderUi(kf::memory::StringView str) noexcept {
         // Control mode overlay
         if (_device_state.controlEnabled()) {
-            _canvas.text(0, static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight()), "\xB2\xF0 Control Enabled");
+            const auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
+            _canvas.text(0, y, "\xB2\xF0 Control Enabled");
         }
 
         _canvas.background(P::black);
@@ -69,8 +75,6 @@ private:
     }
 
     void renderVirtualKeyboard() noexcept {
-        const auto &virtual_keyboard = input::VirtualKeyboard::instance();
-
         const auto key_height = _canvas.glyphHeight();
         const auto start_y = _canvas.maxY() - key_height * virtual_keyboard.rowsTotal();
         const auto longest_row = input::VirtualKeyboard::keys_in_row[0];
@@ -82,7 +86,6 @@ private:
 
         _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", virtual_keyboard.available(), virtual_keyboard.text().size()).data());
         _canvas.text(0, _canvas.glyphHeight(), virtual_keyboard.text().data());
-
 
         _canvas.background(P::bright_black);
         _canvas.foreground(P::bright_black);
@@ -100,7 +103,7 @@ private:
                 if (row == virtual_keyboard.row() and col == virtual_keyboard.col()) {
                     _canvas.foreground(P::blue);
                     _canvas.rect(x, y, x + key_width, y + key_height - 1, true);
-                    
+
                     _canvas.background(P::blue);
                     _canvas.foreground(P::bright_white);
                 } else {
