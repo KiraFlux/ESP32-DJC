@@ -13,7 +13,7 @@ namespace djc::ui::pages {
 struct RootPage : UI::Page {
     static constexpr auto max_items{4};
 
-    explicit constexpr RootPage() noexcept : Page{"ESP32-DJC"} {}
+    explicit constexpr RootPage() noexcept : Page{"Main"} {}
 
     void attach(UI::Page &page) noexcept {
         if (_items >= _layout.size()) { return; }
