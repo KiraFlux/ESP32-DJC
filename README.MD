@@ -6,136 +6,131 @@ An open-source remote controller based on ESP32 with dual analog joysticks, desi
 
 ## Hardware
 
-| Component     | Specification                                  | Notes                        |
-|---------------|------------------------------------------------|------------------------------|
-| MCU           | ESP32 (any DevKit variant)                     |                              |
-| Joysticks     | 2x HW-504                                      | With integrated push-buttons |
-| Display       | SSD1306 (128x64, I2C) or ST7735 (160x128, SPI) | Selectable via compile flag  |
-| Communication | ESPNOW                                         | Direct ESP32-to-ESP32        |
+| Component     | Specification                 | Notes                   |
+| ------------- | ----------------------------- | ----------------------- |
+| MCU           | ESP32 (any DevKit variant)    |                         |
+| Joysticks     | 2x HW-504                     |                         |
+| Buttons       | 2x external micro switch (NO) | e.g., V-153-1C25        |
+| Display       | ST7735 (160x128, SPI)         | SSD1306 support planned |
+| Communication | ESPNOW                        | Direct ESP32-to-ESP32   |
 
-### Pin Configuration
+## Pin Configuration
 
-| Component | Name           | N | Pin   | ESP32-Pin |
-|-----------|----------------|---|-------|-----------|
-| HW-504    | Joystick       | 1 | GND   | GND       |
-|           | (Left)         | 2 | +5V   | 3V3       |
-|           |                | 3 | VRX   | GPIO 32   |
-|           |                | 4 | VRY   | GPIO 33   |
-|           |                | 5 | SW    | GPIO 14   |
-|           |                |   |       |           |
-| HW-504    | Joystick       | 1 | GND   | GND       |
-|           | (Right)        | 2 | +5V   | 3V3       |
-|           |                | 3 | VRX   | GPIO 35   |
-|           |                | 4 | VRY   | GPIO 34   |
-|           |                | 5 | SW    | GPIO 4    |
-|           |                |   |       |           |
-| SSD1306   | Display        | 1 | GND   | GND       |
-|           | (128x64, I2C)  | 2 | VDD   | 3V3       |
-|           |                | 3 | SDA   | GPIO 21   |
-|           |                | 4 | SCK   | GPIO 22   |
-|           |                |   |       |           |
-| ST7735    | Display        | 1 | GND   | GND       |
-|           | (160x128, SPI) | 2 | Reset | GPIO 15   |
-|           |                | 3 | VCC   | 3V3       |
-|           |                | 4 | DC    | GPIO 2    |
-|           |                | 5 | CS    | GPIO 5    |
-|           |                | 6 | SCK   | GPIO 18   |
-|           |                | 7 | MOSI  | GPIO 23   |
-|           |                | 8 | LED   | 5V        |
+| Component    | Name             | N   | Pin   | ESP32-Pin |
+| ------------ | ---------------- | --- | ----- | --------- |
+| HW-504       | Joystick (Left)  | 1   | GND   | GND       |
+|              |                  | 2   | +5V   | 3V3       |
+|              |                  | 3   | VRX   | GPIO 32   |
+|              |                  | 4   | VRY   | GPIO 33   |
+|              |                  |     |       |           |
+| HW-504       | Joystick (Right) | 1   | GND   | GND       |
+|              |                  | 2   | +5V   | 3V3       |
+|              |                  | 3   | VRX   | GPIO 35   |
+|              |                  | 4   | VRY   | GPIO 34   |
+|              |                  |     |       |           |
+| Micro Switch | Button (Left)    | 1   | COM   | GND       |
+| (V-153-1C25) |                  | 2   | NO    | GPIO 14   |
+|              |                  |     |       |           |
+| Micro Switch | Button (Right)   | 1   | COM   | GND       |
+| (V-153-1C25) |                  | 2   | NO    | GPIO 21   |
+|              |                  |     |       |           |
+| ST7735       | Display          | 1   | GND   | GND       |
+|              | (160x128, SPI)   | 2   | Reset | GPIO 15   |
+|              |                  | 3   | VCC   | 3V3       |
+|              |                  | 4   | DC    | GPIO 2    |
+|              |                  | 5   | CS    | GPIO 5    |
+|              |                  | 6   | SCK   | GPIO 18   |
+|              |                  | 7   | MOSI  | GPIO 23   |
+|              |                  | 8   | LED   | 5V        |
 
-NOTE: ST7735 backlight LED requires a (220 + 220)Ω current-limiting resistors to 5V.
+<blockquote>
+
+### NOTE:
+
+ST7735 backlight LED requires a (220 + 220)Ω current-limiting resistors to 5V.
+
+Buttons are external micro switches NO (normally open) connected between GND and the respective GPIO. Internal pull‑ups are enabled in firmware.
+
+</blockquote>
 
 ## Software
 
-[DJC-Firmware](./DJC-Firmware) is a PlatformIO project. Configuration and dependencies are managed in [platformio.ini](./DJC-Firmware/platformio.ini).
+Firmware is a PlatformIO project located in `DJC-Firmware/`.  
+Dependencies: [KiraFlux‑Toolkit](https://github.com/KiraFlux/KiraFlux-Toolkit.git) and MAVLink library.
 
-This project uses [KiraFlux-Toolkit](https://github.com/KiraFlux/KiraFlux-Toolkit.git), included as a submodule in [/lib](./DJC-Firmware/lib).
+### Build
 
-To build:
+1. Clone the repository.
+2. Open `DJC-Firmware` in PlatformIO.
+3. Build and upload.
 
-1) Clone with submodules: `git clone --recursive https://github.com/KiraFlux/ESP32-DJC.git`
-2) Open DJC-Firmware in Any IDE with PlatformIO support
-3) Build and upload
+### Features
 
-### Firmware Structure
+| Feature                                 | Status                            |
+| --------------------------------------- | --------------------------------- |
+| Dual joystick with calibration          | Implemented                       |
+| ST7735 display (SPI)                    | Implemented                       |
+| ESPNOW peer discovery & connection      | Implemented                       |
+| Raw and MAVLink control modes           | Implemented (Basic)               |
+| Persistent configuration (NVS)          | Implemented                       |
+| MAVLink telemetry (partial)             | ⚠️ SCALED_IMU, ATTITUDE_QUATERNION |
+| Peer explorer with signal age           | Implemented                       |
+| On‑screen text input (virtual keyboard) | Implemented (WIP)                 |
 
-```
-DJC-Firmware/src/
-├── main.cpp              # Application entry point
-└── djc/
-    ├── Device.hpp        # Main device controller
-    ├── Periphery.hpp     # Hardware abstraction
-    ├── UI.hpp           # UI system configuration
-    └── ui/              # Application pages
-        ├── MainPage.hpp
-        ├── MavLinkControlPage.hpp
-        └── TestPage.hpp
-```
+### Planned
 
-### Implemented Features
-
-| Feature              | Status  | Notes                          |
-|----------------------|---------|--------------------------------|
-| Dual joystick input  | Working | With calibration               |
-| Display support      | Working | SSD1306 (I2C) and ST7735 (SPI) |
-| ESPNOW communication | Working | Broadcast mode only            |
-| Basic UI system      | Working | Page-based navigation          |
-| MAVLink control      | Basic   | Manual control packets only    |
+- Active peer indicator on all pages
+- Idle sleep for power saving
+- Confirmation for reset / delete peer
+- Calibration visual feedback
+- Extended MAVLink telemetry (position, battery, flight mode)
+- CLI over Serial
+- Peer nicknames
+- Auto‑add devices from heartbeat
+- SSD1306 support via compile flag
 
 ### Known Limitations
 
-| Limitation      | Description                                                       |
-|-----------------|-------------------------------------------------------------------|
-| ESPNOW pairing  | Hardcoded to broadcast MAC                                        |
-| MAVLink support | Minimal implementation (manual control + heartbeat + IMU receive) |
-| Configuration   | No persistent storage                                             |
-| Error handling  | Limited recovery mechanisms                                       |
-
-### Development Status
-
-The firmware is currently undergoing modernization as part of the [KiraFlux-Toolkit](https://github.com/KiraFlux/KiraFlux-Toolkit.git) update. Some components are in transition.
+- Only ST7735 display supported currently
+- MAVLink telemetry limited to basic IMU/attitude
+- No CLI, no sleep
 
 ## Usage
 
-### Controls
+The device operates in three modes, switching automatically or via the left button.
 
-| Control              | Function                                                          |
-|----------------------|-------------------------------------------------------------------|
-| Left joystick button | Toggle navigation/control modes                                   |
-| Right joystick       | Navigate UI (navigation mode) or send control data (control mode) |
-| Right button         | Activate UI elements (navigation mode)                            |
+| Mode                     | Purpose                                | Activation                                                          |
+| ------------------------ | -------------------------------------- | ------------------------------------------------------------------- |
+| **UiNavigation**         | Menu navigation and widget interaction | Default after power‑on; return from Control by pressing left button |
+| **Control**              | Transmit joystick data over ESPNOW     | Left button from UiNavigation                                       |
+| **VirtualKeyboardInput** | Text entry (e.g., device name)         | Automatically when a text field is activated                        |
 
-### Modes
+### Controls by Mode
 
-| Mode            | Description                                         |
-|-----------------|-----------------------------------------------------|
-| Navigation Mode | Right joystick controls UI menu navigation          |
-| Control Mode    | Right joystick values are sent via ESPNOW / MAVLink |
+| Control           | UiNavigation                                  | Control (Raw)              | Control (MAVLink)          | VirtualKeyboardInput                 |
+| ----------------- | --------------------------------------------- | -------------------------- | -------------------------- | ------------------------------------ |
+| **Left stick X**  | *Unused*                                      | `left_x`                   | `Yaw`                      | *Unused*                             |
+| **Left stick Y**  | *Unused*                                      | `left_y`                   | `Thrust`                   | *Unused*                             |
+| **Right stick X** | Change value of active widget (left/right)    | `right_x`                  | `Roll`                     | Move cursor horizontally on keyboard |
+| **Right stick Y** | Move cursor between widgets (up/down)         | `right_y`                  | `Pitch`                    | Move cursor vertically on keyboard   |
+| **Left button**   | Switch to **Control**                         | Return to **UiNavigation** | Return to **UiNavigation** | **Close virtual keyboard**           |
+| **Right button**  | Activate selected widget (press, follow link) | *Ignored*                  | *Ignored*                  | **Enter the selected key**           |
+
+**Notes:**
+- When the virtual keyboard is active, the left button closes it and does not switch modes.
+- In Control mode, the right joystick does not affect the UI – all its movements are transmitted.
+- The active peer (MAC address) is currently only shown on the `PeerExplorerPage`.
 
 ## Models
 
-The repository contains 3D models in native **Kompas 3D v23 Study** format:
-
-| Directory                        | Contents              | Status                       |
-|----------------------------------|-----------------------|------------------------------|
-| [Models-Legacy](./Models-Legacy) | Original design files | Outdated, for reference only |
-| [Models](./Models)               | Current models        | Minimal, under development   |
-
-NOTE: Production-ready 3D printable models are not yet available.
+3D models (Kompas 3D format) are in `Models-Legacy/` (outdated) and `Models/` (under development).  
+No production‑ready STL files yet.
 
 ## Images
 
-| Original version with SSD1306 display      | Updated version with ST7735 display        |
-|--------------------------------------------|--------------------------------------------|
+| Original (SSD1306)                         | Current (ST7735)                           |
+| ------------------------------------------ | ------------------------------------------ |
 | ![2025.10.19.jpg](./Images/2025.10.19.jpg) | ![2026.01.23.jpg](./Images/2026.01.23.jpg) |
-
-## Contributing
-
-Contributions are welcome. Please:
-
-1. Report issues via GitHub Issues
-2. Submit pull requests for improvements
-3. Share your modifications in Discussions
 
 ## License
 
