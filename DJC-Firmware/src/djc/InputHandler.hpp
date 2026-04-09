@@ -10,7 +10,6 @@
 #include <kf/input/JoystickListener.hpp>
 #include <kf/math/units.hpp>
 #include <kf/mixin/NonCopyable.hpp>
-#include <kf/mixin/Resettable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/DeviceState.hpp"
@@ -20,10 +19,11 @@ namespace djc {
 
 struct InputHandler final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<InputHandler> {
     using JoystickListener = kf::input::JoystickListener<Joystick>;
+
     using ClickCallback = kf::Function<void()>;
     using DirectionCallback = kf::Function<void(JoystickListener::Direction)>;
 
-    struct Config {
+    struct Config final : kf::mixin::NonCopyable {
         JoystickListener::Config joystick_listener;
 
         static constexpr Config defaults() noexcept {
@@ -38,23 +38,12 @@ struct InputHandler final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Inp
     };
 
     /// @brief Controller values for manual control mode
-    struct ControllerValues final : kf::mixin::NonCopyable, kf::mixin::Resettable<ControllerValues> {
-        using Unit = kf::f32;
-
-        kf::f32 left_x;
-        kf::f32 left_y;
-        kf::f32 right_x;
-        kf::f32 right_y;
-
-    private:
-        KF_IMPL_RESETTABLE(ControllerValues);
-        void resetImpl() noexcept { left_x = left_y = right_x = right_y = Unit{}; }
+    struct ControllerValues final : kf::mixin::NonCopyable {
+        kf::f32 left_x, left_y, right_x, right_y;
     };
 
-    explicit InputHandler(Periphery &periphery, const DeviceState &device_state, const Config &config) noexcept :
-        _periphery{periphery}, _device_state{device_state}, _joystick_listener{periphery.right_joystick, config.joystick_listener} {}
-
-    const ControllerValues &controllerValues() const noexcept { return _controller_values; }
+    explicit InputHandler(Periphery &periphery, const Config &config) noexcept :
+        _periphery{periphery}, _joystick_listener{periphery.right_joystick, config.joystick_listener} {}
 
     void onRightButton(ClickCallback &&callback) noexcept { _right_click_callback = std::move(callback); }
 
@@ -62,11 +51,18 @@ struct InputHandler final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Inp
 
     void onDirection(DirectionCallback &&callback) noexcept { _direction_callback = std::move(callback); }
 
+    ControllerValues measureControls() noexcept {
+        return ControllerValues{
+            .left_x = _periphery.left_joystick.axis_x.read(),
+            .left_y = _periphery.left_joystick.axis_y.read(),
+            .right_x = _periphery.right_joystick.axis_x.read(),
+            .right_y = _periphery.right_joystick.axis_y.read(),
+        };
+    }
+
 private:
     Periphery &_periphery;
-    const DeviceState &_device_state;
     JoystickListener _joystick_listener;
-    ControllerValues _controller_values{};
     ClickCallback _right_click_callback{};
     ClickCallback _left_click_callback{};
     DirectionCallback _direction_callback{};
@@ -80,25 +76,16 @@ private:
             if (_periphery.left_button.clicked()) { _left_click_callback(); }
         }
 
-        if (_device_state.controlEnabled()) {
-            _controller_values.left_x = _periphery.left_joystick.axis_x.read();
-            _controller_values.left_y = _periphery.left_joystick.axis_y.read();
-            _controller_values.right_x = _periphery.right_joystick.axis_x.read();
-            _controller_values.right_y = _periphery.right_joystick.axis_y.read();
-        } else {
-            _controller_values.reset();// todo make once with flag
+        if (_right_click_callback) {
+            _periphery.right_button.poll(now);
+            if (_periphery.right_button.clicked()) { _right_click_callback(); }
+        }
 
-            if (_right_click_callback) {
-                _periphery.right_button.poll(now);
-                if (_periphery.right_button.clicked()) { _right_click_callback(); }
-            }
-
-            if (_direction_callback) {
-                _joystick_listener.poll(now);
-                const auto direction = _joystick_listener.direction();
-                if (direction != JoystickListener::Direction::Home and _joystick_listener.changed()) {
-                    _direction_callback(direction);
-                }
+        if (_direction_callback) {
+            _joystick_listener.poll(now);
+            const auto direction = _joystick_listener.direction();
+            if (direction != JoystickListener::Direction::Home and _joystick_listener.changed()) {
+                _direction_callback(direction);
             }
         }
     }

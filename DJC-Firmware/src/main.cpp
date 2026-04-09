@@ -40,7 +40,6 @@ static djc::Periphery periphery{
 
 static djc::InputHandler input_handler{
     periphery,
-    device_state,
     storage.config().input_handler,
 };
 
@@ -81,6 +80,7 @@ static djc::ui::pages::ConfigPage config_page{
 };
 
 void setup() {
+    bool config_modified{false};
     static constexpr auto logger{kf::Logger::create("setup")};
 
     Serial.begin(115200);
@@ -91,12 +91,23 @@ void setup() {
     if (not periphery.init()) {
         logger.error("Periphery init failed. Resseting periphery config to defaults");
         storage.config().periphery = djc::Periphery::Config::defaults();
-        storage.save();
+        config_modified = true;
     }
 
-    using E = djc::ui::UI::Event;
+    if (not storage.config().periphery.joystick_axes_tuned) {
+        logger.debug("Tunning axes..");
+        periphery.tune(storage.config().periphery);
+        config_modified = true;
+    } else {
+        logger.debug("Axes already tuned");
+    }
+
+    (void) control.init();// TODO: implement halt on error?
+    display_manager.init();
 
     {
+        using E = djc::ui::UI::Event;
+
         input_handler.onLeftButton([]() {
             if (device_state.uiNavigationEnabled()) {
                 device_state.mode = djc::DeviceState::Mode::Control;// from navigation to control
@@ -108,6 +119,8 @@ void setup() {
         });
 
         input_handler.onRightButton([]() {
+            if (device_state.controlEnabled()) { return; }
+
             ui.addEvent(E::widgetClick());
         });
 
@@ -126,26 +139,12 @@ void setup() {
                 E::widgetValue(3),// Right
             };
 
-            const auto table = device_state.keyboardInputEnabled() ? keyboard_event_from_direction : navigation_event_from_direction;
+            if (device_state.controlEnabled()) { return; }
 
+            const auto table = device_state.keyboardInputEnabled() ? keyboard_event_from_direction : navigation_event_from_direction;
             ui.addEvent(table[static_cast<kf::u8>(direction)]);
         });
-    }
 
-    if (not storage.config().periphery.joystick_axes_tuned) {
-        logger.debug("Need axes tune");
-        periphery.tune(storage.config().periphery);
-        logger.debug("Tune done!");
-
-        storage.save();
-    } else {
-        logger.debug("Axes already tuned");
-    }
-
-    (void) control.init();
-    display_manager.init();
-
-    {
         // apply page links
         root_page.attach(mavlink_page);
         root_page.attach(raw_control_page);
@@ -155,6 +154,8 @@ void setup() {
         ui.bindPage(root_page);
         ui.addEvent(E::update());
     }
+
+    if (config_modified) { storage.save(); }
 }
 
 void loop() {

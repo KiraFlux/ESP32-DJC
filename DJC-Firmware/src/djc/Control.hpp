@@ -72,7 +72,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
             return static_cast<Unit>(value * scale);
         }
 
-        static constexpr RawData fromControllerValues(const InputHandler::ControllerValues &controller_values) noexcept {
+        static constexpr RawData fromControls(const InputHandler::ControllerValues &controller_values) noexcept {
             return RawData{
                 .left_x = RawData::fromReal(controller_values.left_x),
                 .left_y = RawData::fromReal(controller_values.left_y),
@@ -282,7 +282,7 @@ private:
 
         const auto result = EspNow::instance().init();
         if (result.isError()) {
-            logger.error("Failed to initialize ESP-NOW: %s");
+            logger.error(LogString::formatted("Failed to initialize ESP-NOW: %s", EspNow::stringFromError(result.error())));
             return false;
         }
 
@@ -316,7 +316,7 @@ private:
         if (_device_state.controlEnabled() and _poll_timer.expired(now)) {
             _poll_timer.start(now);
 
-            const auto raw = RawData::fromControllerValues(_input_handler.controllerValues());
+            const auto raw = RawData::fromControls(_input_handler.measureControls());
 
             switch (_mode) {
                 case Mode::Raw:
