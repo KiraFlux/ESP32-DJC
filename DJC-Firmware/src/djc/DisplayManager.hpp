@@ -96,7 +96,7 @@ private:
 
                 if (row == _keyboard.row() and col == _keyboard.col()) {
                     _canvas.foreground(P::blue);
-                    _canvas.rect(x, y, x + key_width, y + key_height, true);
+                    _canvas.rect(x, y, x + key_width, y + key_height - 1, true);
                     
                     _canvas.background(P::blue);
                     _canvas.foreground(P::bright_white);
