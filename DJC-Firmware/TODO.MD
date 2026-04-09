@@ -27,11 +27,6 @@
 Обновлять соответствующие виджеты на странице.
 **Где:** `MavLinkPage::onMavLinkMessage()`.
 
-### 6. Исправить опрос левой кнопки в InputHandler
-**Проблема:** Сейчас `_periphery.left_button.poll(now)` вызывается только если `_left_click_callback` установлен. Это неправильно: кнопка должна опрашиваться всегда, чтобы сбрасывать своё состояние, а колбэк вызываться только при клике.
-**Решение:** В `InputHandler::pollImpl()` вынести вызов `_periphery.left_button.poll(now)` перед проверкой `if (_left_click_callback)`, и внутри условия проверять `_periphery.left_button.clicked()`.
-**Где:** `src/djc/InputHandler.hpp`, метод `pollImpl`.
-
 ### 7. CLI (Command Line Interface) через Serial
 **Проблема:** Отладка и настройка без экрана невозможны. Нужен простой shell.
 **Решение:** Интегрировать легковесную библиотеку (например, ESP-Shell) и добавить команды:
