@@ -1,4 +1,4 @@
-.PHONY: all c clean u upload m monitor
+.PHONY: all c clean u upload m monitor s snapshot
 
 all:
 	pio run
@@ -18,5 +18,7 @@ monitor:
 
 m: monitor
 
-s:
+snapshot:
 	python ./snapshot.py
+
+s: snapshot
