@@ -57,6 +57,7 @@ private:
     bool _last_stable{false};
     bool _last_raw{false};
     bool _click_ready{false};
+    bool _first{true};
 
     // impl
     using This = Button<I>;
@@ -64,15 +65,17 @@ private:
     KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {
         _pin.init();
-        // FIX here:
-        const bool initial = _pin.read();
-        _last_raw = initial;
-        _last_stable = initial;
     }
 
     KF_IMPL_TIMED_POLLABLE(This);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         const bool state = _pin.read();
+
+        if (_first) {
+            _first = false;
+            _last_raw = state;
+            _last_stable = state;
+        }
 
         // todo use Timer here
 
