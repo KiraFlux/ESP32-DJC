@@ -12,7 +12,7 @@
 #include <kf/mixin/NonCopyable.hpp>
 
 #include "djc/DeviceState.hpp"
-#include "djc/Keyboard.hpp"
+#include "djc/input/VirtualKeyboard.hpp"
 #include "djc/prelude.hpp"
 #include "djc/ui/UI.hpp"
 
@@ -20,15 +20,14 @@ namespace djc {
 
 struct DisplayManager final : kf::mixin::NonCopyable, kf::mixin::Initable<DisplayManager, void> {
 
-    explicit DisplayManager(DisplayDriver &display, const DeviceState &device_state, const Keyboard &keyboard) noexcept :
-        _display{display}, _device_state{device_state}, _keyboard{keyboard} {}
+    explicit DisplayManager(DisplayDriver &display, const DeviceState &device_state) noexcept :
+        _display{display}, _device_state{device_state} {}
 
 private:
     using P = kf::gfx::Palette<DisplayDriver::PixelImpl>;
 
     DisplayDriver &_display;
     const DeviceState &_device_state;
-    const Keyboard &_keyboard;
     kf::gfx::Canvas<DisplayDriver::PixelImpl> _canvas{};
 
     KF_IMPL_INITABLE(DisplayManager, void);
@@ -54,11 +53,8 @@ private:
 
         _canvas.fill();
 
-        if (_device_state.keyboardInputEnabled()) {
-            _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _keyboard.available(), _keyboard.text().size()).data());
-            _canvas.text(0, _canvas.glyphHeight(), _keyboard.text().data());
-
-            renderKeyboard();
+        if (_device_state.VirtualKeyboardInputEnabled()) {
+            renderVirtualKeyboard();
             return;
         }
 
@@ -72,29 +68,36 @@ private:
         _canvas.text(0, 0, str.data());
     }
 
-    void renderKeyboard() noexcept {
+    void renderVirtualKeyboard() noexcept {
+        const auto &virtual_keyboard = input::VirtualKeyboard::instance();
+
         const auto key_height = _canvas.glyphHeight();
-        const auto start_y = _canvas.maxY() - key_height * _keyboard.rowsTotal();
-        const auto longest_row = Keyboard::keys_in_row[0];
+        const auto start_y = _canvas.maxY() - key_height * virtual_keyboard.rowsTotal();
+        const auto longest_row = input::VirtualKeyboard::keys_in_row[0];
 
         const auto key_width = _canvas.width() / longest_row;
         const auto glyph_offset = (key_width - _canvas.glyphWidth()) / 2;
 
         char c[2]{0, 0};
+
+        _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", virtual_keyboard.available(), virtual_keyboard.text().size()).data());
+        _canvas.text(0, _canvas.glyphHeight(), virtual_keyboard.text().data());
+
+
         _canvas.background(P::bright_black);
         _canvas.foreground(P::bright_black);
         _canvas.rect(0, start_y, _canvas.maxX(), _canvas.maxY(), true);
 
-        for (auto row = 0; row < _keyboard.rowsTotal(); row += 1) {
+        for (auto row = 0; row < virtual_keyboard.rowsTotal(); row += 1) {
             const auto y = start_y + row * key_height;
-            const auto cols = Keyboard::keys_in_row[row];
+            const auto cols = input::VirtualKeyboard::keys_in_row[row];
 
             const auto x_offset = ((longest_row - cols) * key_width) / 2;
 
             for (auto col = 0; col < cols; col += 1) {
                 const auto x = col * key_width + x_offset;
 
-                if (row == _keyboard.row() and col == _keyboard.col()) {
+                if (row == virtual_keyboard.row() and col == virtual_keyboard.col()) {
                     _canvas.foreground(P::blue);
                     _canvas.rect(x, y, x + key_width, y + key_height - 1, true);
                     
@@ -105,7 +108,7 @@ private:
                     _canvas.foreground(P::black);
                 }
 
-                c[0] = Keyboard::keys[Keyboard::selectedIndex(row, col)].value;
+                c[0] = input::VirtualKeyboard::keys[input::VirtualKeyboard::selectedIndex(row, col)].value;
                 _canvas.text(x + glyph_offset, y, c);
             }
         }

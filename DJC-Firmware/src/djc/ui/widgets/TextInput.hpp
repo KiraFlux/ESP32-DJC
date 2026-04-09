@@ -7,14 +7,12 @@
 #include <kf/memory/Slice.hpp>
 #include <kf/memory/StringView.hpp>
 
-#include "djc/Keyboard.hpp"
+#include "djc/input/VirtualKeyboard.hpp"
 #include "djc/ui/UI.hpp"
 
 namespace djc::ui::widgets {
 
 struct TextInput final : UI::Widget {
-
-    explicit constexpr TextInput(Keyboard &keyboard) noexcept : _keyboard{keyboard} {}
 
     void source(kf::memory::Slice<char> new_source) noexcept { _text_source = new_source; }
 
@@ -33,18 +31,22 @@ struct TextInput final : UI::Widget {
     bool onClick() noexcept override {
         if (not available()) { return false; }
 
-        if (_keyboard.active()) {
-            _keyboard.click();
+        auto &virtual_keyboard = input::VirtualKeyboard::instance();
+
+        if (virtual_keyboard.active()) {
+            virtual_keyboard.click();
         } else {
-            _keyboard.begin(_text_source);
+            virtual_keyboard.begin(_text_source);
         }
 
         return true;
     }
 
     bool onEventValue(UI::Event::Value event_value) noexcept {
-        if (_keyboard.active()) {
-            _keyboard.move(static_cast<Keyboard::Direction>(event_value));
+        auto &virtual_keyboard = input::VirtualKeyboard::instance();
+
+        if (virtual_keyboard.active()) {
+            virtual_keyboard.move(static_cast<input::VirtualKeyboard::Direction>(event_value));
             return true;
         }
 
@@ -52,7 +54,6 @@ struct TextInput final : UI::Widget {
     }
 
 private:
-    Keyboard &_keyboard;
     kf::memory::Slice<char> _text_source{};
 };
 

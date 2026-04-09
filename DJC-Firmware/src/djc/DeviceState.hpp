@@ -12,14 +12,14 @@ struct DeviceState final : kf::mixin::NonCopyable {
     enum class Mode : kf::u8 {
         UiNavigation,
         Control,
-        KeyboardInput,
+        VirtualKeyboardInput,
     };
 
     [[nodiscard]] bool uiNavigationEnabled() const noexcept { return mode == Mode::UiNavigation; }
 
     [[nodiscard]] bool controlEnabled() const noexcept { return mode == Mode::Control; }
 
-    [[nodiscard]] bool keyboardInputEnabled() const noexcept { return mode == Mode::KeyboardInput; }
+    [[nodiscard]] bool VirtualKeyboardInputEnabled() const noexcept { return mode == Mode::VirtualKeyboardInput; }
 
     // fields
 

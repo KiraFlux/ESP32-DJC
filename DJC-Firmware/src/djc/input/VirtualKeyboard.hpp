@@ -3,18 +3,19 @@
 
 #pragma once
 
+#include <kf/Function.hpp>
 #include <kf/algorithm.hpp>
 #include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
 #include <kf/memory/Slice.hpp>
 #include <kf/memory/StringView.hpp>
+#include <kf/mixin/Callbacked.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/mixin/Singleton.hpp>
 
-#include "djc/DeviceState.hpp"
+namespace djc::input {
 
-namespace djc {
-
-struct Keyboard final : kf::mixin::NonCopyable {
+struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard>, kf::mixin::Callbacked<bool> {
 
     enum class Direction : kf::u8 {
         Up = 0,
@@ -79,8 +80,6 @@ struct Keyboard final : kf::mixin::NonCopyable {
 
     static constexpr kf::memory::Array<kf::u8, 4> keys_in_row{{10, 10, 9, 9}};
 
-    explicit constexpr Keyboard(DeviceState &device_state) noexcept : _device_state{device_state} {}
-
     kf::u8 rowsTotal() const noexcept { return keys_in_row.size(); }
 
     kf::u8 row() const noexcept { return _selected_key_row; }
@@ -103,7 +102,7 @@ struct Keyboard final : kf::mixin::NonCopyable {
         return selectedIndex(row(), col());
     }
 
-    [[nodiscard]] bool active() const noexcept { return _device_state.keyboardInputEnabled(); }
+    [[nodiscard]] bool active() const noexcept { return _active; }
 
     [[nodiscard]] kf::memory::StringView text() const noexcept { return {_text_source.data(), _text_source.size()}; }
 
@@ -116,10 +115,16 @@ struct Keyboard final : kf::mixin::NonCopyable {
     }
 
     void begin(kf::memory::Slice<char> text_source) noexcept {
-        _device_state.mode = DeviceState::Mode::KeyboardInput;
+        _active = true;
+        this->invoke(_active);
 
         _text_source = text_source;
         _text_cursor = text().find('\0').value();
+    }
+
+    void quit() noexcept {
+        _active = false;
+        this->invoke(_active);
     }
 
     void click() noexcept {
@@ -153,10 +158,10 @@ struct Keyboard final : kf::mixin::NonCopyable {
     }
 
 private:
-    DeviceState &_device_state;
     kf::memory::Slice<char> _text_source{};
     kf::isize _text_cursor{};
     kf::i8 _selected_key_row{0}, _selected_key_col{0};
+    bool _active{false};
 
     void moveCursorRow(kf::i8 delta) noexcept {
         _selected_key_row = (_selected_key_row + delta + rowsTotal()) % rowsTotal();

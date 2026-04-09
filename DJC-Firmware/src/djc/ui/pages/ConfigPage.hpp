@@ -8,15 +8,13 @@
 #include "djc/ConfigManager.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/widgets/TextInput.hpp"
-#include "djc/Keyboard.hpp"
 
 namespace djc::ui::pages {
 
 struct ConfigPage : UI::Page {
 
-    explicit ConfigPage(UI::Page &root, Keyboard &keyboard) noexcept :
+    explicit ConfigPage(UI::Page &root) noexcept :
         Page{"Config"},
-        _test_input{keyboard},
         _layout{{
             &root.link(),
             &_test_input,
@@ -53,7 +51,7 @@ private:
     using ControlModeSelectWidget = UI::ComboBox<Control::Mode>;
 
     // widgets
-    widgets::TextInput _test_input;
+    widgets::TextInput _test_input{};
     UI::Button _save_storage{"Save"};
     UI::Button _load_storage{"Load"};
     UI::Button _reset_storage{"Reset"};

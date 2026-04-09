@@ -12,8 +12,8 @@
 #include "djc/DeviceState.hpp"
 #include "djc/DisplayManager.hpp"
 #include "djc/InputHandler.hpp"
-#include "djc/Keyboard.hpp"
 #include "djc/Periphery.hpp"
+#include "djc/input/VirtualKeyboard.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavLinkPage.hpp"
 #include "djc/ui/pages/PeerExplorerPage.hpp"
@@ -24,15 +24,13 @@ static auto &ui{djc::ui::UI::instance()};
 
 static auto &storage{djc::ConfigManager::instance()};
 
+static auto &virtual_keyboard{djc::input::VirtualKeyboard::instance()};
+
 static djc::DeviceState device_state{
     .mode = djc::DeviceState::Mode::UiNavigation,
 };
 
 // services
-
-static djc::Keyboard keyboard{
-    device_state,
-};
 
 static djc::Periphery periphery{
     storage.config().periphery,
@@ -52,7 +50,6 @@ static djc::Control control{
 static djc::DisplayManager display_manager{
     periphery.display,
     device_state,
-    keyboard,
 };
 
 // pages
@@ -76,7 +73,6 @@ static djc::ui::pages::PeerExplorerPage peer_explorer_page{
 
 static djc::ui::pages::ConfigPage config_page{
     root_page,
-    keyboard,
 };
 
 void setup() {
@@ -109,10 +105,14 @@ void setup() {
         using E = djc::ui::UI::Event;
 
         input_handler.onLeftButton([]() {
-            if (device_state.uiNavigationEnabled()) {
-                device_state.mode = djc::DeviceState::Mode::Control;// from navigation to control
+            if (virtual_keyboard.active()) {
+                virtual_keyboard.quit();
             } else {
-                device_state.mode = djc::DeviceState::Mode::UiNavigation;// from any to navigation
+                if (device_state.uiNavigationEnabled()) {
+                    device_state.mode = djc::DeviceState::Mode::Control;// from navigation to control
+                } else {
+                    device_state.mode = djc::DeviceState::Mode::UiNavigation;// from any to navigation
+                }
             }
 
             ui.addEvent(E::update());
@@ -132,7 +132,7 @@ void setup() {
                 E::widgetValue(+1),   // Right
             };
 
-            static constexpr E keyboard_event_from_direction[4] = {
+            static constexpr E VirtualKeyboard_event_from_direction[4] = {
                 E::widgetValue(0),// Up
                 E::widgetValue(1),// Down
                 E::widgetValue(2),// Left
@@ -141,7 +141,7 @@ void setup() {
 
             if (device_state.controlEnabled()) { return; }
 
-            const auto table = device_state.keyboardInputEnabled() ? keyboard_event_from_direction : navigation_event_from_direction;
+            const auto table = device_state.VirtualKeyboardInputEnabled() ? VirtualKeyboard_event_from_direction : navigation_event_from_direction;
             ui.addEvent(table[static_cast<kf::u8>(direction)]);
         });
 
@@ -154,6 +154,14 @@ void setup() {
         ui.bindPage(root_page);
         ui.addEvent(E::update());
     }
+
+    virtual_keyboard.callback([](bool is_entering) {
+        if (is_entering) {
+            device_state.mode = djc::DeviceState::Mode::VirtualKeyboardInput;
+        } else {
+            device_state.mode = djc::DeviceState::Mode::UiNavigation;
+        }
+    });
 
     if (config_modified) { storage.save(); }
 }
