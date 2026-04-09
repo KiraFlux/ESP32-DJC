@@ -2,7 +2,7 @@
 
 An open-source remote controller based on ESP32 with dual analog joysticks, designed for DIY robotics projects.
 
-![2026.01.23.jpg](./Images/2026.01.23.jpg)
+![2026.04.09.jpg](./Images/2026.04.09.jpg)
 
 ## Hardware
 
@@ -55,27 +55,35 @@ Buttons are external micro switches NO (normally open) connected between GND and
 
 ## Software
 
-Firmware is a PlatformIO project located in `DJC-Firmware/`.  
-Dependencies: [KiraFlux‑Toolkit](https://github.com/KiraFlux/KiraFlux-Toolkit.git) and MAVLink library.
+Firmware is a **PlatformIO** project located in the [`DJC-Firmware/`](./DJC-Firmware/) directory. All dependencies are declared and managed in [`platformio.ini`](./DJC-Firmware/platformio.ini).
+
+The project uses:
+- [KiraFlux‑Toolkit](https://github.com/KiraFlux/KiraFlux-Toolkit.git)
+- [MAVLink](https://github.com/okalachev/MAVLink.git)
 
 ### Build
 
-1. Clone the repository.
-2. Open `DJC-Firmware` in PlatformIO.
-3. Build and upload.
+A [`makefile`](./DJC-Firmware/makefile) wraps common PlatformIO commands for convenience.
+
+| Command      | Action                                                      |
+| ------------ | ----------------------------------------------------------- |
+| `make`       | Compile the project (`pio run`)                             |
+| `make u`     | Compile and upload to the ESP32 (`pio run --target upload`) |
+| `make m`     | Open serial monitor (`pio device monitor`)                  |
+| `make clean` | Delete compiled objects (`pio run --target clean`)          |
 
 ### Features
 
-| Feature                                 | Status                            |
-| --------------------------------------- | --------------------------------- |
-| Dual joystick with calibration          | Implemented                       |
-| ST7735 display (SPI)                    | Implemented                       |
-| ESPNOW peer discovery & connection      | Implemented                       |
-| Raw and MAVLink control modes           | Implemented (Basic)               |
-| Persistent configuration (NVS)          | Implemented                       |
-| MAVLink telemetry (partial)             | ⚠️ SCALED_IMU, ATTITUDE_QUATERNION |
-| Peer explorer with signal age           | Implemented                       |
-| On‑screen text input (virtual keyboard) | Implemented (WIP)                 |
+| Feature                                 | Status                          |
+| --------------------------------------- | ------------------------------- |
+| Dual joystick with calibration          | Implemented                     |
+| ST7735 display (SPI)                    | Implemented                     |
+| ESPNOW peer discovery & connection      | Implemented                     |
+| Raw and MAVLink control modes           | Implemented (Basic)             |
+| Persistent configuration (NVS)          | Implemented                     |
+| MAVLink telemetry (partial)             | SCALED_IMU, ATTITUDE_QUATERNION |
+| Peer explorer with signal age           | Implemented                     |
+| On‑screen text input (virtual keyboard) | Implementation (Basic)          |
 
 ### Planned
 
@@ -128,9 +136,9 @@ No production‑ready STL files yet.
 
 ## Images
 
-| Original (SSD1306)                         | Current (ST7735)                           |
-| ------------------------------------------ | ------------------------------------------ |
-| ![2025.10.19.jpg](./Images/2025.10.19.jpg) | ![2026.01.23.jpg](./Images/2026.01.23.jpg) |
+| Original `v0.1.0` (SSD1306 display)        | Early `v0.1.1` (display ST7735)            | Current `v0.2.0` (Add microswitch buttons) |
+| ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
+| ![2025.10.19.jpg](./Images/2025.10.19.jpg) | ![2026.01.23.jpg](./Images/2026.01.23.jpg) | ![2026.04.09.jpg](./Images/2026.04.09.jpg) |
 
 ## License
 
