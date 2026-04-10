@@ -55,7 +55,7 @@ Buttons are external micro switches NO (normally open) connected between GND and
 
 ## Software
 
-Firmware is a **PlatformIO** project located in the [`DJC-Firmware/`](./DJC-Firmware/) directory. All dependencies are declared and managed in [`platformio.ini`](./DJC-Firmware/platformio.ini).
+Firmware is a **PlatformIO** project located in the [`DJC-Firmware`](./DJC-Firmware) directory. All dependencies are declared and managed in [`platformio.ini`](./DJC-Firmware/platformio.ini).
 
 The project uses:
 - [KiraFlux‑Toolkit](https://github.com/KiraFlux/KiraFlux-Toolkit.git)
