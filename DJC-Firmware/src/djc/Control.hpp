@@ -20,7 +20,6 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
-#include "djc/DeviceState.hpp"
 #include "djc/InputHandler.hpp"
 #include "djc/prelude.hpp"
 
@@ -82,9 +81,12 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
         }
     };
 
-    explicit Control(const Config &config, DeviceState &device_state, InputHandler &input_handler) noexcept :
-        kf::mixin::Configurable<Config>{config},
-        _device_state{device_state}, _input_handler{input_handler} {}
+    explicit Control(const Config &config, InputHandler &input_handler) noexcept :
+        kf::mixin::Configurable<Config>{config}, _input_handler{input_handler} {}
+
+    [[nodiscard]] bool enabled() const noexcept { return _enabled; }
+
+    void enabled(bool is_enabled) noexcept { _enabled = is_enabled; }
 
     void disconnect() noexcept {
         if (not _active_peer.hasValue()) {
@@ -162,8 +164,8 @@ private:
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
     kf::math::Timer _receice_disconnect_timer{this->config().receive_timeout};
 
-    DeviceState &_device_state;
     InputHandler &_input_handler;
+    bool _enabled{false};
 
     Mode _mode{this->config().init_mode};
     volatile bool _got_packet{false};
@@ -313,7 +315,9 @@ private:
             disconnect();
         }
 
-        if (_device_state.controlEnabled() and _poll_timer.expired(now)) {
+        if (not _enabled) { return; }
+
+        if (_poll_timer.expired(now)) {
             _poll_timer.start(now);
 
             const auto raw = RawData::fromControls(_input_handler.measureControls());

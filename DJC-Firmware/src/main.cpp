@@ -9,7 +9,6 @@
 
 #include "djc/ConfigManager.hpp"
 #include "djc/Control.hpp"
-#include "djc/DeviceState.hpp"
 #include "djc/DisplayManager.hpp"
 #include "djc/InputHandler.hpp"
 #include "djc/Periphery.hpp"
@@ -26,10 +25,6 @@ static auto &storage{djc::ConfigManager::instance()};
 
 static auto &virtual_keyboard{djc::input::VirtualKeyboard::instance()};
 
-static djc::DeviceState device_state{
-    .mode = djc::DeviceState::Mode::UiNavigation,
-};
-
 // services
 
 static djc::Periphery periphery{
@@ -43,13 +38,12 @@ static djc::InputHandler input_handler{
 
 static djc::Control control{
     storage.config().control,
-    device_state,
     input_handler,
 };
 
 static djc::DisplayManager display_manager{
     periphery.display,
-    device_state,
+    control,
 };
 
 // pages
@@ -108,18 +102,14 @@ void setup() {
             if (virtual_keyboard.active()) {
                 virtual_keyboard.quit();
             } else {
-                if (device_state.uiNavigationEnabled()) {
-                    device_state.mode = djc::DeviceState::Mode::Control;// from navigation to control
-                } else {
-                    device_state.mode = djc::DeviceState::Mode::UiNavigation;// from any to navigation
-                }
+                control.enabled(not control.enabled());
             }
 
             ui.addEvent(E::update());
         });
 
         input_handler.onRightButton([]() {
-            if (device_state.controlEnabled()) { return; }
+            if (control.enabled()) { return; }
 
             ui.addEvent(E::widgetClick());
         });
@@ -139,9 +129,9 @@ void setup() {
                 E::widgetValue(3),// Right
             };
 
-            if (device_state.controlEnabled()) { return; }
+            if (control.enabled()) { return; }
 
-            const auto table = device_state.VirtualKeyboardInputEnabled() ? VirtualKeyboard_event_from_direction : navigation_event_from_direction;
+            const auto table = virtual_keyboard.active() ? VirtualKeyboard_event_from_direction : navigation_event_from_direction;
             ui.addEvent(table[static_cast<kf::u8>(direction)]);
         });
 
@@ -154,14 +144,6 @@ void setup() {
         ui.bindPage(root_page);
         ui.addEvent(E::update());
     }
-
-    virtual_keyboard.callback([](bool is_entering) {
-        if (is_entering) {
-            device_state.mode = djc::DeviceState::Mode::VirtualKeyboardInput;
-        } else {
-            device_state.mode = djc::DeviceState::Mode::UiNavigation;
-        }
-    });
 
     if (config_modified) { storage.save(); }
 }

@@ -12,7 +12,6 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
-#include "djc/DeviceState.hpp"
 #include "djc/Periphery.hpp"
 
 namespace djc {

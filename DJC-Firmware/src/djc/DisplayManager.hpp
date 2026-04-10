@@ -11,7 +11,7 @@
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
-#include "djc/DeviceState.hpp"
+#include "djc/Control.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
 #include "djc/prelude.hpp"
 #include "djc/ui/UI.hpp"
@@ -20,8 +20,8 @@ namespace djc {
 
 struct DisplayManager final : kf::mixin::NonCopyable, kf::mixin::Initable<DisplayManager, void> {
 
-    explicit DisplayManager(DisplayDriver &display, const DeviceState &device_state) noexcept :
-        _display{display}, _device_state{device_state} {}
+    explicit DisplayManager(DisplayDriver &display, const Control &control) noexcept :
+        _display{display}, _control{control} {}
 
 private:
     using P = kf::gfx::Palette<DisplayDriver::PixelImpl>;
@@ -29,7 +29,7 @@ private:
     inline static const auto &virtual_keyboard = input::VirtualKeyboard::instance();
 
     DisplayDriver &_display;
-    const DeviceState &_device_state;
+    const Control &_control;
     kf::gfx::Canvas<DisplayDriver::PixelImpl> _canvas{};
 
     KF_IMPL_INITABLE(DisplayManager, void);
@@ -64,7 +64,7 @@ private:
 
     void renderUi(kf::memory::StringView str) noexcept {
         // Control mode overlay
-        if (_device_state.controlEnabled()) {
+        if (_control.enabled()) {
             const auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
             _canvas.text(0, y, "\xB2\xF0 Control Enabled");
         }
