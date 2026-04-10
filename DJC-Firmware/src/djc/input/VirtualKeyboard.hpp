@@ -9,13 +9,12 @@
 #include <kf/memory/Array.hpp>
 #include <kf/memory/Slice.hpp>
 #include <kf/memory/StringView.hpp>
-#include <kf/mixin/Callbacked.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/Singleton.hpp>
 
 namespace djc::input {
 
-struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard>, kf::mixin::Callbacked<bool> {
+struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
 
     enum class Direction : kf::u8 {
         Up = 0,
@@ -116,7 +115,6 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard>, kf::mixin:
 
     void begin(kf::memory::Slice<char> text_source) noexcept {
         _active = true;
-        this->invoke(_active);
 
         _text_source = text_source;
         _text_cursor = text().find('\0').value();
@@ -124,7 +122,6 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard>, kf::mixin:
 
     void quit() noexcept {
         _active = false;
-        this->invoke(_active);
     }
 
     void click() noexcept {
