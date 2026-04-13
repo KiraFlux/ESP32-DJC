@@ -16,12 +16,12 @@ namespace djc {
 
 struct Config {
 
-    struct PeerInfo {
+    struct PeerNote {
         EspNow::Mac mac;
         kf::memory::Array<char, 10> info;
     };
 
-    using PeerFavoritesConfig = djc::memory::Box<PeerInfo, kf::u8, 8>;
+    using PeerFavoritesConfig = djc::memory::Box<PeerNote, kf::u8, 8>;
 
     static constexpr auto latest_version{4};
 
