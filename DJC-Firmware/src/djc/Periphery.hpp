@@ -21,7 +21,7 @@ namespace djc {
 namespace internal {
 
 struct PeripheryConfig final : kf::mixin::NonCopyable {
-    Button::Config button;
+    ButtonListener::Config button;
 
     AxisInput::FilterImpl::Config axis_filter;
     Joystick::Config left_joystick, right_joystick;
@@ -80,7 +80,7 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
 
     using Configurable<Config>::Configurable;
 
-    Button left_button{
+    ButtonListener left_button{
         this->config().button,
         DigitalInput{
             GPIO_NUM_14,
@@ -95,7 +95,7 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
         AdcInput{GPIO_NUM_33},
     };
 
-    Button right_button{
+    ButtonListener right_button{
         this->config().button,
         DigitalInput{
             GPIO_NUM_21,
