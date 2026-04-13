@@ -40,7 +40,6 @@ static djc::InputHandler input_handler{
 
 static djc::Control control{
     storage.config().control,
-    periphery,
 };
 
 static djc::DisplayManager display_manager{
@@ -156,6 +155,17 @@ void loop() {
 
     const auto now = millis();
     input_handler.poll(now);
+
+    if (control.enabled()) {
+        using I = djc::Control::Input;
+
+        control.input({
+            .left_x = I::fromReal(periphery.left_joystick.axis_x.read()),
+            .left_y = I::fromReal(periphery.left_joystick.axis_y.read()),
+            .right_x = I::fromReal(periphery.right_joystick.axis_x.read()),
+            .right_y = I::fromReal(periphery.right_joystick.axis_y.read()),
+        });
+    }
     control.poll(now);
     ui.poll(now);
 }

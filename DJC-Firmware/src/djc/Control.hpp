@@ -20,7 +20,6 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
-#include "djc/Periphery.hpp"
 #include "djc/prelude.hpp"
 
 namespace djc {
@@ -70,12 +69,16 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
         static constexpr Unit fromReal(kf::f32 value) noexcept { return static_cast<Unit>(value * scale); }
     };
 
-    explicit Control(const Config &config, Periphery &periphery) noexcept :
-        kf::mixin::Configurable<Config>{config}, _periphery{periphery} {}
+    explicit Control(const Config &config) noexcept :
+        kf::mixin::Configurable<Config>{config} {}
 
     [[nodiscard]] bool enabled() const noexcept { return _enabled; }
 
     void enabled(bool is_enabled) noexcept { _enabled = is_enabled; }
+
+    void input(const Input &new_input) noexcept { _input = new_input; }
+
+    [[nodiscard]] const Input &input() const noexcept { return _input; }
 
     void disconnect() noexcept {
         if (not _active_peer.hasValue()) {
@@ -153,7 +156,7 @@ private:
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
     kf::math::Timer _receice_disconnect_timer{this->config().receive_timeout};
 
-    Periphery &_periphery;
+    Input _input{};
     bool _enabled{false};
 
     Mode _mode{this->config().init_mode};
@@ -218,12 +221,12 @@ private:
         }
     }
 
-    void pollRaw(EspNow::Peer &peer, kf::math::Milliseconds, const Input &raw) noexcept {
-        (void) peer.writePacket(raw);
+    void pollRaw(EspNow::Peer &peer, kf::math::Milliseconds) noexcept {
+        (void) peer.writePacket(_input);
     }
 
-    void pollMavLink(EspNow::Peer &peer, kf::math::Milliseconds now, const Input &raw) noexcept {
-        sendMavLinkControl(peer, raw);
+    void pollMavLink(EspNow::Peer &peer, kf::math::Milliseconds now) noexcept {
+        sendMavLinkControl(peer);
 
         if (_heartbear_timer.expired(now)) {
             _heartbear_timer.start(now);
@@ -231,14 +234,14 @@ private:
         }
     }
 
-    void sendMavLinkControl(EspNow::Peer &peer, const Input &raw) noexcept {
+    void sendMavLinkControl(EspNow::Peer &peer) noexcept {
         mavlink_message_t message;
         (void) mavlink_msg_manual_control_pack(
             127, MAV_COMP_ID_PARACHUTE, &message, 1,
-            raw.right_y,// x: pitch (right Y)
-            raw.right_x,// y: roll (right X)
-            raw.left_y, // z: thrust (left Y)
-            raw.left_x, // r: yaw (left X)
+            _input.right_y,// x: pitch (right Y)
+            _input.right_x,// y: roll (right X)
+            _input.left_y, // z: thrust (left Y)
+            _input.left_x, // r: yaw (left X)
             // Buttons (unused)
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -309,20 +312,13 @@ private:
         if (_poll_timer.expired(now)) {
             _poll_timer.start(now);
 
-            const auto control_input = Input{
-                .left_x = Input::fromReal(_periphery.left_joystick.axis_x.read()),
-                .left_y = Input::fromReal(_periphery.left_joystick.axis_y.read()),
-                .right_x = Input::fromReal(_periphery.right_joystick.axis_x.read()),
-                .right_y = Input::fromReal(_periphery.right_joystick.axis_y.read()),
-            };
-
             switch (_mode) {
                 case Mode::Raw:
-                    pollRaw(_active_peer.value(), now, control_input);
+                    pollRaw(_active_peer.value(), now);
                     return;
 
                 case Mode::MavLink:
-                    pollMavLink(_active_peer.value(), now, control_input);
+                    pollMavLink(_active_peer.value(), now);
                     return;
             }
         }
