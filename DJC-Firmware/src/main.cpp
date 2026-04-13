@@ -32,13 +32,15 @@ static djc::Periphery periphery{
 };
 
 static djc::InputHandler input_handler{
-    periphery,
     storage.config().input_handler,
+    periphery.right_joystick,
+    periphery.left_button_listener,
+    periphery.right_button_listener,
 };
 
 static djc::Control control{
     storage.config().control,
-    input_handler,
+    periphery,
 };
 
 static djc::DisplayManager display_manager{

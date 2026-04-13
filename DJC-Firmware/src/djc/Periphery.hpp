@@ -80,7 +80,7 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
 
     using Configurable<Config>::Configurable;
 
-    ButtonListener left_button{
+    ButtonListener left_button_listener{
         this->config().button,
         DigitalInput{
             GPIO_NUM_14,
@@ -95,7 +95,7 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
         AdcInput{GPIO_NUM_33},
     };
 
-    ButtonListener right_button{
+    ButtonListener right_button_listener{
         this->config().button,
         DigitalInput{
             GPIO_NUM_21,
@@ -150,8 +150,8 @@ private:
 
         left_joystick.init();
         right_joystick.init();
-        left_button.init();
-        right_button.init();
+        left_button_listener.init();
+        right_button_listener.init();
 
         if (bus.init().isError()) {
             logger.error("Bus initialization failed");
