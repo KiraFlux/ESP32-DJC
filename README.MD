@@ -2,54 +2,60 @@
 
 An open-source remote controller based on ESP32 with dual analog joysticks, designed for DIY robotics projects.
 
-![2026.04.09.jpg](./Images/2026.04.09.jpg)
+<img src="./Images/2026.04.10.jpg" style="width: auto; height: 600px; max-width: 100%;">
 
 ## Hardware
 
-| Component     | Specification                 | Notes                   |
-| ------------- | ----------------------------- | ----------------------- |
-| MCU           | ESP32 (any DevKit variant)    |                         |
-| Joysticks     | 2x HW-504                     |                         |
-| Buttons       | 2x external micro switch (NO) | e.g., V-153-1C25        |
-| Display       | ST7735 (160x128, SPI)         | SSD1306 support planned |
-| Communication | ESPNOW                        | Direct ESP32-to-ESP32   |
+| Component     | Specification                 | Notes                               |
+| ------------- | ----------------------------- | ----------------------------------- |
+| MCU           | ESP32 (any DevKit variant)    | Can be used with an expansion board |
+| Joysticks     | 2x HW-504                     |                                     |
+| Buttons       | 2x external micro switch (NO) | e.g., V-153-1C25                    |
+| Display       | ST7735 (160x128, SPI)         | SSD1306 support planned             |
+| Communication | ESPNOW                        | Direct ESP32-to-ESP32               |
 
 ## Pin Configuration
 
-| Component    | Name             | N   | Pin   | ESP32-Pin |
-| ------------ | ---------------- | --- | ----- | --------- |
-| HW-504       | Joystick (Left)  | 1   | GND   | GND       |
-|              |                  | 2   | +5V   | 3V3       |
-|              |                  | 3   | VRX   | GPIO 32   |
-|              |                  | 4   | VRY   | GPIO 33   |
-|              |                  |     |       |           |
-| HW-504       | Joystick (Right) | 1   | GND   | GND       |
-|              |                  | 2   | +5V   | 3V3       |
-|              |                  | 3   | VRX   | GPIO 35   |
-|              |                  | 4   | VRY   | GPIO 34   |
-|              |                  |     |       |           |
-| Micro Switch | Button (Left)    | 1   | COM   | GND       |
-| (V-153-1C25) |                  | 2   | NO    | GPIO 14   |
-|              |                  |     |       |           |
-| Micro Switch | Button (Right)   | 1   | COM   | GND       |
-| (V-153-1C25) |                  | 2   | NO    | GPIO 21   |
-|              |                  |     |       |           |
-| ST7735       | Display          | 1   | GND   | GND       |
-|              | (160x128, SPI)   | 2   | Reset | GPIO 15   |
-|              |                  | 3   | VCC   | 3V3       |
-|              |                  | 4   | DC    | GPIO 2    |
-|              |                  | 5   | CS    | GPIO 5    |
-|              |                  | 6   | SCK   | GPIO 18   |
-|              |                  | 7   | MOSI  | GPIO 23   |
-|              |                  | 8   | LED   | 5V        |
+| Component  | Name             | №   | Pin   | ESP32-Pin |
+| ---------- | ---------------- | --- | ----- | --------- |
+| HW-504     | Joystick (Left)  | 1   | GND   | GND       |
+|            |                  | 2   | +5V   | 3V3       |
+|            |                  | 3   | VRX   | GPIO 32   |
+|            |                  | 4   | VRY   | GPIO 33   |
+|            |                  | 5   | SW    | *NC*      |
+|            |                  |     |       |           |
+| HW-504     | Joystick (Right) | 1   | GND   | GND       |
+|            |                  | 2   | +5V   | 3V3       |
+|            |                  | 3   | VRX   | GPIO 35   |
+|            |                  | 4   | VRY   | GPIO 34   |
+|            |                  | 5   | SW    | *NC*      |
+|            |                  |     |       |           |
+| V-153-1C25 | Button (Left)    | 1   | COM   | GND       |
+|            |                  | 2   | NO    | GPIO 14   |
+|            |                  | 3   | NC    | *NC*      |
+|            |                  |     |       |           |
+| V-153-1C25 | Button (Right)   | 1   | COM   | GND       |
+|            |                  | 2   | NO    | GPIO 21   |
+|            |                  | 3   | NC    | *NC*      |
+|            |                  |     |       |           |
+| ST7735     | Display          | 1   | LED   | 5V        |
+|            | (160x128, SPI)   | 2   | SCK   | GPIO 18   |
+|            |                  | 3   | MOSI  | GPIO 23   |
+|            |                  | 4   | DC    | GPIO 2    |
+|            |                  | 5   | Reset | GPIO 15   |
+|            |                  | 6   | CS    | GPIO 5    |
+|            |                  | 7   | GND   | GND       |
+|            |                  | 8   | VCC   | 3V3       |
 
 <blockquote>
 
 ### NOTE:
 
-ST7735 backlight LED requires a (220 + 220)Ω current-limiting resistors to 5V.
+`NC` means *Not Connected*
 
-Buttons are external micro switches NO (normally open) connected between GND and the respective GPIO. Internal pull‑ups are enabled in firmware.
+ST7735 backlight LED **requires** a 440Ω (two 220Ω in series) current-limiting resistor to 5V.
+
+Buttons are external micro switches `NO` (normally open) connected between GND and the respective GPIO. Internal pull‑ups are enabled in firmware.
 
 </blockquote>
 
@@ -74,19 +80,23 @@ A [`makefile`](./DJC-Firmware/makefile) wraps common PlatformIO commands for con
 
 ### Features
 
-| Feature                                 | Status                          |
-| --------------------------------------- | ------------------------------- |
-| Dual joystick with calibration          | Implemented                     |
-| ST7735 display (SPI)                    | Implemented                     |
-| ESPNOW peer discovery & connection      | Implemented                     |
-| Raw and MAVLink control modes           | Implemented (Basic)             |
-| Persistent configuration (NVS)          | Implemented                     |
-| MAVLink telemetry (partial)             | SCALED_IMU, ATTITUDE_QUATERNION |
-| Peer explorer with signal age           | Implemented                     |
-| On‑screen text input (virtual keyboard) | Implementation (Basic)          |
+| Feature                                 | Status                                                   |
+| --------------------------------------- | -------------------------------------------------------- |
+| Dual joystick with calibration          | Implemented                                              |
+| ST7735 display (SPI)                    | Implemented                                              |
+| ESPNOW peer discovery & connection      | Implemented                                              |
+| Raw and MAVLink control modes           | Implemented (Basic)                                      |
+| Persistent configuration (NVS)          | Implemented                                              |
+| MAVLink telemetry (partial)             | SCALED_IMU, ATTITUDE_QUATERNION, SERIAL_CONTROL messages |
+| Peer explorer with signal age           | Implemented                                              |
+| On‑screen text input (virtual keyboard) | Implemented (Basic)                                      |
 
 ### Planned
 
+- Power supply documentation (currently only USB, no shield)
+- Battery-powered operation with 18650 1S1P Li‑ion cell + boost converter (5V) for devkit board
+- Create schematic in KiCad for the DIY shield
+- DIY shield for devkit board (single‑sided PCB, toner transfer method) with integrated power circuitry
 - Active peer indicator on all pages
 - Idle sleep for power saving
 - Confirmation for reset / delete peer
@@ -99,13 +109,13 @@ A [`makefile`](./DJC-Firmware/makefile) wraps common PlatformIO commands for con
 
 ### Known Limitations
 
-- Only ST7735 display supported currently
+- Only ST7735 display is currently supported
 - MAVLink telemetry limited to basic IMU/attitude
 - No CLI, no sleep
 
 ## Usage
 
-The device operates in three modes, switching automatically or via the left button.
+The device operates in three modes. Switching between UiNavigation and Control is done with the left button; VirtualKeyboardInput appears automatically when a text field is activated.
 
 | Mode                     | Purpose                                | Activation                                                          |
 | ------------------------ | -------------------------------------- | ------------------------------------------------------------------- |
@@ -136,9 +146,23 @@ No production‑ready STL files yet.
 
 ## Images
 
-| Original `v0.1.0` (SSD1306 display)        | Early `v0.1.1` (display ST7735)            | Current `v0.2.0` (Add microswitch buttons) |
-| ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
-| ![2025.10.19.jpg](./Images/2025.10.19.jpg) | ![2026.01.23.jpg](./Images/2026.01.23.jpg) | ![2026.04.09.jpg](./Images/2026.04.09.jpg) |
+<blockquote>
+
+## v0.1.x
+
+| `v0.1.0` (SSD1306 display)                                              | `v0.1.1` (Using ST7735 display)                                         |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| <img src="./Images/2025.10.19.jpg" style="width: auto; height: 400px;"> | <img src="./Images/2026.01.23.jpg" style="width: auto; height: 400px;"> |
+
+## v0.2.x
+
+| `v0.2.0` (Add microswitch buttons)                                      | `v0.2.1` (Improved cable management)                                    |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| <img src="./Images/2026.04.09.jpg" style="width: auto; height: 400px;"> | <img src="./Images/2026.04.10.jpg" style="width: auto; height: 400px;"> |
+
+</blockquote>
+
+---
 
 ## License
 
