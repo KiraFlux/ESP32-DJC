@@ -10,7 +10,7 @@
 #include <kf/gpio/arduino.hpp>
 #include <kf/network/EspNow.hpp>
 
-#include "djc/input/Button.hpp"
+#include "djc/input/LogicalLevelListener.hpp"
 
 namespace djc {
 
