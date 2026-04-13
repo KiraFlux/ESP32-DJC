@@ -21,3 +21,4 @@ fp-info-cache
 *.tmp
 *~
 _autosave-*
+**/.history/**
