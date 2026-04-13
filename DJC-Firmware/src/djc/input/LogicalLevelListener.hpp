@@ -25,16 +25,16 @@ struct ButtonConfig final : kf::mixin::NonCopyable {
 
 /// @brief Minimal button with press detection only
 template<typename I>
-struct Button : kf::mixin::Initable<Button<I>, void>,
+struct LogicalLevelListener : kf::mixin::Initable<LogicalLevelListener<I>, void>,
                 kf::mixin::NonCopyable,
-                kf::mixin::TimedPollable<Button<I>>,
+                kf::mixin::TimedPollable<LogicalLevelListener<I>>,
                 kf::mixin::Configurable<internal::ButtonConfig> {
     KF_CHECK_IMPL(I, kf::gpio::DigitalInputTag);
 
     using PinImpl = I;
     using Config = internal::ButtonConfig;
 
-    explicit Button(const Config &config, PinImpl &&pin) noexcept :
+    explicit LogicalLevelListener(const Config &config, PinImpl &&pin) noexcept :
         kf::mixin::Configurable<Config>{config}, _pin{std::move(pin)} {}
 
     /// @brief Check if button was clicked (consumes the click)
@@ -60,7 +60,7 @@ private:
     bool _first{true};
 
     // impl
-    using This = Button<I>;
+    using This = LogicalLevelListener<I>;
 
     KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {

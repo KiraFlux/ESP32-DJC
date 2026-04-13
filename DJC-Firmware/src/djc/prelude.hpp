@@ -16,7 +16,7 @@ namespace djc {
 
 using namespace kf::gpio::arduino;
 
-using Button = djc::input::Button<DigitalInput>;
+using Button = djc::input::LogicalLevelListener<DigitalInput>;
 
 using AxisInput = kf::drivers::sensors::NormalizedAdcInput<AdcInput>;
 using Joystick = kf::drivers::sensors::Joystick<AxisInput>;
