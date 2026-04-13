@@ -16,7 +16,7 @@ upload:
 u: upload
 
 monitor:
-	pio device monitor -d $(FIRMWARE_DIR) --no-reconnect
+	pio device monitor -b 115200 --no-reconnect
 
 m: monitor
 
