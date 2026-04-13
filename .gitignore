@@ -1,7 +1,23 @@
 **/.idea
-**/.pio
-**/.vscode
 
+**/.pio
+
+**/.vscode
 !./DJC-Firmware/.vscode/extensions.json
 
 ./snapshot.txt
+
+
+# KiCad 10
+
+**/*-backups/**
+*.kicad_prl
+fp-info-cache
+*.kicad_sch-bak
+*.kicad_pcb-bak
+*-rescue.lib
+*-save.kicad_pcb
+*-save.kicad_sch
+*.tmp
+*~
+_autosave-*
