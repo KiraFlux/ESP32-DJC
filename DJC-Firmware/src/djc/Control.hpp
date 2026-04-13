@@ -20,7 +20,7 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
-#include "djc/InputHandler.hpp"
+#include "djc/input/InputHandler.hpp"
 #include "djc/prelude.hpp"
 
 namespace djc {

@@ -8,8 +8,8 @@
 #include <kf/memory/StringView.hpp>
 
 #include "djc/Control.hpp"
-#include "djc/InputHandler.hpp"
 #include "djc/Periphery.hpp"
+#include "djc/input/InputHandler.hpp"
 #include "djc/memory/Box.hpp"
 
 namespace djc {
@@ -18,7 +18,7 @@ struct Config {
 
     struct PeerInfo {
         EspNow::Mac mac;
-        kf::memory::Array<char, 10> info; 
+        kf::memory::Array<char, 10> info;
     };
 
     using PeerFavoritesConfig = djc::memory::Box<PeerInfo, kf::u8, 8>;
@@ -33,7 +33,7 @@ struct Config {
     PeerFavoritesConfig peer_favorites;
     kf::memory::Array<char, 16> device_name;
 
-    [[nodiscard]] constexpr kf::memory::StringView deviceName() const noexcept { 
+    [[nodiscard]] constexpr kf::memory::StringView deviceName() const noexcept {
         return kf::memory::StringView{device_name.data(), device_name.size()};
     }
 
