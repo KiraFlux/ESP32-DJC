@@ -69,7 +69,7 @@ The project uses:
 
 ### Build
 
-A [`makefile`](./DJC-Firmware/makefile) wraps common PlatformIO commands for convenience.
+A [`makefile`](./makefile) wraps common PlatformIO commands for convenience.
 
 | Command      | Action                                                      |
 | ------------ | ----------------------------------------------------------- |
@@ -141,8 +141,8 @@ The device operates in three modes. Switching between UiNavigation and Control i
 
 ## Models
 
-3D models (Kompas 3D format) are in `Models-Legacy/` (outdated) and `Models/` (under development).  
-No production‑ready STL files yet.
+3D models (Kompas 3D format) are in `Models-Legacy` (outdated) and `Models` (under development).  
+No production‑ready files yet.
 
 ## Images
 

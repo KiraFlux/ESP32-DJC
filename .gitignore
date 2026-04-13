@@ -1,0 +1,7 @@
+**/.idea
+**/.pio
+**/.vscode
+
+!./DJC-Firmware/.vscode/extensions.json
+
+./snapshot.txt
