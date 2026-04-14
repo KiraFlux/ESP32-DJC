@@ -83,7 +83,7 @@ private:
             for (auto col = 0; col < cols; col += 1) {
                 const auto x = col * key_width + x_offset;
 
-                if (row == virtual_keyboard.row() and col == virtual_keyboard.col()) {
+                if (row == virtual_keyboard.cursorRow() and col == virtual_keyboard.cursorCol()) {
                     _canvas.foreground(P::blue);
                     _canvas.rect(x, y, x + key_width, y + key_height - 1, true);
 
@@ -94,7 +94,13 @@ private:
                     _canvas.foreground(P::black);
                 }
 
-                c[0] = input::VirtualKeyboard::rows[row][col].value;
+                const auto &key = input::VirtualKeyboard::keyAt(row, col);
+                if (key.kind == input::Key::Kind::Common) {
+                    c[0] = key.value(virtual_keyboard.shifted());
+                } else {
+                    c[0] = '?';
+                }
+                
                 _canvas.text(x + glyph_offset, y, c);
             }
         }

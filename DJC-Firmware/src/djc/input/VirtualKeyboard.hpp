@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <kf/Function.hpp>
 #include <kf/algorithm.hpp>
 #include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
@@ -14,6 +13,28 @@
 
 namespace djc::input {
 
+struct Key {
+
+    enum class Kind : kf::u8 {
+        Common,
+        Shift,
+        Backspace,
+        Space,
+        Enter,
+    };
+
+    constexpr Key(char normal, char shift) noexcept : kind{Kind::Common}, normal_value{normal}, shift_value{shift} {}
+
+    constexpr Key(Kind k, char value) noexcept : kind{k}, normal_value{value}, shift_value{0} {}
+
+    const Kind kind;
+    const char normal_value, shift_value;
+
+    constexpr char value(bool shifted = false) const noexcept {
+        return shifted ? shift_value : normal_value;
+    }
+};
+
 struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
 
     enum class Direction : kf::u8 {
@@ -23,88 +44,80 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         Right = 3,
     };
 
-    struct Key {
-
-        enum class Kind {
-            Common,
-            Shift,
-            Backspace,
-            Space,
-            Enter,
-        };
-
-        static constexpr Key createCommon(char value) noexcept {
-            return Key{
-                .kind = Kind::Common,
-                .value = value,
-            };
-        }
-
-        Kind kind;
-        char value;
+    enum class State : kf::u8 {
+        Normal,
+        ShiftOnce,
+        ShiftAll,
     };
 
     template<kf::usize N> using KeyRow = kf::memory::Array<Key, N>;
-    using KeyView = kf::memory::Slice<const Key>;
 
-    static constexpr KeyRow<10> row_0{{
-        {.kind = Key::Kind::Common, .value = '1'},
-        {.kind = Key::Kind::Common, .value = '2'},
-        {.kind = Key::Kind::Common, .value = '3'},
-        {.kind = Key::Kind::Common, .value = '4'},
-        {.kind = Key::Kind::Common, .value = '5'},
-        {.kind = Key::Kind::Common, .value = '6'},
-        {.kind = Key::Kind::Common, .value = '7'},
-        {.kind = Key::Kind::Common, .value = '8'},
-        {.kind = Key::Kind::Common, .value = '9'},
-        {.kind = Key::Kind::Common, .value = '0'},
+    static constexpr KeyRow<14> row_0{{
+        {'`', '~'},
+        {'1', '!'},
+        {'2', '@'},
+        {'3', '#'},
+        {'4', '$'},
+        {'5', '%'},
+        {'6', '^'},
+        {'7', '&'},
+        {'8', '*'},
+        {'9', '('},
+        {'0', ')'},
+        {'-', '_'},
+        {'=', '+'},
+        {Key::Kind::Backspace, 0},        
     }};
 
-    static constexpr KeyRow<10> row_1{{
-        {.kind = Key::Kind::Common, .value = 'Q'},
-        {.kind = Key::Kind::Common, .value = 'W'},
-        {.kind = Key::Kind::Common, .value = 'E'},
-        {.kind = Key::Kind::Common, .value = 'R'},
-        {.kind = Key::Kind::Common, .value = 'T'},
-        {.kind = Key::Kind::Common, .value = 'Y'},
-        {.kind = Key::Kind::Common, .value = 'U'},
-        {.kind = Key::Kind::Common, .value = 'I'},
-        {.kind = Key::Kind::Common, .value = 'O'},
-        {.kind = Key::Kind::Common, .value = 'P'},
+    static constexpr KeyRow<13> row_1{{
+        {'q', 'Q'},
+        {'w', 'W'},
+        {'e', 'E'},
+        {'r', 'R'},
+        {'t', 'T'},
+        {'y', 'Y'},
+        {'u', 'U'},
+        {'i', 'I'},
+        {'o', 'O'},
+        {'p', 'P'},
+        {'[', '{'},
+        {']', '}'},
+        {'\\', '|'},
     }};
 
-    static constexpr KeyRow<9> row_2{{
-        {.kind = Key::Kind::Common, .value = 'A'},
-        {.kind = Key::Kind::Common, .value = 'S'},
-        {.kind = Key::Kind::Common, .value = 'D'},
-        {.kind = Key::Kind::Common, .value = 'F'},
-        {.kind = Key::Kind::Common, .value = 'G'},
-        {.kind = Key::Kind::Common, .value = 'H'},
-        {.kind = Key::Kind::Common, .value = 'J'},
-        {.kind = Key::Kind::Common, .value = 'K'},
-        {.kind = Key::Kind::Common, .value = 'L'},
+    static constexpr KeyRow<12> row_2{{
+        {'a', 'A'},
+        {'s', 'S'},
+        {'d', 'D'},
+        {'f', 'F'},
+        {'g', 'G'},
+        {'h', 'H'},
+        {'j', 'J'},
+        {'k', 'K'},
+        {'l', 'L'},
+        {';', ':'},
+        {'\'', '"'},
+        {Key::Kind::Enter, '\n'},
     }};
 
-    static constexpr KeyRow<9> row_3{{
-        {.kind = Key::Kind::Shift, .value = 0},
-        {.kind = Key::Kind::Common, .value = 'Z'},
-        {.kind = Key::Kind::Common, .value = 'X'},
-        {.kind = Key::Kind::Common, .value = 'C'},
-        {.kind = Key::Kind::Common, .value = 'V'},
-        {.kind = Key::Kind::Common, .value = 'B'},
-        {.kind = Key::Kind::Common, .value = 'N'},
-        {.kind = Key::Kind::Common, .value = 'M'},
-        {.kind = Key::Kind::Backspace, .value = 0},
+    static constexpr KeyRow<10> row_3{{
+        {Key::Kind::Shift, 0},
+        {'z', 'Z'},
+        {'x', 'X'},
+        {'c', 'C'},
+        {'v', 'V'},
+        {'b', 'B'},
+        {'n', 'N'},
+        {'m', 'M'},
+        {',', '<'},
+        {'.', '>'},
     }};
 
-    static constexpr KeyRow<4> row_4{{
-        {.kind = Key::Kind::Common, .value = ','},
-        {.kind = Key::Kind::Space, .value = 0},
-        {.kind = Key::Kind::Common, .value = '.'},
-        {.kind = Key::Kind::Enter, .value = 0},
+    static constexpr KeyRow<1> row_4{{
+        {Key::Kind::Space, ' '},
     }};
 
-    static constexpr kf::memory::Array<KeyView, 5> rows{{
+    static constexpr kf::memory::Array<kf::memory::Slice<const Key>, 5> rows{{
         {row_0.data(), row_0.size()},
         {row_1.data(), row_1.size()},
         {row_2.data(), row_2.size()},
@@ -112,17 +125,23 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {row_4.data(), row_4.size()},
     }};
 
-    kf::u8 rowsTotal() const noexcept { return rows.size(); }
+    [[nodiscard]] kf::u8 rowsTotal() const noexcept { return rows.size(); }
 
-    kf::u8 row() const noexcept { return _selected_key_row; }
+    [[nodiscard]] kf::u8 colsTotal() const noexcept { return rows[_cursor_row].size(); }
 
-    kf::u8 colsTotal() const noexcept { return rows[_selected_key_row].size(); }
+    [[nodiscard]] kf::u8 cursorRow() const noexcept { return _cursor_row; }
 
-    kf::u8 col() const noexcept { return _selected_key_col; }
+    [[nodiscard]] kf::u8 cursorCol() const noexcept { return _cursor_row_index; }
+
+    [[nodiscard]] bool shifted() const noexcept { return _state != State::Normal; }
 
     [[nodiscard]] bool active() const noexcept { return _active; }
 
     [[nodiscard]] kf::memory::StringView text() const noexcept { return {_text_source.data(), _text_source.size()}; }
+
+    [[nodiscard]] static const Key &keyAt(kf::i8 row, kf::i8 col) noexcept {
+        return rows[row][col];
+    }
 
     [[nodiscard]] kf::usize available() const noexcept {
         if (_text_cursor < _text_source.size()) {
@@ -146,17 +165,22 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
     void click() noexcept {
         if (available() == 0) { return; }
 
-        const auto &selected_key = rows[_selected_key_row][_selected_key_col];
+        const auto &key = rows[_cursor_row][_cursor_row_index];
 
-        switch (selected_key.kind) {
+        switch (key.kind) {
+            case Key::Kind::Space:
+            case Key::Kind::Enter:
             case Key::Kind::Common: {
-                _text_source[_text_cursor] = selected_key.value;
+                _text_source[_text_cursor] = key.value(shifted());
                 _text_cursor += 1;
                 _text_source[_text_cursor] = '\0';
+
+                if (State::ShiftOnce == _state) { _state = State::Normal; }
             }
                 return;
 
             case Key::Kind::Shift: {
+                _state = evolvedState(_state);
             }
                 return;
 
@@ -164,14 +188,6 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
                 _text_cursor = kf::max(0, _text_cursor - 1);
                 _text_source[_text_cursor] = '\0';
             }
-                return;
-
-            case Key::Kind::Space: {
-            }
-                return;
-
-            case Key::Kind::Enter: {
-            }  
                 return;
         }
     }
@@ -199,15 +215,29 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
 private:
     kf::memory::Slice<char> _text_source{};
     kf::isize _text_cursor{};
-    kf::i8 _selected_key_row{0}, _selected_key_col{0};
+    kf::i8 _cursor_row{0}, _cursor_row_index{0};
     bool _active{false};
+    State _state{State::Normal};
 
     void moveCursorRow(kf::i8 delta) noexcept {
-        _selected_key_row = (_selected_key_row + delta + rowsTotal()) % rowsTotal();
+        _cursor_row = (_cursor_row + delta + rowsTotal()) % rowsTotal();
+        _cursor_row_index = kf::clamp<kf::i8>(_cursor_row_index, 0, colsTotal() - 1);
     }
 
     void moveCursorCol(kf::i8 delta) noexcept {
-        _selected_key_col = (_selected_key_col + delta + colsTotal()) % colsTotal();
+        _cursor_row_index = (_cursor_row_index + delta + colsTotal()) % colsTotal();
+    }
+
+    static State evolvedState(State state) noexcept {
+        switch (state) {
+            case State::Normal:
+                return State::ShiftOnce;
+            case State::ShiftOnce:
+                return State::ShiftAll;
+            case State::ShiftAll:
+            default:
+                return State::Normal;
+        }
     }
 };
 
