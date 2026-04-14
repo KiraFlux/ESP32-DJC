@@ -29,8 +29,10 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
 
     static constexpr auto keys_total{38};
 
-    static constexpr kf::memory::Array<Key, keys_total> keys{{
-        // row 0: 10 keys
+    template<kf::usize N> using KeyRow = kf::memory::Array<Key, N>;
+    using KeyView = kf::memory::Slice<const Key>;
+
+    static constexpr KeyRow<10> row_0{{
         {'1'},
         {'2'},
         {'3'},
@@ -41,8 +43,9 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {'8'},
         {'9'},
         {'0'},
+    }};
 
-        // row 1: 10 keys
+    static constexpr KeyRow<10> row_1{{
         {'Q'},
         {'W'},
         {'E'},
@@ -53,8 +56,9 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {'I'},
         {'O'},
         {'P'},
+    }};
 
-        // row 2: 9 keys
+    static constexpr KeyRow<9> row_2{{
         {'A'},
         {'S'},
         {'D'},
@@ -64,8 +68,9 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {'J'},
         {'K'},
         {'L'},
+    }};
 
-        // row 3: (7 + 2 wide) keys
+    static constexpr KeyRow<9> row_3{{
         {'^'},// mock SHIFT
         {'Z'},
         {'X'},
@@ -74,32 +79,23 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {'B'},
         {'N'},
         {'M'},
-        {'<'},// mock BACKSPACE
+        {'<'},// mock BACKSPACE   
     }};
 
-    static constexpr kf::memory::Array<kf::u8, 4> keys_in_row{{10, 10, 9, 9}};
+    static constexpr kf::memory::Array<KeyView, 4> rows{{
+        {row_0.data(), row_0.size()},
+        {row_1.data(), row_1.size()},
+        {row_2.data(), row_2.size()},
+        {row_3.data(), row_3.size()},
+    }};
 
-    kf::u8 rowsTotal() const noexcept { return keys_in_row.size(); }
+    kf::u8 rowsTotal() const noexcept { return rows.size(); }
 
     kf::u8 row() const noexcept { return _selected_key_row; }
 
-    kf::u8 colsTotal() const noexcept { return keys_in_row[_selected_key_row]; }
+    kf::u8 colsTotal() const noexcept { return rows[_selected_key_row].size(); }
 
     kf::u8 col() const noexcept { return _selected_key_col; }
-
-    static kf::u8 selectedIndex(kf::i8 rr, kf::i8 cc) noexcept {
-        auto ret = 0;
-
-        for (auto r = 0; r < rr; r += 1) {
-            ret += keys_in_row[r];
-        }
-
-        return ret + cc;
-    }
-
-    kf::u8 selectedIndex() const noexcept {
-        return selectedIndex(row(), col());
-    }
 
     [[nodiscard]] bool active() const noexcept { return _active; }
 
@@ -127,7 +123,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
     void click() noexcept {
         if (available() == 0) { return; }
 
-        _text_source[_text_cursor] = keys[selectedIndex()].value;
+        _text_source[_text_cursor] = rows[_selected_key_row][_selected_key_col].value;
         _text_cursor += 1;
         _text_source[_text_cursor] = '\0';
     }
@@ -169,4 +165,4 @@ private:
     }
 };
 
-}// namespace djc
+}// namespace djc::input

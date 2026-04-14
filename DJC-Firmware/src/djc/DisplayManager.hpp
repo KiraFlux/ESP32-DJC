@@ -32,23 +32,6 @@ private:
     const Control &_control;
     kf::gfx::Canvas<DisplayDriver::PixelImpl> _canvas{};
 
-    KF_IMPL_INITABLE(DisplayManager, void);
-    void initImpl() noexcept {
-        _canvas = kf::gfx::Canvas<DisplayDriver::PixelImpl>{
-            kf::image::DynamicImage<DisplayDriver::PixelImpl>{_display.image()},
-            kf::gfx::fonts::gyver_5x7_en,
-        };
-        _canvas.autoNextLine(true);
-
-        auto &config = ui::UI::instance().renderConfig();
-        config.callback([this](kf::memory::StringView str) {
-            onRender(str);
-            (void) _display.send();
-        });
-        config.row_max_length = _canvas.widthInGlyphs();
-        config.rows_total = _canvas.heightInGlyphs() - 1;
-    }
-
     void onRender(kf::memory::StringView str) noexcept {
         _canvas.background(P::black);
         _canvas.foreground(P::white);
@@ -77,7 +60,7 @@ private:
     void renderVirtualKeyboard() noexcept {
         const auto key_height = _canvas.glyphHeight();
         const auto start_y = _canvas.maxY() - key_height * virtual_keyboard.rowsTotal();
-        const auto longest_row = input::VirtualKeyboard::keys_in_row[0];
+        const auto longest_row = input::VirtualKeyboard::rows[0].size();
 
         const auto key_width = _canvas.width() / longest_row;
         const auto glyph_offset = (key_width - _canvas.glyphWidth()) / 2;
@@ -93,7 +76,7 @@ private:
 
         for (auto row = 0; row < virtual_keyboard.rowsTotal(); row += 1) {
             const auto y = start_y + row * key_height;
-            const auto cols = input::VirtualKeyboard::keys_in_row[row];
+            const auto cols = input::VirtualKeyboard::rows[row].size();
 
             const auto x_offset = ((longest_row - cols) * key_width) / 2;
 
@@ -111,10 +94,29 @@ private:
                     _canvas.foreground(P::black);
                 }
 
-                c[0] = input::VirtualKeyboard::keys[input::VirtualKeyboard::selectedIndex(row, col)].value;
+                c[0] = input::VirtualKeyboard::rows[row][col].value;
                 _canvas.text(x + glyph_offset, y, c);
             }
         }
+    }
+
+    // impl
+
+    KF_IMPL_INITABLE(DisplayManager, void);
+    void initImpl() noexcept {
+        _canvas = kf::gfx::Canvas<DisplayDriver::PixelImpl>{
+            kf::image::DynamicImage<DisplayDriver::PixelImpl>{_display.image()},
+            kf::gfx::fonts::gyver_5x7_en,
+        };
+        _canvas.autoNextLine(true);
+
+        auto &config = ui::UI::instance().renderConfig();
+        config.callback([this](kf::memory::StringView str) {
+            onRender(str);
+            (void) _display.send();
+        });
+        config.row_max_length = _canvas.widthInGlyphs();
+        config.rows_total = _canvas.heightInGlyphs() - 1;
     }
 };
 
