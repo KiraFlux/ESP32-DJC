@@ -69,19 +69,65 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
         static constexpr Unit fromReal(kf::f32 value) noexcept { return static_cast<Unit>(value * scale); }
     };
 
-    explicit Control(const Config &config) noexcept :
-        kf::mixin::Configurable<Config>{config} {}
+    explicit Control(const Config &config) noexcept : kf::mixin::Configurable<Config>{config} {}
+
+    // properties
+
+    void onReceiveFromUnknown(ReceiveFromUnknownCallback &&callback) noexcept { EspNow::instance().onReceiveFromUnknown(std::move(callback)); }
+
+    void onRawMessage(RawMessageCallback &&callback) noexcept { _raw_message_callback = std::move(callback); }
+
+    void onMavlinkMessage(MavLinkMessageCallback &&callback) noexcept { _mavlink_message_callback = std::move(callback); }
+
+    [[nodiscard]] Mode mode() const noexcept { return _mode; }
+
+    [[nodiscard]] static constexpr kf::memory::StringView stringFromMode(Mode mode) noexcept { return (mode == Mode::Raw) ? "Raw" : "MavLink"; }
+
+    void mode(Mode new_mode) noexcept { _mode = new_mode; }
+
+    [[nodiscard]] const Input &input() const noexcept { return _input; }
+
+    void input(const Input &new_input) noexcept { _input = new_input; }
 
     [[nodiscard]] bool enabled() const noexcept { return _enabled; }
 
     void enabled(bool is_enabled) noexcept { _enabled = is_enabled; }
 
-    void input(const Input &new_input) noexcept { _input = new_input; }
+    [[nodiscard]] bool connected() const noexcept { return _active_peer.hasValue(); }
 
-    [[nodiscard]] const Input &input() const noexcept { return _input; }
+    kf::Option<EspNow::Mac> activeMac() noexcept {
+        if (connected()) {
+            return {_active_peer.value().mac()};
+        } else {
+            return {};
+        }
+    }
+
+    void connect(const EspNow::Mac &mac) noexcept {
+        if (connected()) {
+            if (_active_peer.value().mac() == mac) {
+                logger.debug("Already connected to active peer");
+                return;
+            }
+
+            disconnect();
+        }
+
+        _active_peer = addPeer(mac);
+        if (not connected()) { return; }
+
+        const auto receive_setup_result = _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer) { onReceive(buffer); });
+        if (receive_setup_result.isError()) {
+            logger.error("Receive callback attachment failed");
+            return;
+        }
+
+        _got_packet = true;
+        logger.info("Connected: OK");
+    }
 
     void disconnect() noexcept {
-        if (not _active_peer.hasValue()) {
+        if (not connected()) {
             logger.error("Disconnect failed: No active peer");
             return;
         }
@@ -98,49 +144,16 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
         logger.info("Disconnected: OK");
     }
 
-    void connect(const EspNow::Mac &mac) noexcept {
-        if (_active_peer.hasValue()) {
-            if (_active_peer.value().mac() == mac) {
-                logger.debug("Already connected to active peer");
-                return;
-            }
-
-            disconnect();
-        }
-
-        _active_peer = addPeer(mac);
-        if (not _active_peer.hasValue()) { return; }
-
-        const auto receive_setup_result = _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer) { onReceive(buffer); });
-        if (receive_setup_result.isError()) {
-            logger.error("Receive callback attachment failed");
-            return;
-        }
-
-        _got_packet = true;
-        logger.info("Connected: OK");
-    }
-
-    kf::Option<EspNow::Mac> activeMac() noexcept {
-        if (_active_peer.hasValue()) {
-            return {_active_peer.value().mac()};
-        } else {
-            return {};
+    void sendMavLinkMessage(mavlink_message_t *message) noexcept {
+        if (connected()) {
+            sendMavLinkMessage(_active_peer.value(), message);
         }
     }
 
-    void onReceiveFromUnknown(ReceiveFromUnknownCallback &&callback) noexcept { EspNow::instance().onReceiveFromUnknown(std::move(callback)); }
-
-    void onRawMessage(RawMessageCallback &&callback) noexcept { _raw_message_callback = std::move(callback); }
-
-    void onMavlinkMessage(MavLinkMessageCallback &&callback) noexcept { _mavlink_message_callback = std::move(callback); }
-
-    void mode(Mode new_mode) noexcept { _mode = new_mode; }
-
-    Mode mode() const noexcept { return _mode; }
-
-    static constexpr kf::memory::StringView stringFromMode(Mode mode) noexcept {
-        return (mode == Mode::Raw) ? "Raw" : "MavLink";
+    void sendRawMessage(kf::memory::Slice<const kf::u8> buffer) noexcept {
+        if (connected()) {
+            (void) _active_peer.value().writeBuffer(buffer);
+        }
     }
 
 private:
@@ -157,9 +170,8 @@ private:
     kf::math::Timer _receice_disconnect_timer{this->config().receive_timeout};
 
     Input _input{};
-    bool _enabled{false};
-
     Mode _mode{this->config().init_mode};
+    bool _enabled{false};
     volatile bool _got_packet{false};
 
     static kf::Option<EspNow::Peer> addPeer(const EspNow::Mac &mac) noexcept {
@@ -295,7 +307,7 @@ private:
 
     KF_IMPL_TIMED_POLLABLE(Control);
     void pollImpl(kf::math::Milliseconds now) noexcept {
-        if (not _active_peer.hasValue()) { return; }
+        if (not connected()) { return; }
 
         if (_got_packet) {
             _got_packet = false;
