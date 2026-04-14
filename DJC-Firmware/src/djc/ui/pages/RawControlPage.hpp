@@ -9,6 +9,7 @@
 
 #include "djc/Control.hpp"
 #include "djc/ui/UI.hpp"
+#include "djc/ui/widgets/TextInput.hpp"
 
 namespace djc::ui::pages {
 
@@ -17,8 +18,19 @@ struct RawControlPage : UI::Page {
         Page{"Raw Control"}, _control{control},
         _layout{{
             &root.link(),
+            &_message_input,
+            &_send_button,
         }} {
         widgets({_layout.data(), _layout.size()});
+
+        _send_button.callback([this]() {            
+            kf::memory::StringView s{_message.data(), _message.size()};
+            s = s.sub(0, s.find('\0').valueOr(s.size()));
+
+            logger.debug(s);
+
+            _control.sendRawMessage({reinterpret_cast<const kf::u8 *>(s.data()), s.size()});
+        });
     }
 
     void onEntry() noexcept override {
@@ -39,8 +51,15 @@ struct RawControlPage : UI::Page {
 private:
     static constexpr auto logger{kf::Logger::create("RawControlPage")};
 
+    kf::memory::Array<char, 200> _message{};
     Control &_control;
-    kf::memory::Array<UI::Widget *, 1> _layout;
+
+    // widgets
+
+    widgets::TextInput _message_input{{_message.data(), _message.size()}};
+    UI::Button _send_button{"Send"};
+
+    kf::memory::Array<UI::Widget *, 3> _layout;
 };
 
 }// namespace djc::ui::pages
