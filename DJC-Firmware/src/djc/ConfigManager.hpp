@@ -17,6 +17,10 @@ struct ConfigManager final : kf::mixin::Singleton<ConfigManager> {
 
     [[nodiscard]] Config &config() noexcept { return _storage.config; }
 
+    [[nodiscard]] bool modified() const noexcept { return _modified; }
+
+    void modified(bool is_modified) noexcept { _modified = is_modified; }
+
     void save() noexcept {
         logger.info("Saving config to NVS");
 
@@ -45,6 +49,7 @@ struct ConfigManager final : kf::mixin::Singleton<ConfigManager> {
         logger.info("Resetting RAM config cache to defaults");
 
         _storage.config = djc::Config::defaults();
+        modified(true);
     }
 
 private:
@@ -54,6 +59,8 @@ private:
         .key = "DC",
         .config = djc::Config::defaults(),
     };
+
+    bool _modified{false};
 };
 
 }// namespace djc

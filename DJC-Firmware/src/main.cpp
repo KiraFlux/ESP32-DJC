@@ -71,7 +71,6 @@ static djc::ui::pages::ConfigPage config_page{
 };
 
 void setup() {
-    bool config_modified{false};
     static constexpr auto logger{kf::Logger::create("setup")};
 
     Serial.begin(115200);
@@ -82,13 +81,13 @@ void setup() {
     if (not periphery.init()) {
         logger.error("Periphery init failed. Resseting periphery config to defaults");
         storage.config().periphery = djc::Periphery::Config::defaults();
-        config_modified = true;
+        storage.modified(true);
     }
 
     if (not storage.config().periphery.joystick_axes_tuned) {
         logger.debug("Tunning axes..");
         periphery.tune(storage.config().periphery);
-        config_modified = true;
+        storage.modified(true);
     } else {
         logger.debug("Axes already tuned");
     }
@@ -146,7 +145,7 @@ void setup() {
         ui.addEvent(E::update());
     }
 
-    if (config_modified) { storage.save(); }
+    if (storage.modified()) { storage.save(); }
 }
 
 void loop() {
