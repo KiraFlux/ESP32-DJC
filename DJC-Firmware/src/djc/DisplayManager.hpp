@@ -95,7 +95,7 @@ private:
                 }
 
                 const auto &key = input::VirtualKeyboard::keyAt(row, col);
-                if (key.kind == input::Key::Kind::Common) {
+                if (key.kind == input::VirtualKeyboard::Key::Kind::Common) {
                     c[0] = key.value(virtual_keyboard.shifted());
                 } else {
                     c[0] = '?';

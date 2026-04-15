@@ -13,6 +13,8 @@
 
 namespace djc::input {
 
+namespace internal {
+
 struct Key {
 
     enum class Kind : kf::u8 {
@@ -35,6 +37,8 @@ struct Key {
     }
 };
 
+}
+
 struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
 
     enum class Direction : kf::u8 {
@@ -49,6 +53,8 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         ShiftOnce,
         ShiftAll,
     };
+
+    using Key = internal::Key;
 
     template<kf::usize N> using KeyRow = kf::memory::Array<Key, N>;
 
