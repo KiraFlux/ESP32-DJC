@@ -58,12 +58,11 @@ private:
     }
 
     void renderVirtualKeyboard() noexcept {
-        const auto key_height = _canvas.glyphHeight();
-        const auto start_y = _canvas.maxY() - key_height * virtual_keyboard.rowsTotal();
         const auto longest_row = input::VirtualKeyboard::rows[0].size();
-
         const auto key_width = _canvas.width() / longest_row;
-        const auto glyph_offset = (key_width - _canvas.glyphWidth()) / 2;
+        const auto key_height = _canvas.glyphHeight();
+        const auto keyboard_offset_y = _canvas.maxY() - key_height * virtual_keyboard.rowsTotal();
+        const auto glyph_offset_x = (key_width - _canvas.glyphWidth()) / 2;
 
         char c[2]{0, 0};
 
@@ -72,10 +71,10 @@ private:
 
         _canvas.background(P::bright_black);
         _canvas.foreground(P::bright_black);
-        _canvas.rect(0, start_y, _canvas.maxX(), _canvas.maxY(), true);
+        _canvas.rect(0, keyboard_offset_y, _canvas.maxX(), _canvas.maxY(), true);
 
         for (auto row = 0; row < virtual_keyboard.rowsTotal(); row += 1) {
-            const auto y = start_y + row * key_height;
+            const auto y = keyboard_offset_y + row * key_height;
             const auto cols = input::VirtualKeyboard::rows[row].size();
 
             const auto x_offset = ((longest_row - cols) * key_width) / 2;
@@ -101,7 +100,7 @@ private:
                     c[0] = '?';
                 }
                 
-                _canvas.text(x + glyph_offset, y, c);
+                _canvas.text(x + glyph_offset_x, y, c);
             }
         }
     }
