@@ -1,5 +1,5 @@
 // Copyright (c) 2026 KiraFlux
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <Arduino.h>
 

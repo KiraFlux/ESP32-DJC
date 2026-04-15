@@ -1,5 +1,7 @@
 # ESP32 Dual Joystick Controller (DJC)
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 An open-source remote controller based on ESP32 with dual analog joysticks, designed for DIY robotics projects.
 
 <img src="./Images/2026.04.10.jpg" style="width: auto; height: 600px; max-width: 100%;">
@@ -166,4 +168,6 @@ No production‑ready files yet.
 
 ## License
 
-MIT License. See [LICENSE](./LICENSE) file for details.
+This project is licensed under the **GNU General Public License v3.0 or later** (SPDX: `GPL-3.0-or-later`).
+
+See the [LICENSE](LICENSE) file for the full text.
