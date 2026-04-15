@@ -53,7 +53,7 @@ An open-source remote controller based on ESP32 with dual analog joysticks, desi
 
 ### NOTE:
 
-`NC` means *Not Connected*
+*NC* means *Not Connected*
 
 ST7735 backlight LED **requires** a 440Ω (two 220Ω in series) current-limiting resistor to 5V.
 
