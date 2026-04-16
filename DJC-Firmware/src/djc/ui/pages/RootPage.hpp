@@ -1,5 +1,5 @@
 // Copyright (c) 2026 KiraFlux
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
 
@@ -11,14 +11,22 @@ namespace djc::ui::pages {
 
 /// @brief Main menu page for ESP32-DJC
 struct RootPage : UI::Page {
-    kf::memory::Array<UI::Widget *, 2> widget_layout{{
-        nullptr,// for MavLink link widget
-        nullptr,// for Config link widget
-    }};
+    static constexpr auto max_items{4};
 
-    explicit constexpr RootPage() : Page{"ESP32-DJC"} {
-        widgets({widget_layout.data(), widget_layout.size()});
+    explicit constexpr RootPage() noexcept : Page{"Main"} {}
+
+    void attach(UI::Page &page) noexcept {
+        if (_items >= _layout.size()) { return; }
+
+        _layout[_items] = &page.link();
+
+        _items += 1;
+        widgets({_layout.data(), _items});
     }
+
+private:
+    kf::memory::Array<UI::Widget *, max_items> _layout{};
+    kf::usize _items{0};
 };
 
-}// namespace djc
+}// namespace djc::ui::pages

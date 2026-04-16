@@ -1,0 +1,19 @@
+name: Pull Request
+description: Submit changes
+title: ""
+labels: ""
+body:
+  - type: input
+    id: closes
+    attributes:
+      label: Closes
+      description: "Closes #issue_number"
+    validations:
+      required: true
+  - type: textarea
+    id: changes
+    attributes:
+      label: Changes
+      description: What does this PR do?
+    validations:
+      required: true

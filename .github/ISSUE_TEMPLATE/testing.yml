@@ -1,0 +1,12 @@
+name: Testing
+description: Add or improve tests
+title: "Test: "
+labels: ["testing"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be tested and why?
+    validations:
+      required: true

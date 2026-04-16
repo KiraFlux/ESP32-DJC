@@ -1,0 +1,19 @@
+name: Epic
+description: A large task grouping several related issues
+title: "Epic: "
+labels: ["epic"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be achieved after all sub-tasks are done?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: When is this epic considered complete? (Usually all linked sub-issues are closed)
+    validations:
+      required: true

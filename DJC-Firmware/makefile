@@ -4,16 +4,16 @@ all:
 	pio run
 
 clean:
-	pio run --target clean
+	pio run -t clean
 
 c: clean
 
 upload:
-	pio run --target upload
+	pio run -t upload
 
 u: upload
 
 monitor:
-	pio device monitor
+	pio device monitor --no-reconnect 
 
 m: monitor
