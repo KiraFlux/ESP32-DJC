@@ -99,14 +99,13 @@ A [`makefile`](./makefile) wraps common PlatformIO commands for convenience.
 - Battery-powered operation with 18650 1S1P Li‑ion cell + boost converter (5V) for devkit board
 - Create schematic in KiCad for the DIY shield
 - DIY shield for devkit board (single‑sided PCB, toner transfer method) with integrated power circuitry
-- Active peer indicator on all pages
 - Idle sleep for power saving
-- Confirmation for reset / delete peer
 - Calibration visual feedback
+- Active peer indicator on all pages
+- Confirmation for reset / delete peer
+- Peer nicknames
 - Extended MAVLink telemetry (position, battery, flight mode)
 - CLI over Serial
-- Peer nicknames
-- Auto‑add devices from heartbeat
 - SSD1306 support via compile flag
 
 ### Known Limitations
