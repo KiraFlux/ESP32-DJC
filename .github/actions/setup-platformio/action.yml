@@ -1,0 +1,25 @@
+name: Setup PlatformIO
+description: Checkout code, cache dependencies, set up Python and PlatformIO
+
+runs:
+  using: "composite"
+  steps:
+    - name: Cache PlatformIO and pip
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.platformio/.cache
+          ~/.platformio/packages
+        key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini', 'library.json') }}
+        restore-keys: |
+          ${{ runner.os }}-pio-
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install PlatformIO Core
+      shell: bash
+      run: pip install --upgrade platformio

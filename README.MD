@@ -101,7 +101,6 @@ A [`makefile`](./makefile) wraps common PlatformIO commands for convenience.
 - DIY shield for devkit board (single‑sided PCB, toner transfer method) with integrated power circuitry
 - Idle sleep for power saving
 - Calibration visual feedback
-- Active peer indicator on all pages
 - Confirmation for reset / delete peer
 - Peer nicknames
 - Extended MAVLink telemetry (position, battery, flight mode)

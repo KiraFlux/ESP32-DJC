@@ -1,0 +1,12 @@
+name: Refactor
+description: Code cleanup or restructuring
+title: "Refactor: "
+labels: ["refactor"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be refactored and why?
+    validations:
+      required: true

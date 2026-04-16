@@ -1,0 +1,12 @@
+name: Chore
+description: Maintenance tasks (CI, dependencies, configs, scripts)
+title: "Chore: "
+labels: ["chore"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be done?
+    validations:
+      required: true
