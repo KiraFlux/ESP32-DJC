@@ -49,7 +49,11 @@ private:
         // Control mode overlay
         if (_control.enabled()) {
             const auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
-            _canvas.text(0, y, "\xB2\xF0 Control Enabled");
+
+            const auto overlay = kf::memory::ArrayString<64>::formatted(
+                "\xB6\xF0""Control [%s]",
+                (_control.connected() ? EspNow::stringFromMac(_control.activeMac().value()).data() : "Disconnected"));
+            _canvas.text(0, y, overlay.data());
         }
 
         _canvas.background(P::black);
@@ -99,7 +103,7 @@ private:
                 } else {
                     c[0] = '?';
                 }
-                
+
                 _canvas.text(x + glyph_offset_x, y, c);
             }
         }
