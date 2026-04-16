@@ -63,7 +63,7 @@ struct PeripheryConfig final : kf::mixin::NonCopyable {
 
 private:
     static constexpr AxisInput::Config axisDefaults(bool inverted) noexcept {
-        return AxisInput::Config {
+        return AxisInput::Config{
             .inverted = inverted,
             .dead_zone = 200,
             .range_positive = 2000,
@@ -98,7 +98,7 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
     ButtonListener right_button_listener{
         this->config().button,
         DigitalInput{
-            GPIO_NUM_21,
+            GPIO_NUM_4,
             DigitalInput::Pull::InternalUp,
         },
     };
@@ -106,8 +106,8 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
     Joystick right_joystick{
         this->config().right_joystick,
         this->config().axis_filter,
-        AdcInput{GPIO_NUM_35},
         AdcInput{GPIO_NUM_34},
+        AdcInput{GPIO_NUM_35},
     };
 
     Bus bus{
@@ -118,8 +118,8 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
     DisplayDriver display{
         this->config().display,
         bus.createNode(this->config().bus_node),
-        DigitalOutput{GPIO_NUM_2}, // DC
-        DigitalOutput{GPIO_NUM_15},// RESET
+        DigitalOutput{GPIO_NUM_22},// DC
+        DigitalOutput{GPIO_NUM_16},// RESET
     };
 
     // Analog axis calibration
