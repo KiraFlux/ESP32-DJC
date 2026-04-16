@@ -57,7 +57,7 @@ struct PeerDisplay final : UI::Widget {
         render.beginBlock();
 
         if (_state == State::NewConnection) {
-            render.value(kf::memory::StringView{"\xFA"});
+            render.value(kf::memory::StringView{"\xFC"});
         } else if (_state == State::PreCleared) {
             render.value(kf::memory::StringView{"\xF9"});
         }

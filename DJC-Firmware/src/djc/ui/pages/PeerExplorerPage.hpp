@@ -77,7 +77,7 @@ struct PeerExplorerPage : UI::Page {
 
             if (_control.activeMac().hasValue()) {
                 (void) _connection_button_label.format(
-                    "\xFA""OK: %s\x80",
+                    "\xFC""OK: %s\x80",
                     EspNow::stringFromMac(_control.activeMac().value()).data());
                 _connection_button.label(_connection_button_label.view());
             } else {
