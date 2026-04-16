@@ -95,7 +95,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 
     [[nodiscard]] bool connected() const noexcept { return _active_peer.hasValue(); }
 
-    kf::Option<EspNow::Mac> activeMac() noexcept {
+    kf::Option<EspNow::Mac> activeMac() const noexcept {
         if (connected()) {
             return {_active_peer.value().mac()};
         } else {
