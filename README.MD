@@ -141,7 +141,7 @@ The project roadmap is maintained in **GitHub Issues**.
 |                   | (Module SPI 160x128)  |    2 |   SCK | Devboard-GPIO_18 |
 |                   |                       |    3 |  MOSI | Devboard-GPIO_23 |
 |                   |                       |    4 |    DC | Devboard-GPIO_22 |
-|                   |                       |    5 | Reset | Devboard-GPIO_16 |
+|                   |                       |    5 | Reset | Devboard-GPIO_17 |
 |                   |                       |    6 |    CS | Devboard-GPIO_5  |
 |                   |                       |    7 |   GND | Devboard-GND     |
 |                   |                       |    8 |   VCC | Devboard-3V3     |
@@ -190,8 +190,8 @@ B+ and B- denote battery contacts
 | **GPIO 32** |   ✓    | Left joystick X         |  **GPIO 19** |   ✓    | *SPI MISO (SD card)*              |
 | **GPIO 33** |   ✓    | Left joystick Y         |  **GPIO 18** |   ✓    | SPI SCK (display + SD)            |
 | **GPIO 25** |   ○    | *Free (DAC)*            |   **GPIO 5** |   ✓    | SPI CS (display)                  |
-| **GPIO 26** |   ○    | *Free (DAC)*            |  **GPIO 17** |   ✓    | *SPI CS (SD card)*                |
-| **GPIO 27** |   ○    | *Free*                  |  **GPIO 16** |   ✓    | Display RESET                     |
+| **GPIO 26** |   ○    | *Free (DAC)*            |  **GPIO 17** |   ✓    | Display RESET                     |
+| **GPIO 27** |   ○    | *Free*                  |  **GPIO 16** |   ✓    | *SPI CS (SD card)*                |
 | **GPIO 14** |   ✓    | Left button             |   **GPIO 4** |   ✓    | Right button                      |
 | **GPIO 12** |   ✗    | *Avoid (MTDI)*          |   **GPIO 0** |   ✓    | BOOT button (use with caution)    |
 |     **GND** |   ✓    | Common ground           |   **GPIO 2** |   ○    | *Free (strapping, use with care)* |

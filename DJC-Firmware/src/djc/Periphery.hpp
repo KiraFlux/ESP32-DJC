@@ -119,7 +119,7 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
         this->config().display,
         bus.createNode(this->config().bus_node),
         DigitalOutput{GPIO_NUM_22},// DC
-        DigitalOutput{GPIO_NUM_16},// RESET
+        DigitalOutput{GPIO_NUM_17},// RESET
     };
 
     // Analog axis calibration
