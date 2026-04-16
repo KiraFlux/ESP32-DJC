@@ -321,6 +321,8 @@ private:
 
         if (not _enabled) { return; }
 
+        if (not _active_peer.hasValue()) { return; }
+
         if (_poll_timer.expired(now)) {
             _poll_timer.start(now);
 
