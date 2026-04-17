@@ -5,7 +5,7 @@
 **/.vscode
 !./DJC-Firmware/.vscode/extensions.json
 
-./snapshot.txt
+snapshot.txt
 
 
 # KiCad 10
