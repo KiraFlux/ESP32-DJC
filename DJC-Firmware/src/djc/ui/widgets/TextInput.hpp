@@ -23,14 +23,9 @@ struct TextInput final : UI::Widget {
     bool available() const noexcept { return nullptr != _text_source.data(); }
 
     void doRender(UI::RenderImpl &render) const noexcept override {
-        if (not available()) {
-            render.value(kf::memory::StringView{"not available"});
-            return;
-        }
-
-        const kf::memory::StringView s{_text_source.data(), _text_source.size()};
-        const auto end_index = s.find('\0');
-        render.value(end_index.hasValue() ? s.sub(0, end_index.value()) : s);
+        render.value(kf::memory::StringView{"\xFC'"});
+        render.value(string());
+        render.value(kf::memory::StringView{"'\x80"});
     }
 
     bool onClick() noexcept override {
@@ -58,6 +53,15 @@ private:
     inline static auto &virtual_keyboard{input::VirtualKeyboard::instance()};
 
     kf::memory::Slice<char> _text_source;
+
+    [[nodiscard]] kf::memory::StringView string() const noexcept {
+        if (available()) {
+            const kf::memory::StringView s{_text_source.data(), _text_source.size()};
+            return s.sub(0, s.find('\0').valueOr(s.size()));
+        } else {
+            return kf::memory::StringView{"not available"};
+        }
+    }
 };
 
 }// namespace djc::ui::widgets
