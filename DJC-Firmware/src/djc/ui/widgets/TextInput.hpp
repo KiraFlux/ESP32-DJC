@@ -41,12 +41,18 @@ struct TextInput final : UI::Widget {
     }
 
     bool onEventValue(UI::Event::Value event_value) noexcept {
-        if (virtual_keyboard.active()) {
-            virtual_keyboard.move(static_cast<input::VirtualKeyboard::Direction>(event_value));
-            return true;
+        if (not virtual_keyboard.active()) {
+            return false;
         }
 
-        return false;
+        switch (event_value) {
+            case 0: virtual_keyboard.moveCursorRow(-1); break;
+            case 1: virtual_keyboard.moveCursorRow(+1); break;
+            case 2: virtual_keyboard.moveCursorCol(-1); break;
+            case 3: virtual_keyboard.moveCursorCol(+1); break;
+        }
+
+        return true;
     }
 
 private:

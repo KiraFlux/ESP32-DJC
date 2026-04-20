@@ -37,16 +37,9 @@ struct Key {
     }
 };
 
-}
+}// namespace internal
 
 struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
-
-    enum class Direction : kf::u8 {
-        Up = 0,
-        Down = 1,
-        Left = 2,
-        Right = 3,
-    };
 
     enum class State : kf::u8 {
         Normal,
@@ -72,7 +65,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {'0', ')'},
         {'-', '_'},
         {'=', '+'},
-        {Key::Kind::Backspace, 0},        
+        {Key::Kind::Backspace, 0},
     }};
 
     static constexpr KeyRow<13> row_1{{
@@ -198,33 +191,6 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         }
     }
 
-    void move(Direction direction) noexcept {
-        switch (direction) {
-            case Direction::Down:
-                moveCursorRow(+1);
-                return;
-
-            case Direction::Up:
-                moveCursorRow(-1);
-                return;
-
-            case Direction::Left:
-                moveCursorCol(-1);
-                return;
-
-            case Direction::Right:
-                moveCursorCol(+1);
-                return;
-        }
-    }
-
-private:
-    kf::memory::Slice<char> _text_source{};
-    kf::isize _text_cursor{};
-    kf::i8 _cursor_row{0}, _cursor_row_index{0};
-    bool _active{false};
-    State _state{State::Normal};
-
     void moveCursorRow(kf::i8 delta) noexcept {
         _cursor_row = (_cursor_row + delta + rowsTotal()) % rowsTotal();
         _cursor_row_index = kf::clamp<kf::i8>(_cursor_row_index, 0, colsTotal() - 1);
@@ -233,6 +199,13 @@ private:
     void moveCursorCol(kf::i8 delta) noexcept {
         _cursor_row_index = (_cursor_row_index + delta + colsTotal()) % colsTotal();
     }
+
+private:
+    kf::memory::Slice<char> _text_source{};
+    kf::isize _text_cursor{};
+    kf::i8 _cursor_row{0}, _cursor_row_index{0};
+    bool _active{false};
+    State _state{State::Normal};
 
     static State evolvedState(State state) noexcept {
         switch (state) {
