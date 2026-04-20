@@ -53,8 +53,6 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
     using Config = internal::ControlConfig;
     using Mode = internal::ControlMode;
 
-    using LogString = kf::memory::ArrayString<64>;
-
     using RawMessageCallback = kf::Function<void(kf::memory::Slice<const kf::u8>)>;
     using MavLinkMessageCallback = kf::Function<void(mavlink_message_t *)>;
     using ReceiveFromUnknownCallback = EspNow::ReceiveFromUnknownHandler;
@@ -68,6 +66,8 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 
         static constexpr Unit fromNormalized(kf::f32 value) noexcept { return static_cast<Unit>(value * scale); }
     };
+
+    static constexpr kf::u8 mavlink_system_id{127}, mavlink_target_id{1};
 
     explicit Control(const Config &config) noexcept : kf::mixin::Configurable<Config>{config} {}
 
@@ -102,6 +102,8 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
             return {};
         }
     }
+
+    // methods
 
     void connect(const EspNow::Mac &mac) noexcept {
         if (connected()) {
@@ -144,7 +146,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
         logger.info("Disconnected: OK");
     }
 
-    void sendMavLinkMessage(mavlink_message_t *message) noexcept {
+    void sendMavLinkMessage(const mavlink_message_t *message) noexcept {
         if (connected()) {
             sendMavLinkMessage(_active_peer.value(), message);
         }
@@ -157,6 +159,8 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
     }
 
 private:
+    using LogString = kf::memory::ArrayString<64>;
+
     static constexpr auto logger{kf::Logger::create("Control")};
 
     RawMessageCallback _raw_message_callback{};
@@ -167,7 +171,7 @@ private:
 
     kf::math::Timer _poll_timer{this->config().poll_period};
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
-    kf::math::Timer _receice_disconnect_timer{this->config().receive_timeout};
+    kf::math::Timer _receive_disconnect_timer{this->config().receive_timeout};
 
     Input _input{};
     Mode _mode{this->config().init_mode};
@@ -249,7 +253,7 @@ private:
     void sendMavLinkControl(EspNow::Peer &peer) noexcept {
         mavlink_message_t message;
         (void) mavlink_msg_manual_control_pack(
-            127, MAV_COMP_ID_PARACHUTE, &message, 1,
+            mavlink_system_id, MAV_COMP_ID_PARACHUTE, &message, mavlink_target_id,
             _input.right_y,// x: pitch (right Y)
             _input.right_x,// y: roll (right X)
             _input.left_y, // z: thrust (left Y)
@@ -263,7 +267,7 @@ private:
     void sendMavLinkHeartbeat(EspNow::Peer &peer) noexcept {
         mavlink_message_t message;
         (void) mavlink_msg_heartbeat_pack(
-            127,            // System ID
+            mavlink_system_id,            // System ID
             MAV_COMP_ID_OSD,// Component ID
             &message,
             MAV_TYPE_QUADROTOR,
@@ -274,7 +278,7 @@ private:
         sendMavLinkMessage(peer, &message);
     }
 
-    void sendMavLinkMessage(EspNow::Peer &peer, mavlink_message_t *message) noexcept {
+    void sendMavLinkMessage(EspNow::Peer &peer, const mavlink_message_t *message) noexcept {
         kf::u8 buffer[MAVLINK_MAX_PACKET_LEN];
         const auto len = mavlink_msg_to_send_buffer(buffer, message);
         (void) peer.writeBuffer(kf::memory::Slice<const kf::u8>{buffer, len});
@@ -295,35 +299,31 @@ private:
         _broadcast_peer = addPeer(EspNow::Mac{0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
 
         _mode = this->config().init_mode;
+        logger.debug(stringFromMode(_mode));
 
         const auto now = millis();
         _poll_timer.start(now);
         _heartbear_timer.start(now);
 
-        logger.debug(stringFromMode(_mode));
         logger.debug("init: ok");
         return true;
     }
 
     KF_IMPL_TIMED_POLLABLE(Control);
     void pollImpl(kf::math::Milliseconds now) noexcept {
-        if (not connected()) { return; }
-
         if (_got_packet) {
             _got_packet = false;
-            _receice_disconnect_timer.start(now);
+            _receive_disconnect_timer.start(now);
         }
 
-        if (_receice_disconnect_timer.expired(now)) {
+        if (_receive_disconnect_timer.expired(now)) {
             logger.info("Timeout");
             disconnect();
         }
 
-        if (not _enabled) { return; }
+        if (not connected()) { return; }
 
-        if (not _active_peer.hasValue()) { return; }
-
-        if (_poll_timer.expired(now)) {
+        if (_enabled and _poll_timer.expired(now)) {
             _poll_timer.start(now);
 
             switch (_mode) {
