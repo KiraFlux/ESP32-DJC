@@ -69,6 +69,8 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 
     static constexpr kf::u8 mavlink_system_id{127}, mavlink_target_id{1};
 
+    [[nodiscard]] static constexpr kf::memory::StringView stringFromMode(Mode mode) noexcept { return (mode == Mode::Raw) ? "Raw" : "MavLink"; }
+
     explicit Control(const Config &config) noexcept : kf::mixin::Configurable<Config>{config} {}
 
     // properties
@@ -80,8 +82,6 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
     void onMavlinkMessage(MavLinkMessageCallback &&callback) noexcept { _mavlink_message_callback = std::move(callback); }
 
     [[nodiscard]] Mode mode() const noexcept { return _mode; }
-
-    [[nodiscard]] static constexpr kf::memory::StringView stringFromMode(Mode mode) noexcept { return (mode == Mode::Raw) ? "Raw" : "MavLink"; }
 
     void mode(Mode new_mode) noexcept { _mode = new_mode; }
 
@@ -267,8 +267,8 @@ private:
     void sendMavLinkHeartbeat(EspNow::Peer &peer) noexcept {
         mavlink_message_t message;
         (void) mavlink_msg_heartbeat_pack(
-            mavlink_system_id,            // System ID
-            MAV_COMP_ID_OSD,// Component ID
+            mavlink_system_id,// System ID
+            MAV_COMP_ID_OSD,  // Component ID
             &message,
             MAV_TYPE_QUADROTOR,
             MAV_AUTOPILOT_GENERIC,
