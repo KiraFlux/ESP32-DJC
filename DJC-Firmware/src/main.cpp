@@ -88,12 +88,10 @@ void setup() {
         logger.debug("Tunning axes..");
         periphery.tune(storage.config().periphery);
         storage.modified(true);
-    } else {
-        logger.debug("Axes already tuned");
     }
 
-    (void) control.init();// TODO: implement halt on error?
     display_manager.init();
+    (void) control.init();// TODO: implement halt on error?
 
     {
         using E = djc::ui::UI::Event;
