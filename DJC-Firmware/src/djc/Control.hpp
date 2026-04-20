@@ -66,7 +66,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 
         Unit left_x, left_y, right_x, right_y;
 
-        static constexpr Unit fromReal(kf::f32 value) noexcept { return static_cast<Unit>(value * scale); }
+        static constexpr Unit fromNormalized(kf::f32 value) noexcept { return static_cast<Unit>(value * scale); }
     };
 
     explicit Control(const Config &config) noexcept : kf::mixin::Configurable<Config>{config} {}

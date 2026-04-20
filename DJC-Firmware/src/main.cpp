@@ -158,12 +158,16 @@ void loop() {
     if (control.enabled()) {
         using I = djc::Control::Input;
 
-        control.input({
-            .left_x = I::fromReal(periphery.left_joystick.axis_x.read()),
-            .left_y = I::fromReal(periphery.left_joystick.axis_y.read()),
-            .right_x = I::fromReal(periphery.right_joystick.axis_x.read()),
-            .right_y = I::fromReal(periphery.right_joystick.axis_y.read()),
-        });
+        const I control_input{
+            .left_x = I::fromNormalized(periphery.left_joystick.axis_x.read()),
+            .left_y = I::fromNormalized(periphery.left_joystick.axis_y.read()),
+            .right_x = I::fromNormalized(periphery.right_joystick.axis_x.read()),
+            .right_y = I::fromNormalized(periphery.right_joystick.axis_y.read()),
+        };
+
+        // todo debug log
+
+        control.input(control_input);
     }
     control.poll(now);
     ui.poll(now);
