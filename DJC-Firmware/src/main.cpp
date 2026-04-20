@@ -122,7 +122,7 @@ void setup() {
                 E::widgetValue(+1),   // Right
             };
 
-            static constexpr E VirtualKeyboard_event_from_direction[4] = {
+            static constexpr E virtual_keyboard_event_from_direction[4] = {
                 E::widgetValue(0),// Up
                 E::widgetValue(1),// Down
                 E::widgetValue(2),// Left
@@ -131,7 +131,7 @@ void setup() {
 
             if (control.enabled()) { return; }
 
-            const auto table = virtual_keyboard.active() ? VirtualKeyboard_event_from_direction : navigation_event_from_direction;
+            const auto table = virtual_keyboard.active() ? virtual_keyboard_event_from_direction : navigation_event_from_direction;
             ui.addEvent(table[static_cast<kf::u8>(direction)]);
         });
 
