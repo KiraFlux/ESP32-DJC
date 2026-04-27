@@ -19,7 +19,7 @@ namespace djc::ui::pages {
 /// @brief MAVLink telemetry page
 struct MavLinkTelemetryPage : UI::Page {
     explicit MavLinkTelemetryPage(UI::Page &root, Control &control) noexcept :
-        Page{"MAV Link"}, _control{control},
+        Page{"MAV Link: Telemetry"}, _control{control},
         _layout{{
             &root.link(),
             &_imu_display,
