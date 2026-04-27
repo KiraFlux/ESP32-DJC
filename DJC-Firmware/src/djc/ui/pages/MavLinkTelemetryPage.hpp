@@ -30,7 +30,7 @@ struct MavLinkTelemetryPage : UI::Page {
 
     void onEntry() noexcept override {
         _control.mode(Control::Mode::MavLink);
-        _control.onMavlinkMessage([this](mavlink_message_t *message) {
+        _control.onMavlinkMessage([this](const mavlink_message_t *message) {
             _need_update |= onMavLinkMessage(message);
         });
     }
@@ -62,7 +62,7 @@ private:
 
     kf::memory::Array<UI::Widget *, 3> _layout;
 
-    [[nodiscard]] bool onMavLinkMessage(mavlink_message_t *message) noexcept {
+    [[nodiscard]] bool onMavLinkMessage(const mavlink_message_t *message) noexcept {
         switch (message->msgid) {
             case MAVLINK_MSG_ID_ATTITUDE_QUATERNION: {
                 mavlink_attitude_quaternion_t attitude_quaternion;

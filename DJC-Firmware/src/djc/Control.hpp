@@ -54,7 +54,7 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
     using Mode = internal::ControlMode;
 
     using RawMessageCallback = kf::Function<void(kf::memory::Slice<const kf::u8>)>;
-    using MavLinkMessageCallback = kf::Function<void(mavlink_message_t *)>;
+    using MavLinkMessageCallback = kf::Function<void(const mavlink_message_t *)>;
     using ReceiveFromUnknownCallback = EspNow::ReceiveFromUnknownHandler;
 
     struct Input {
