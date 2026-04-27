@@ -14,18 +14,18 @@
 #include "djc/input/InputHandler.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
-#include "djc/ui/pages/MavLinkPage.hpp"
+#include "djc/ui/pages/MavLinkTelemetryPage.hpp"
 #include "djc/ui/pages/PeerExplorerPage.hpp"
 #include "djc/ui/pages/RawControlPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
+
+// services
 
 static auto &ui{djc::ui::UI::instance()};
 
 static auto &storage{djc::ConfigManager::instance()};
 
 static auto &virtual_keyboard{djc::input::VirtualKeyboard::instance()};
-
-// services
 
 static djc::Periphery periphery{
     storage.config().periphery,
@@ -51,7 +51,7 @@ static djc::DisplayManager display_manager{
 
 static djc::ui::pages::RootPage root_page{};
 
-static djc::ui::pages::MavLinkPage mavlink_page{
+static djc::ui::pages::MavLinkTelemetryPage mavlink_telemetry_page{
     root_page,
     control,
 };
@@ -134,7 +134,7 @@ void setup() {
         });
 
         // apply page links
-        root_page.attach(mavlink_page);
+        root_page.attach(mavlink_telemetry_page);
         root_page.attach(raw_control_page);
         root_page.attach(peer_explorer_page);
         root_page.attach(config_page);
