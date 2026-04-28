@@ -11,13 +11,14 @@
 #include "djc/Periphery.hpp"
 #include "djc/input/InputHandler.hpp"
 #include "djc/memory/Box.hpp"
+#include "djc/transport/PeerAddress.hpp"
 
 namespace djc {
 
 struct Config {
 
     struct PeerNote {
-        EspNow::Mac mac;
+        char address;// temp
         kf::memory::Array<char, 10> info;
     };
 
