@@ -8,7 +8,8 @@
 #include <kf/math/units.hpp>
 #include <kf/memory/StringView.hpp>
 
-#include "djc/Control.hpp"
+#include "djc/transport/PeerAddress.hpp"
+#include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 
 namespace djc::ui::widgets {
@@ -24,21 +25,21 @@ struct PeerDisplay final : UI::Widget {
 
     static constexpr kf::math::Milliseconds clear_timeout{8000}, new_highlight_timespan{clear_timeout - 600}, pre_cleared_highligt_timespan{2000};
 
-    void control(Control &control) noexcept { _control = &control; }
+    void transportLink(transport::TransportLink &new_transport_link) noexcept { _transport_link = &new_transport_link; }
 
-    const kf::Option<EspNow::Mac> &mac() const noexcept { return _mac_option; }
+    const kf::Option<transport::PeerAddress> &address() const noexcept { return _address; }
 
-    void update(const EspNow::Mac &mac, kf::math::Milliseconds now) noexcept {
+    void update(const transport::PeerAddress &address, kf::math::Milliseconds now) noexcept {
         _mac_clear_timer.start(now);
-        _mac_option.value(mac);
+        _address.value(address);
     }
 
     void checkForClear(kf::math::Milliseconds now) noexcept {
         if (_mac_clear_timer.expired(now)) {
-            _mac_option = {};
+            _address = {};
         }
 
-        if (_mac_option.hasValue()) {
+        if (_address.hasValue()) {
 
             if (_mac_clear_timer.remaining(now) > new_highlight_timespan) {
                 _state = State::NewConnection;
@@ -62,8 +63,8 @@ struct PeerDisplay final : UI::Widget {
             render.value(kf::memory::StringView{"\xF9"});
         }
 
-        if (_mac_option.hasValue()) {
-            render.value(EspNow::stringFromMac(_mac_option.value()).view());
+        if (_address.hasValue()) {
+            render.value(_address.value().toString().view());
         } else {
             render.value(kf::memory::StringView{"\xF8    -    -    "});
         }
@@ -76,19 +77,19 @@ struct PeerDisplay final : UI::Widget {
     }
 
     bool onClick() noexcept override {
-        if (not _mac_option.hasValue()) { return false; }
+        if (not _address.hasValue()) { return false; }
 
-        if (_control != nullptr) {
-            _control->connect(_mac_option.value());
-            _mac_option = {};
+        if (_transport_link != nullptr) {
+            (void) _transport_link->connect(_address.value());
+            _address = {};
         }
 
         return true;
     }
 
 private:
-    Control *_control{nullptr};
-    kf::Option<EspNow::Mac> _mac_option{};
+    transport::TransportLink *_transport_link{nullptr};
+    kf::Option<transport::PeerAddress> _address{};
     kf::math::Timer _mac_clear_timer{clear_timeout};
     State _state{State::Cleared};
 };
