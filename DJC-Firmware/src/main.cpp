@@ -13,6 +13,8 @@
 #include "djc/Periphery.hpp"
 #include "djc/input/InputHandler.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
+#include "djc/transport/EspNowTransport.hpp"
+#include "djc/transport/TransportLink.hpp"
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavLinkTelemetryPage.hpp"
 #include "djc/ui/pages/PeerExplorerPage.hpp"
@@ -38,13 +40,21 @@ static djc::InputHandler input_handler{
     periphery.right_button_listener,
 };
 
+static djc::transport::EspNowTransport espnow_transport{};
+
+static djc::transport::TransportLink transport_link{
+    kf::math::Milliseconds{30'000},// disconnect timeout
+};
+
 static djc::Control control{
     storage.config().control,
+    transport_link,
 };
 
 static djc::DisplayManager display_manager{
     periphery.display,
     control,
+    transport_link,
 };
 
 // pages
@@ -63,7 +73,7 @@ static djc::ui::pages::RawControlPage raw_control_page{
 
 static djc::ui::pages::PeerExplorerPage peer_explorer_page{
     root_page,
-    control,
+    transport_link,
 };
 
 static djc::ui::pages::ConfigPage config_page{
@@ -91,7 +101,14 @@ void setup() {
     }
 
     display_manager.init();
-    (void) control.init();// TODO: implement halt on error?
+
+    if (espnow_transport.init()) {
+        transport_link.transport(espnow_transport);
+    } else {
+        logger.error("failed to initialize espnow transport");
+    }
+
+    control.init();
 
     {
         using E = djc::ui::UI::Event;
