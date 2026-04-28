@@ -46,6 +46,10 @@ public:
     /// @param callback Functor invoked on each received packet.
     void onReceive(ReceiveCallback &&callback) noexcept { _receive_callback = std::move(callback); }
 
+    /// @brief Register a callback for incoming data from non-primary peer
+    /// @param callback Functor invoked on each received packet.
+    void onReceiveForeign(ReceiveCallback &&callback) noexcept { _broadcast_receive_callback = std::move(callback); }
+
     /// @brief Check whether the transport is currently connected to a peer.
     /// @return true if a peer is active, false otherwise.
     [[nodiscard]] bool connected() const noexcept { return _active_peer_address.hasValue(); }
@@ -82,9 +86,16 @@ protected:
         }
     }
 
+    void invokeReceiveForeign(const PeerAddress &address, kf::memory::Slice<const kf::u8> buffer) noexcept {
+        if (_broadcast_receive_callback) {
+            _broadcast_receive_callback(address, buffer);
+        }
+    }
+
 private:
     kf::Option<PeerAddress> _active_peer_address{};
     ReceiveCallback _receive_callback{};
+    ReceiveCallback _broadcast_receive_callback{};
 };
 
 }// namespace djc::transport
