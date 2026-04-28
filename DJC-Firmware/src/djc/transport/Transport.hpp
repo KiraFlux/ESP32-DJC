@@ -28,7 +28,7 @@ struct Transport : kf::mixin::NonCopyable {
     /// @param buffer Raw payload.
     /// @return true if the data was sent successfully, false otherwise.
     /// @note Must only be called when connected.
-    [[nodiscard]] virtual bool send(kf::memory::Slice<const kf::u8> buffer) const noexcept = 0;
+    [[nodiscard]] virtual bool send(kf::memory::Slice<const kf::u8> buffer) noexcept = 0;
 
     /// @brief Register a callback for incoming data.
     /// @param callback Functor invoked on each received packet.
