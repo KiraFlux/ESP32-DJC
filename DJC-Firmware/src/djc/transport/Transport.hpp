@@ -35,6 +35,18 @@ struct Transport : kf::mixin::NonCopyable {
     /// @note The callback is set before a connection is established.
     virtual void onReceive(ReceiveCallback &&callback) noexcept = 0;
 
+protected:
+    /// @brief Hardware‑specific connection procedure.
+    /// @param addr Address of the peer.
+    /// @return true on success, false on failure.
+    /// @note Implementations should handle invalid or incompatible address types.
+    virtual bool doConnect(const PeerAddress &address) noexcept = 0;
+
+    /// @brief Hardware‑specific disconnection procedure.
+    /// @note Called even if not connected; implementations must be safe.
+    virtual void doDisconnect() noexcept = 0;
+
+public:
     /// @brief Check whether the transport is currently connected to a peer.
     /// @return true if a peer is active, false otherwise.
     [[nodiscard]] bool connected() const noexcept { return _active_peer.hasValue(); }
@@ -63,17 +75,6 @@ struct Transport : kf::mixin::NonCopyable {
 
         _active_peer = {};
     }
-
-protected:
-    /// @brief Hardware‑specific connection procedure.
-    /// @param addr Address of the peer.
-    /// @return true on success, false on failure.
-    /// @note Implementations should handle invalid or incompatible address types.
-    virtual bool doConnect(const PeerAddress &address) noexcept = 0;
-
-    /// @brief Hardware‑specific disconnection procedure.
-    /// @note Called even if not connected; implementations must be safe.
-    virtual void doDisconnect() noexcept = 0;
 
 private:
     kf::Option<PeerAddress> _active_peer{};
