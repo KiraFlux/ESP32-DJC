@@ -14,14 +14,15 @@
 #include "djc/Control.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
 #include "djc/prelude.hpp"
+#include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 
 namespace djc {
 
 struct DisplayManager final : kf::mixin::NonCopyable, kf::mixin::Initable<DisplayManager, void> {
 
-    explicit DisplayManager(DisplayDriver &display, const Control &control) noexcept :
-        _display{display}, _control{control} {}
+    explicit DisplayManager(DisplayDriver &display, const Control &control, const transport::TransportLink &transport_link) noexcept :
+        _display{display}, _control{control}, _transport_link{transport_link} {}
 
 private:
     using P = kf::gfx::Palette<DisplayDriver::PixelImpl>;
@@ -30,6 +31,7 @@ private:
 
     DisplayDriver &_display;
     const Control &_control;
+    const transport::TransportLink &_transport_link;
     kf::gfx::Canvas<DisplayDriver::PixelImpl> _canvas{};
 
     void onRender(kf::memory::StringView str) noexcept {
@@ -49,11 +51,11 @@ private:
         // Control mode overlay
         if (_control.enabled()) {
             const auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
+            const auto overlay = _transport_link.connected() ? _transport_link.activePeerAddress().value().toString().data() : "Disconnected";
 
-            const auto overlay = kf::memory::ArrayString<64>::formatted(
-                "\xB6\xF0""Control [%s]",
-                (_control.connected() ? EspNow::stringFromMac(_control.activeMac().value()).data() : "Disconnected"));
-            _canvas.text(0, y, overlay.data());
+            _canvas.background(P::bright_blue);
+            _canvas.foreground(P::black);
+            _canvas.text(0, y, overlay);
         }
 
         _canvas.background(P::black);
