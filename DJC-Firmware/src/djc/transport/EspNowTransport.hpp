@@ -125,11 +125,17 @@ private:
     bool initImpl() noexcept {
         logger.info("init");
 
-        const auto result = EspNow::instance().init();
+        auto &espnow = EspNow::instance();
+
+        const auto result = espnow.init();
         if (result.isError()) {
             logger.error(LogString::formatted("Failed to initialize ESP-NOW: %s", EspNow::stringFromError(result.error())));
             return false;
         }
+
+        espnow.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::memory::Slice<const kf::u8> buffer){
+            invokeReceiveForeign(PeerAddress{mac}, buffer);    
+        });
 
         _broadcast_peer = addPeer(broadcast_mac_address);
 
