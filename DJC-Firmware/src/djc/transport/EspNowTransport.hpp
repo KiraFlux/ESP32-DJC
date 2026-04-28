@@ -5,10 +5,12 @@
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
+#include <kf/memory/ArrayString.hpp>
 #include <kf/memory/Slice.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/network/EspNow.hpp>
 
+#include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/Transport.hpp"
 
 namespace djc::transport {
