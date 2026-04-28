@@ -169,6 +169,7 @@ void loop() {
 
     const auto now = millis();
     input_handler.poll(now);
+    transport_link.poll(now);
 
     if (control.enabled()) {
         using I = djc::Control::Input;

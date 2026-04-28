@@ -61,9 +61,13 @@ public:
     /// @brief Connect to a remote peer.
     /// @param peer_address Address of the peer to connect to.
     /// @return true on success, false on failure.
-    /// @note If already connected, the method will return false. Disconnect explicitly first.
     [[nodiscard]] bool connect(const PeerAddress &address) noexcept {
-        if (connected()) { return false; }
+        if (connected()) {
+            if (_active_peer_address.value() == address) { return true; }// already on this peer
+
+            disconnect();
+        }
+
         if (not doConnect(address)) { return false; }
 
         _active_peer_address = address;

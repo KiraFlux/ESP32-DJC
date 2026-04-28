@@ -47,8 +47,6 @@ struct TransportLink final : kf::mixin::TimedPollable<TransportLink> {
     /// @note The callback is invoked for every received packet.
     ///       This method overwrites the transport‑level receive handler so that each incoming packet also resets the inactivity timer.
     void onReceive(Transport::ReceiveCallback &&callback) noexcept {
-        if (not callback) { return; }
-
         if (nullptr == _transport) {
             logger.error("onReceive failed: no transport set");
             return;
@@ -57,7 +55,7 @@ struct TransportLink final : kf::mixin::TimedPollable<TransportLink> {
         _receive_callback = std::move(callback);
 
         _transport->onReceive([this](const PeerAddress &address, kf::memory::Slice<const kf::u8> buffer) {
-            _receive_callback(address, buffer);
+            if (_receive_callback) { _receive_callback(address, buffer); }
             _disconnect_timer_reset_required = true;
         });
     }

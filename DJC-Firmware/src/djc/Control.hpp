@@ -119,18 +119,6 @@ private:
     Mode _mode{this->config().init_mode};
     bool _enabled{false};
 
-    void onReceive(kf::memory::Slice<const kf::u8> buffer) noexcept {
-        switch (_mode) {
-            case Mode::Raw:
-                onReceiveRaw(buffer);
-                return;
-
-            case Mode::MavLink:
-                onReceiveMavLink(buffer);
-                return;
-        }
-    }
-
     void onReceiveRaw(kf::memory::Slice<const kf::u8> buffer) noexcept {
         if (_raw_message_callback) { _raw_message_callback(buffer); }
     }
@@ -202,7 +190,17 @@ private:
         _poll_timer.start(now);
         _heartbear_timer.start(now);
 
-        logger.debug("init: ok");
+        _transport_link.onReceive([this](const transport::PeerAddress &, kf::memory::Slice<const kf::u8> buffer) {
+            switch (_mode) {
+                case Mode::Raw:
+                    onReceiveRaw(buffer);
+                    return;
+
+                case Mode::MavLink:
+                    onReceiveMavLink(buffer);
+                    return;
+            }
+        });
     }
 
     KF_IMPL_TIMED_POLLABLE(Control);

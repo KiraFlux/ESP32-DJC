@@ -45,7 +45,7 @@ protected:
         if (address.kind() != Kind::EspNow) { return false; }
 
         _active_peer = addPeer(address.mac());
-        if (not connected()) { return false; }
+        if (not _active_peer.hasValue()) { return false; }
 
         const auto receive_setup_result = _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer) {
             invokeReceive(buffer);
