@@ -48,11 +48,11 @@ protected:
 public:
     /// @brief Check whether the transport is currently connected to a peer.
     /// @return true if a peer is active, false otherwise.
-    [[nodiscard]] bool connected() const noexcept { return _active_peer.hasValue(); }
+    [[nodiscard]] bool connected() const noexcept { return _active_peer_address.hasValue(); }
 
     /// @brief Get the address of the currently connected peer.
     /// @return Option containing the peer address if connected, empty Option otherwise.
-    [[nodiscard]] const kf::Option<PeerAddress> &activePeer() const noexcept { return _active_peer; }
+    [[nodiscard]] const kf::Option<PeerAddress> &activePeerAddress() const noexcept { return _active_peer_address; }
 
     /// @brief Connect to a remote peer.
     /// @param peer_address Address of the peer to connect to.
@@ -62,7 +62,7 @@ public:
         if (connected()) { return false; }
         if (not doConnect(address)) { return false; }
 
-        _active_peer = address;
+        _active_peer_address = address;
 
         return true;
     }
@@ -72,18 +72,18 @@ public:
     void disconnect() noexcept {
         doDisconnect();
 
-        _active_peer = {};
+        _active_peer_address = {};
     }
 
 protected:
     void invokeReceive(kf::memory::Slice<const kf::u8> buffer) noexcept {
-        if (_active_peer.hasValue() and _receive_callback) {
-            _receive_callback(_active_peer.value(), buffer);
+        if (_active_peer_address.hasValue() and _receive_callback) {
+            _receive_callback(_active_peer_address.value(), buffer);
         }
     }
 
 private:
-    kf::Option<PeerAddress> _active_peer{};
+    kf::Option<PeerAddress> _active_peer_address{};
     ReceiveCallback _receive_callback{};
 };
 
