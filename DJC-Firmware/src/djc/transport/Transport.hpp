@@ -32,8 +32,7 @@ struct Transport : kf::mixin::NonCopyable {
 
     /// @brief Register a callback for incoming data.
     /// @param callback Functor invoked on each received packet.
-    /// @note The callback is set before a connection is established.
-    virtual void onReceive(ReceiveCallback &&callback) noexcept = 0;
+    virtual void onReceive(ReceiveCallback &&callback) noexcept { _receive_callback = std::move(callback); }
 
 protected:
     /// @brief Hardware‑specific connection procedure.
@@ -76,8 +75,16 @@ public:
         _active_peer = {};
     }
 
+protected:
+    void invokeReceive(const PeerAddress &address, kf::memory::Slice<const kf::u8> buffer) noexcept {
+        if (_receive_callback) {
+            _receive_callback(address, buffer);
+        }
+    }
+
 private:
     kf::Option<PeerAddress> _active_peer{};
+    ReceiveCallback _receive_callback{};
 };
 
 }// namespace djc::transport
