@@ -20,7 +20,7 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
-#include "djc/prelude.hpp"
+#include "djc/transport/TransportLink.hpp"
 
 namespace djc {
 
@@ -34,14 +34,12 @@ enum class ControlMode : kf::u8 {
 struct ControlConfig final : kf::mixin::NonCopyable {
     kf::math::Milliseconds heartbeat_period;
     kf::math::Milliseconds poll_period;
-    kf::math::Milliseconds receive_timeout;
     ControlMode init_mode;
 
     static constexpr ControlConfig defaults() noexcept {
         return ControlConfig{
             .heartbeat_period = 2000,                                     // ms
             .poll_period = static_cast<kf::math::Milliseconds>(1000 / 50),// 50 Hz
-            .receive_timeout = 30'000,                                    // ms
             .init_mode = ControlMode::MavLink,
         };
     }
@@ -49,13 +47,12 @@ struct ControlConfig final : kf::mixin::NonCopyable {
 
 }// namespace internal
 
-struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>, kf::mixin::Configurable<internal::ControlConfig>, kf::mixin::Initable<Control, bool> {
+struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>, kf::mixin::Configurable<internal::ControlConfig>, kf::mixin::Initable<Control, void> {
     using Config = internal::ControlConfig;
     using Mode = internal::ControlMode;
 
     using RawMessageCallback = kf::Function<void(kf::memory::Slice<const kf::u8>)>;
     using MavLinkMessageCallback = kf::Function<void(const mavlink_message_t *)>;
-    using ReceiveFromUnknownCallback = EspNow::ReceiveFromUnknownHandler;
 
     struct Input {
         using Unit = kf::i16;
@@ -71,11 +68,10 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 
     [[nodiscard]] static constexpr kf::memory::StringView stringFromMode(Mode mode) noexcept { return (mode == Mode::Raw) ? "Raw" : "MavLink"; }
 
-    explicit Control(const Config &config) noexcept : kf::mixin::Configurable<Config>{config} {}
+    explicit Control(const Config &config, transport::TransportLink &transport_link) noexcept :
+        kf::mixin::Configurable<Config>{config}, _transport_link{transport_link} {}
 
     // properties
-
-    void onReceiveFromUnknown(ReceiveFromUnknownCallback &&callback) noexcept { EspNow::instance().onReceiveFromUnknown(std::move(callback)); }
 
     void onRawMessage(RawMessageCallback &&callback) noexcept { _raw_message_callback = std::move(callback); }
 
@@ -93,69 +89,17 @@ struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control>
 
     void enabled(bool is_enabled) noexcept { _enabled = is_enabled; }
 
-    [[nodiscard]] bool connected() const noexcept { return _active_peer.hasValue(); }
-
-    kf::Option<EspNow::Mac> activeMac() const noexcept {
-        if (connected()) {
-            return {_active_peer.value().mac()};
-        } else {
-            return {};
-        }
-    }
-
     // methods
 
-    void connect(const EspNow::Mac &mac) noexcept {
-        if (connected()) {
-            if (_active_peer.value().mac() == mac) {
-                logger.debug("Already connected to active peer");
-                return;
-            }
-
-            disconnect();
-        }
-
-        _active_peer = addPeer(mac);
-        if (not connected()) { return; }
-
-        const auto receive_setup_result = _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer) { onReceive(buffer); });
-        if (receive_setup_result.isError()) {
-            logger.error("Receive callback attachment failed");
-            return;
-        }
-
-        _got_packet = true;
-        logger.info("Connected: OK");
-    }
-
-    void disconnect() noexcept {
-        if (not connected()) {
-            logger.error("Disconnect failed: No active peer");
-            return;
-        }
-
-        auto &peer = _active_peer.value();
-        if (not peer.exist()) {
-            logger.error("Disconnect failed: Peer not exit");
-            return;
-        }
-
-        delPeer(peer);
-
-        _active_peer = {};
-        logger.info("Disconnected: OK");
-    }
-
     void sendMavLinkMessage(const mavlink_message_t *message) noexcept {
-        if (connected()) {
-            sendMavLinkMessage(_active_peer.value(), message);
-        }
+        kf::u8 buffer[MAVLINK_MAX_PACKET_LEN];
+        const auto len = mavlink_msg_to_send_buffer(buffer, message);
+
+        (void) _transport_link.send({buffer, len});
     }
 
     void sendRawMessage(kf::memory::Slice<const kf::u8> buffer) noexcept {
-        if (connected()) {
-            (void) _active_peer.value().writeBuffer(buffer);
-        }
+        (void) _transport_link.send(buffer);
     }
 
 private:
@@ -166,49 +110,16 @@ private:
     RawMessageCallback _raw_message_callback{};
     MavLinkMessageCallback _mavlink_message_callback{};
 
-    kf::Option<EspNow::Peer> _active_peer{};
-    kf::Option<EspNow::Peer> _broadcast_peer{};
+    transport::TransportLink &_transport_link;
 
     kf::math::Timer _poll_timer{this->config().poll_period};
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
-    kf::math::Timer _receive_disconnect_timer{this->config().receive_timeout};
 
     Input _input{};
     Mode _mode{this->config().init_mode};
     bool _enabled{false};
-    volatile bool _got_packet{false};
-
-    static kf::Option<EspNow::Peer> addPeer(const EspNow::Mac &mac) noexcept {
-        auto peer_result = EspNow::Peer::add(mac);
-        if (peer_result.isError()) {
-            logger.error(
-                LogString::formatted(
-                    "Failed to add peer [%s] :%s",
-                    EspNow::stringFromMac(mac).data(),
-                    EspNow::stringFromError(peer_result.error()))
-                    .view());
-            return {};
-        }
-
-        logger.info(LogString::formatted("Peer '%s' added", EspNow::stringFromMac(mac).data()).view());
-        return {std::move(peer_result.value())};
-    }
-
-    static void delPeer(EspNow::Peer &peer) noexcept {
-        const auto result = peer.del();
-        if (result.isError()) {
-            logger.error(
-                LogString::formatted(
-                    "Failed to delete peer [%s] : %s",
-                    EspNow::stringFromMac(peer.mac()).data(),
-                    EspNow::stringFromError(result.error()))
-                    .view());
-            return;
-        }
-    }
 
     void onReceive(kf::memory::Slice<const kf::u8> buffer) noexcept {
-        _got_packet = true;
         switch (_mode) {
             case Mode::Raw:
                 onReceiveRaw(buffer);
@@ -237,20 +148,20 @@ private:
         }
     }
 
-    void pollRaw(EspNow::Peer &peer, kf::math::Milliseconds) noexcept {
-        (void) peer.writePacket(_input);
+    void pollRaw(kf::math::Milliseconds) noexcept {
+        (void) _transport_link.send({reinterpret_cast<const kf::u8 *>(&_input), sizeof(_input)});
     }
 
-    void pollMavLink(EspNow::Peer &peer, kf::math::Milliseconds now) noexcept {
-        sendMavLinkControl(peer);
+    void pollMavLink(kf::math::Milliseconds now) noexcept {
+        sendMavLinkControl();
 
         if (_heartbear_timer.expired(now)) {
             _heartbear_timer.start(now);
-            sendMavLinkHeartbeat(peer);
+            sendMavLinkHeartbeat();
         }
     }
 
-    void sendMavLinkControl(EspNow::Peer &peer) noexcept {
+    void sendMavLinkControl() noexcept {
         mavlink_message_t message;
         (void) mavlink_msg_manual_control_pack(
             mavlink_system_id, MAV_COMP_ID_PARACHUTE, &message, mavlink_target_id,
@@ -261,10 +172,10 @@ private:
             // Buttons (unused)
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-        sendMavLinkMessage(peer, &message);
+        sendMavLinkMessage(&message);
     }
 
-    void sendMavLinkHeartbeat(EspNow::Peer &peer) noexcept {
+    void sendMavLinkHeartbeat() noexcept {
         mavlink_message_t message;
         (void) mavlink_msg_heartbeat_pack(
             mavlink_system_id,// System ID
@@ -275,28 +186,14 @@ private:
             0, 0, 0// Base mode, Custom mode, system status
         );
 
-        sendMavLinkMessage(peer, &message);
-    }
-
-    void sendMavLinkMessage(EspNow::Peer &peer, const mavlink_message_t *message) noexcept {
-        kf::u8 buffer[MAVLINK_MAX_PACKET_LEN];
-        const auto len = mavlink_msg_to_send_buffer(buffer, message);
-        (void) peer.writeBuffer(kf::memory::Slice<const kf::u8>{buffer, len});
+        sendMavLinkMessage(&message);
     }
 
     // impl
 
-    KF_IMPL_INITABLE(Control, bool);
-    bool initImpl() noexcept {
+    KF_IMPL_INITABLE(Control, void);
+    void initImpl() noexcept {
         logger.info("init");
-
-        const auto result = EspNow::instance().init();
-        if (result.isError()) {
-            logger.error(LogString::formatted("Failed to initialize ESP-NOW: %s", EspNow::stringFromError(result.error())));
-            return false;
-        }
-
-        _broadcast_peer = addPeer(EspNow::Mac{0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
 
         _mode = this->config().init_mode;
         logger.debug(stringFromMode(_mode));
@@ -306,33 +203,23 @@ private:
         _heartbear_timer.start(now);
 
         logger.debug("init: ok");
-        return true;
     }
 
     KF_IMPL_TIMED_POLLABLE(Control);
     void pollImpl(kf::math::Milliseconds now) noexcept {
-        if (_got_packet) {
-            _got_packet = false;
-            _receive_disconnect_timer.start(now);
-        }
+        if (not _enabled) { return; }
+        if (not _transport_link.connected()) { return; }
 
-        if (_receive_disconnect_timer.expired(now)) {
-            logger.info("Timeout");
-            disconnect();
-        }
-
-        if (not connected()) { return; }
-
-        if (_enabled and _poll_timer.expired(now)) {
+        if (_poll_timer.expired(now)) {
             _poll_timer.start(now);
 
             switch (_mode) {
                 case Mode::Raw:
-                    pollRaw(_active_peer.value(), now);
+                    pollRaw(now);
                     return;
 
                 case Mode::MavLink:
-                    pollMavLink(_active_peer.value(), now);
+                    pollMavLink(now);
                     return;
             }
         }
