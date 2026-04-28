@@ -51,9 +51,11 @@ struct PeerAddress {
     [[nodiscard]] ReprString toString() const noexcept {
         switch (_kind) {
             case Kind::EspNow:
-                return ReprString::formatted("<EspNow: %s>", kf::network::EspNow::stringFromMac(_mac).data());
+                return ReprString::formatted("%s@EspNow", kf::network::EspNow::stringFromMac(_mac).data());
+
+            default:
+                return {};
         }
-        return {};
     }
 
 private:
