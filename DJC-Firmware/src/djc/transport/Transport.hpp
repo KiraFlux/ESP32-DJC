@@ -6,7 +6,6 @@
 #include <kf/Function.hpp>
 #include <kf/Option.hpp>
 #include <kf/aliases.hpp>
-#include <kf/math/units.hpp>
 #include <kf/memory/Slice.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
@@ -25,11 +24,6 @@ struct Transport : kf::mixin::NonCopyable {
     /// @brief Callback invoked when data is received from a peer.
     using ReceiveCallback = kf::Function<void(const PeerAddress &, kf::memory::Slice<const kf::u8>)>;
 
-    /// @brief Initialize the transport hardware.
-    /// @return true on success, false on failure.
-    /// @note Must be called once before any other operations.
-    [[nodiscard]] virtual bool init() noexcept = 0;
-
     /// @brief Send raw data to the currently connected peer.
     /// @param buffer Raw payload.
     /// @return true if the data was sent successfully, false otherwise.
@@ -40,11 +34,6 @@ struct Transport : kf::mixin::NonCopyable {
     /// @param callback Functor invoked on each received packet.
     /// @note The callback is set before a connection is established.
     virtual void onReceive(ReceiveCallback &&callback) noexcept = 0;
-
-    /// @brief Periodic housekeeping (polling, timeouts, etc.).
-    /// @param now Current timestamp in milliseconds.
-    /// @note Default implementation does nothing.
-    virtual void poll(kf::math::Milliseconds now) noexcept {}
 
     /// @brief Check whether the transport is currently connected to a peer.
     /// @return true if a peer is active, false otherwise.
