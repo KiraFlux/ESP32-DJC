@@ -75,9 +75,7 @@ struct PeerExplorerPage : UI::Page {
             _redraw_timer.start(now);
 
             if (_transport_link.activePeerAddress().hasValue()) {
-                (void) _connection_button_label.format("\xFC"
-                                                       "OK: %s\x80",
-                                                       _transport_link.activePeerAddress().value().toString().data());
+                (void) _connection_button_label.format("\xFC%s\x80", _transport_link.activePeerAddress().value().toString().data());
                 _connection_button.label(_connection_button_label.view());
             } else {
                 _connection_button.label("\xF9"
