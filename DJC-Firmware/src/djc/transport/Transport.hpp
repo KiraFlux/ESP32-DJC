@@ -76,9 +76,9 @@ public:
     }
 
 protected:
-    void invokeReceive(const PeerAddress &address, kf::memory::Slice<const kf::u8> buffer) noexcept {
-        if (_receive_callback) {
-            _receive_callback(address, buffer);
+    void invokeReceive(kf::memory::Slice<const kf::u8> buffer) noexcept {
+        if (_active_peer.hasValue() and _receive_callback) {
+            _receive_callback(_active_peer.value(), buffer);
         }
     }
 
