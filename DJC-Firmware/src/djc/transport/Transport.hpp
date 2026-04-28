@@ -30,10 +30,6 @@ struct Transport : kf::mixin::NonCopyable {
     /// @note Must only be called when connected.
     [[nodiscard]] virtual bool send(kf::memory::Slice<const kf::u8> buffer) noexcept = 0;
 
-    /// @brief Register a callback for incoming data.
-    /// @param callback Functor invoked on each received packet.
-    virtual void onReceive(ReceiveCallback &&callback) noexcept { _receive_callback = std::move(callback); }
-
 protected:
     /// @brief Hardware‑specific connection procedure.
     /// @param addr Address of the peer.
@@ -46,6 +42,10 @@ protected:
     virtual void doDisconnect() noexcept = 0;
 
 public:
+    /// @brief Register a callback for incoming data.
+    /// @param callback Functor invoked on each received packet.
+    void onReceive(ReceiveCallback &&callback) noexcept { _receive_callback = std::move(callback); }
+
     /// @brief Check whether the transport is currently connected to a peer.
     /// @return true if a peer is active, false otherwise.
     [[nodiscard]] bool connected() const noexcept { return _active_peer_address.hasValue(); }
