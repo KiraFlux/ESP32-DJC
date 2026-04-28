@@ -62,6 +62,16 @@ struct TransportLink final : kf::mixin::TimedPollable<TransportLink> {
         });
     }
 
+    /// @brief Register a callback for incoming data from other peers (non-primary)
+    void onReceiveForeign(Transport::ReceiveCallback &&callback) noexcept {
+        if (nullptr == _transport) {
+            logger.error("onReceiveForeign failed: no transport set");
+            return;
+        }
+
+        _transport->onReceiveForeign(std::move(callback));
+    }
+
     /// @brief Check whether the transport is currently connected.
     [[nodiscard]] bool connected() const noexcept { return nullptr != _transport and _transport->connected(); }
 
