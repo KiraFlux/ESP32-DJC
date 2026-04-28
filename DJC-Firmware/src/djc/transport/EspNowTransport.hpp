@@ -29,7 +29,7 @@ struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
 
 private:
     using EspNow = kf::network::EspNow;
-    using LogString = kf::memory::ArrayString<64>;
+    using LogString = kf::memory::ArrayString<128>;
 
     static constexpr auto logger{kf::Logger::create("EspNowTransport")};
 
