@@ -26,6 +26,13 @@ struct PeerScannerConfig final : kf::mixin::NonCopyable {
     kf::math::Milliseconds
         entry_max_life_time,       ///< How long an entry stays in the list without being refreshed.
         entries_list_update_period;///< Interval between periodic clean-ups and list compaction.
+
+    [[nodiscard]] static constexpr PeerScannerConfig defaults() noexcept {
+        return PeerScannerConfig{
+            .entry_max_life_time = 8'000,
+            .entries_list_update_period = 1'000,
+        };
+    }
 };
 
 }// namespace internal
