@@ -10,6 +10,7 @@
 #include "djc/ConfigManager.hpp"
 #include "djc/Control.hpp"
 #include "djc/DisplayManager.hpp"
+#include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/input/InputHandler.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
@@ -43,7 +44,12 @@ static djc::InputHandler input_handler{
 static djc::transport::EspNowTransport espnow_transport{};
 
 static djc::transport::TransportLink transport_link{
-    kf::math::Milliseconds{30'000},// disconnect timeout
+    storage.config().transport_link,
+};
+
+static djc::PeerScanner peer_scanner{
+    storage.config().peer_scanner,
+    transport_link,
 };
 
 static djc::Control control{
@@ -108,6 +114,8 @@ void setup() {
         logger.error("failed to initialize espnow transport");
     }
 
+    peer_scanner.init();
+
     control.init();
 
     {
@@ -170,6 +178,7 @@ void loop() {
     const auto now = millis();
     input_handler.poll(now);
     transport_link.poll(now);
+    peer_scanner.poll(now);
 
     if (control.enabled()) {
         using I = djc::Control::Input;
