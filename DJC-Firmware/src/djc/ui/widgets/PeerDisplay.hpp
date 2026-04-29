@@ -6,9 +6,10 @@
 #include <kf/Option.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
+#include <kf/memory/ArrayString.hpp>
 #include <kf/memory/StringView.hpp>
 
-#include "djc/transport/PeerAddress.hpp"
+#include "djc/PeerScanner.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 
@@ -16,72 +17,44 @@ namespace djc::ui::widgets {
 
 struct PeerDisplay final : UI::Widget {
 
-    enum class State : kf::u8 {
-        Cleared,
-        NewConnection,
-        Stable,
-        PreCleared,
+    enum class State : char {
+        Cleared = '\xF8',
+        Stable = '\xFC',
+        PreCleared = '\xFC',
     };
 
-    static constexpr kf::math::Milliseconds clear_timeout{8000}, new_highlight_timespan{clear_timeout - 600}, pre_cleared_highligt_timespan{2000};
+    static constexpr kf::math::Milliseconds pre_cleared_highligt_timespan{2000};
 
     void transportLink(transport::TransportLink &new_transport_link) noexcept { _transport_link = &new_transport_link; }
 
-    const kf::Option<transport::PeerAddress> &address() const noexcept { return _address; }
+    void update(const kf::Option<PeerScanner::Entry> &entry_option, kf::math::Milliseconds deadline_time) noexcept {
+        _entry_option = entry_option;
 
-    void update(const transport::PeerAddress &address, kf::math::Milliseconds now) noexcept {
-        _mac_clear_timer.start(now);
-        _address.value(address);
-    }
-
-    void checkForClear(kf::math::Milliseconds now) noexcept {
-        if (_mac_clear_timer.expired(now)) {
-            _address = {};
-        }
-
-        if (_address.hasValue()) {
-
-            if (_mac_clear_timer.remaining(now) > new_highlight_timespan) {
-                _state = State::NewConnection;
-            } else if (_mac_clear_timer.remaining(now) < pre_cleared_highligt_timespan) {
-                _state = State::PreCleared;
-            } else {
-                _state = State::Stable;
-            }
-
+        if (_entry_option.hasValue()) {
+            _state = (deadline_time < _entry_option.value().last_seen + pre_cleared_highligt_timespan) ? State::Stable : State::PreCleared;
         } else {
             _state = State::Cleared;
         }
     }
 
+    void clear() noexcept {
+        _entry_option = {};
+    }
+
     void doRender(UI::RenderImpl &render) const noexcept override {
+        constexpr auto empty_string = "    -    -    ";
+        const auto content = (_entry_option.hasValue()) ? _entry_option.value().address.toString().data() : empty_string;
+
         render.beginBlock();
-
-        if (_state == State::NewConnection) {
-            render.value(kf::memory::StringView{"\xFC"});
-        } else if (_state == State::PreCleared) {
-            render.value(kf::memory::StringView{"\xF9"});
-        }
-
-        if (_address.hasValue()) {
-            render.value(_address.value().toString().view());
-        } else {
-            render.value(kf::memory::StringView{"\xF8    -    -    "});
-        }
-
-        if (_state != State::Stable) {
-            render.value(kf::memory::StringView{"\x80"});
-        }
-
+        render.value(kf::memory::ArrayString<64>::formatted("%c%s\x80", static_cast<char>(_state), content).view());
         render.endBlock();
     }
 
     bool onClick() noexcept override {
-        if (not _address.hasValue()) { return false; }
+        if (not _entry_option.hasValue()) { return false; }
 
-        if (_transport_link != nullptr) {
-            (void) _transport_link->connect(_address.value());
-            _address = {};
+        if (_transport_link != nullptr and _transport_link->connect(_entry_option.value().address)) {
+            clear();
         }
 
         return true;
@@ -89,8 +62,7 @@ struct PeerDisplay final : UI::Widget {
 
 private:
     transport::TransportLink *_transport_link{nullptr};
-    kf::Option<transport::PeerAddress> _address{};
-    kf::math::Timer _mac_clear_timer{clear_timeout};
+    kf::Option<PeerScanner::Entry> _entry_option{};
     State _state{State::Cleared};
 };
 

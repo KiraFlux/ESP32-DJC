@@ -79,6 +79,7 @@ static djc::ui::pages::RawControlPage raw_control_page{
 
 static djc::ui::pages::PeerExplorerPage peer_explorer_page{
     root_page,
+    peer_scanner,
     transport_link,
 };
 
