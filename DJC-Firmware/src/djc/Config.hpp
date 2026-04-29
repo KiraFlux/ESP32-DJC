@@ -8,6 +8,7 @@
 #include <kf/memory/StringView.hpp>
 
 #include "djc/Control.hpp"
+#include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/input/InputHandler.hpp"
 #include "djc/memory/Box.hpp"
@@ -24,13 +25,14 @@ struct Config {
 
     using PeerFavoritesConfig = djc::memory::Box<PeerNote, kf::u8, 8>;
 
-    static constexpr auto latest_version{4};
+    static constexpr auto latest_version{5};
 
     kf::u16 version;
 
     Periphery::Config periphery;
     InputHandler::Config input_handler;
     Control::Config control;
+    PeerScanner::Config peer_scanner;
     PeerFavoritesConfig peer_favorites;
     kf::memory::Array<char, 16> device_name;
 
@@ -46,6 +48,7 @@ struct Config {
             .periphery = Periphery::Config::defaults(),
             .input_handler = InputHandler::Config::defaults(),
             .control = Control::Config::defaults(),
+            .peer_scanner = PeerScanner::Config::defaults(),
             .peer_favorites = PeerFavoritesConfig::defaults(),
             .device_name = {"ESP32-DJC"},
         };
