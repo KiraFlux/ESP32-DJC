@@ -20,18 +20,19 @@ struct PeerDisplay final : UI::Widget {
     enum class State : char {
         Cleared = '\xF8',
         Stable = '\xFC',
-        PreCleared = '\xFC',
+        PreCleared = '\xF9',
     };
 
     static constexpr kf::math::Milliseconds pre_cleared_highligt_timespan{2000};
 
     void transportLink(transport::TransportLink &new_transport_link) noexcept { _transport_link = &new_transport_link; }
 
-    void update(const kf::Option<PeerScanner::Entry> &entry_option, kf::math::Milliseconds deadline_time) noexcept {
+    void update(const kf::Option<PeerScanner::Entry> &entry_option, kf::math::Milliseconds now,kf::math::Milliseconds max_life_time) noexcept {
         _entry_option = entry_option;
 
         if (_entry_option.hasValue()) {
-            _state = (deadline_time < _entry_option.value().last_seen + pre_cleared_highligt_timespan) ? State::Stable : State::PreCleared;
+            const auto age = now - _entry_option.value().last_seen;
+            _state = (age + pre_cleared_highligt_timespan >= max_life_time) ? State::PreCleared : State::Stable;
         } else {
             _state = State::Cleared;
         }

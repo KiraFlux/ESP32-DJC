@@ -65,11 +65,9 @@ struct PeerExplorerPage : UI::Page {
             (void) _available_label_value.format(" Available: %d", available_peers.size());
             _available_label.value(_available_label_value.view());
 
-            const auto deadline_time = now + _peer_scanner.config().entry_max_life_time;
-
             for (auto i = 0u; i < _peer_displays.size(); i += 1) {
                 if (i < available_peers.size()) {
-                    _peer_displays[i].update(available_peers[i], deadline_time);
+                    _peer_displays[i].update(available_peers[i], now, _peer_scanner.config().entry_max_life_time);
                 } else {
                     _peer_displays[i].clear();
                 }
