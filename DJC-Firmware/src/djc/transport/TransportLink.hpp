@@ -6,6 +6,8 @@
 #include <kf/Logger.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
+#include <kf/mixin/Configurable.hpp>
+#include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
@@ -13,13 +15,34 @@
 
 namespace djc::transport {
 
+namespace internal {
+
+/// @brief Configuration parameters for the Transport Link.
+struct TransportLinkConfig final : kf::mixin::NonCopyable {
+    kf::math::Milliseconds disconnect_timeout;
+
+    [[nodiscard]] static constexpr TransportLinkConfig defaults() noexcept {
+        return TransportLinkConfig{
+            .disconnect_timeout = 15'000,
+        };
+    }
+};
+
+}// namespace internal
+
 /// @brief Connection manager for a single transport.
 /// @note Separates connection lifecycle and inactivity timeout from higher‑level logic.
 ///       Keeps the transport abstract: the rest of the firmware only talks to `TransportLink`, never to a concrete transport.
-struct TransportLink final : kf::mixin::TimedPollable<TransportLink> {
+struct TransportLink final :
 
-    explicit constexpr TransportLink(kf::math::Milliseconds disconnect_timeout) noexcept :
-        _disconnect_timer{disconnect_timeout} {}
+    kf::mixin::NonCopyable,
+    kf::mixin::Configurable<internal::TransportLinkConfig>,
+    kf::mixin::TimedPollable<TransportLink>
+
+{
+    using Config = internal::TransportLinkConfig;
+
+    using Configurable<Config>::Configurable;
 
     /// @brief Set the active transport, disconnecting any previous connection first.
     /// @note Ensures that changing the transport does not leave a stale connection open,
@@ -107,10 +130,10 @@ private:
 
     static constexpr auto logger{kf::Logger::create("TransportLink")};
 
-    Transport *_transport{nullptr};                       ///< Currently active transport (may be nullptr).
-    Transport::ReceiveCallback _receive_callback{};       ///< User‑supplied callback for incoming data.
-    kf::math::Timer _disconnect_timer;                    ///< Inactivity timer.
-    volatile bool _disconnect_timer_reset_required{false};///< Flag: reset timer on next poll.
+    Transport *_transport{nullptr};                                      ///< Currently active transport (may be nullptr).
+    Transport::ReceiveCallback _receive_callback{};                      ///< User‑supplied callback for incoming data.
+    kf::math::Timer _disconnect_timer{this->config().disconnect_timeout};///< Inactivity timer.
+    volatile bool _disconnect_timer_reset_required{false};               ///< Flag: reset timer on next poll.
 
     // impl
     using This = TransportLink;
