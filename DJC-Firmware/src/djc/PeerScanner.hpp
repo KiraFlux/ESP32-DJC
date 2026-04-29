@@ -30,7 +30,7 @@ struct PeerScannerConfig final : kf::mixin::NonCopyable {
     [[nodiscard]] static constexpr PeerScannerConfig defaults() noexcept {
         return PeerScannerConfig{
             .entry_max_life_time = 8'000,
-            .entries_list_update_period = 1'000,
+            .entries_list_update_period = 100,
         };
     }
 };
@@ -121,15 +121,27 @@ private:
         if (_update_poll_timer.expired(now)) {
             _update_poll_timer.start(now);
 
+            if (_transport_link.connected()) {
+                const auto &active_address = _transport_link.activePeerAddress().value();
+                for (auto &entry: _entries) {
+                    if (entry.hasValue() and entry.value().address == active_address) {
+                        entry = {};
+                        break;
+                    }
+                }
+            }
+
             auto write_index = 0u;
             for (auto read_index = 0u; read_index < max_entries; read_index += 1) {
-                if (_entries[read_index].hasValue() and (now > _entries[read_index].value().last_seen + this->config().entry_max_life_time)) {
-                    _entries[read_index] = {};
-                } else {
-                    if (write_index != read_index) {
-                        _entries[write_index] = _entries[read_index];
+                if (_entries[read_index].hasValue()) {
+                    if (now > _entries[read_index].value().last_seen + this->config().entry_max_life_time) {
+                        _entries[read_index] = {};
+                    } else {
+                        if (write_index != read_index) {
+                            _entries[write_index] = _entries[read_index];
+                        }
+                        write_index += 1;
                     }
-                    write_index += 1;
                 }
             }
 
