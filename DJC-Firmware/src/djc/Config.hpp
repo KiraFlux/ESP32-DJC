@@ -13,6 +13,7 @@
 #include "djc/input/InputHandler.hpp"
 #include "djc/memory/Box.hpp"
 #include "djc/transport/PeerAddress.hpp"
+#include "djc/transport/TransportLink.hpp"
 
 namespace djc {
 
@@ -31,6 +32,7 @@ struct Config {
 
     Periphery::Config periphery;
     InputHandler::Config input_handler;
+    transport::TransportLink::Config transport_link;
     Control::Config control;
     PeerScanner::Config peer_scanner;
     PeerFavoritesConfig peer_favorites;
@@ -47,6 +49,7 @@ struct Config {
             .version = latest_version,
             .periphery = Periphery::Config::defaults(),
             .input_handler = InputHandler::Config::defaults(),
+            .transport_link = transport::TransportLink::Config::defaults(),
             .control = Control::Config::defaults(),
             .peer_scanner = PeerScanner::Config::defaults(),
             .peer_favorites = PeerFavoritesConfig::defaults(),
