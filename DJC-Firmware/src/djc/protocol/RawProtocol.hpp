@@ -4,6 +4,7 @@
 #pragma once
 
 #include <kf/aliases.hpp>
+#include <kf/math/units.hpp>
 #include <kf/memory/Slice.hpp>
 #include <kf/mixin/Callbacked.hpp>
 
