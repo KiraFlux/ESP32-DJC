@@ -66,7 +66,7 @@ struct MavlinkProtocol :
     /// @return true if the transport reported success, false otherwise.
     /// @note
     /// The return value reflects the transport-level result.
-    [[nodiscard]] bool sendMessage(transport::TransportLink &transport_link, const mavlink_message_t &message) const noexcept {
+    [[nodiscard]] static bool sendMessage(transport::TransportLink &transport_link, const mavlink_message_t &message) noexcept {
         kf::u8 buffer[MAVLINK_MAX_PACKET_LEN];
         const auto len = mavlink_msg_to_send_buffer(buffer, &message);
 
@@ -76,8 +76,8 @@ struct MavlinkProtocol :
     // impl dynamic
 
     void poll(kf::math::Milliseconds now, const ManualInput &input, transport::TransportLink &transport_link) noexcept override {
-        if (_heartbear_timer.expired(now) or _need_to_reset_heartbeat_timer) {
-            _need_to_reset_heartbeat_timer = false;
+        if (_heartbear_timer.expired(now) or _heartbeat_timer_reset_required) {
+            _heartbeat_timer_reset_required = false;
             _heartbear_timer.start(now);
 
             sendHeartbeat(transport_link);
@@ -99,9 +99,9 @@ struct MavlinkProtocol :
 
 private:
     kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
-    bool _need_to_reset_heartbeat_timer{true};
+    bool _heartbeat_timer_reset_required{true};
 
-    void sendHeartbeat(transport::TransportLink &transport_link) const noexcept {
+    [[nodiscard]] bool sendHeartbeat(transport::TransportLink &transport_link) const noexcept {
         mavlink_message_t message;
         (void) mavlink_msg_heartbeat_pack(
             this->config().system_id_self,
@@ -112,28 +112,27 @@ private:
             0, 0, 0// Base mode, Custom mode, system status
         );
 
-        (void) sendMessage(transport_link, message);
+        return sendMessage(transport_link, message);
     }
 
-    void sendManualControl(transport::TransportLink &transport_link, const ManualInput &input) const noexcept {
+    [[nodiscard]] bool sendManualControl(transport::TransportLink &transport_link, const ManualInput &input) const noexcept {
         mavlink_message_t message;
         (void) mavlink_msg_manual_control_pack(
             this->config().system_id_self,
             this->config().component_id_manual_control,
             &message,
             this->config().system_id_target,
-            input.right_y,// x: pitch (right Y)
-            input.right_x,// y: roll (right X)
-            input.left_y, // z: thrust (left Y)
-            input.left_x, // r: yaw (left X)
-            // Buttons (unused)
+            input.right_y,  // x: pitch (right Y)
+            input.right_x,  // y: roll (right X)
+            input.left_y,   // z: thrust (left Y)
+            input.left_x,   // r: yaw (left X)
             0, 0,           // buttons
             0,              // extensions
             0, 0,           // roll/pitch only axes
-            0, 0, 0, 0, 0, 0// aux0..6
+            0, 0, 0, 0, 0, 0// aux: 0..6
         );
 
-        (void) sendMessage(transport_link, message);
+        return sendMessage(transport_link, message);
     }
 };
 
