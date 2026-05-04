@@ -46,8 +46,12 @@ struct ProtocolRegistry final :
 
     [[nodiscard]] Protocol &get(Mode mode) noexcept {
         switch (mode) {
-            case Mode::Raw: return _raw_protocol;
-            case Mode::Mavlink: return _mavlink_protocol;
+            case Mode::Mavlink:
+                return _mavlink_protocol;
+
+            case Mode::Raw:
+            default:
+                return _raw_protocol;
         }
     }
 
