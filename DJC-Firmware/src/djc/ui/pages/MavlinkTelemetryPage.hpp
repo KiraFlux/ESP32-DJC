@@ -39,7 +39,7 @@ struct MavlinkTelemetryPage : UI::Page {
     }
 
     void onExit() noexcept override {
-        _protocol_registry.mavlink().callback(protocol::MavlinkProtocol::CallbackType{nullptr});
+        _protocol_registry.mavlink().callback(protocol::MavlinkProtocol::CallbackType{});
     }
 
     void onUpdate(kf::math::Milliseconds now) noexcept override {

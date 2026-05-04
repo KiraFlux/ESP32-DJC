@@ -57,17 +57,17 @@ static djc::transport::TransportLink transport_link{
     storage.config().transport_link,
 };
 
-static djc::PeerScanner peer_scanner{
-    storage.config().peer_scanner,
-    transport_link,
-};
-
 static djc::protocol::ProtocolLink protocol_link{
     storage.config().protocol_link,
 };
 
 static djc::protocol::ProtocolRegistry protocol_registry{
     storage.config().protocol_registry,
+};
+
+static djc::PeerScanner peer_scanner{
+    storage.config().peer_scanner,
+    transport_link,
 };
 
 static djc::Control control{
@@ -85,6 +85,12 @@ static djc::DisplayManager display_manager{
 
 static djc::ui::pages::RootPage root_page{};
 
+static djc::ui::pages::PeerExplorerPage peer_explorer_page{
+    root_page,
+    peer_scanner,
+    transport_link,
+};
+
 static djc::ui::pages::MavlinkTelemetryPage mavlink_telemetry_page{
     root_page,
     protocol_registry,
@@ -95,12 +101,6 @@ static djc::ui::pages::RawProtocolPage raw_protocol_page{
     root_page,
     protocol_registry,
     protocol_link,
-    transport_link,
-};
-
-static djc::ui::pages::PeerExplorerPage peer_explorer_page{
-    root_page,
-    peer_scanner,
     transport_link,
 };
 
@@ -185,9 +185,9 @@ void setup() {
         });
 
         // apply page links
+        root_page.attach(peer_explorer_page);
         root_page.attach(mavlink_telemetry_page);
         root_page.attach(raw_protocol_page);
-        root_page.attach(peer_explorer_page);
         root_page.attach(config_page);
 
         ui.bindPage(root_page);
@@ -201,7 +201,7 @@ void loop() {
     constexpr kf::math::Milliseconds loop_period{1000 / 50};// 50 Hz
     delay(loop_period);
 
-    const auto now = millis();
+    const auto now = static_cast<kf::math::Milliseconds>(millis());
     input_handler.poll(now);
     transport_link.poll(now);
     peer_scanner.poll(now);
