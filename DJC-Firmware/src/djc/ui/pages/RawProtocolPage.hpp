@@ -7,15 +7,22 @@
 #include <kf/memory/ArrayString.hpp>
 #include <kf/memory/Slice.hpp>
 
-#include "djc/Control.hpp"
+#include "djc/protocol/ProtocolLink.hpp"
+#include "djc/protocol/ProtocolRegistry.hpp"
+#include "djc/protocol/RawProtocol.hpp"
+#include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/widgets/TextInput.hpp"
 
 namespace djc::ui::pages {
 
-struct RawControlPage : UI::Page {
-    explicit RawControlPage(UI::Page &root, Control &control) noexcept :
-        Page{"Raw Control"}, _control{control},
+struct RawProtocolPage : UI::Page {
+    explicit RawProtocolPage(
+        UI::Page &root,
+        protocol::ProtocolRegistry &protocol_registry,
+        protocol::ProtocolLink &protocol_link,
+        transport::TransportLink &transport_link) noexcept :
+        Page{"Raw Protocol"}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link}, _transport_link{transport_link},
         _layout{{
             &root.link(),
             &_message_input,
@@ -23,19 +30,20 @@ struct RawControlPage : UI::Page {
         }} {
         widgets({_layout.data(), _layout.size()});
 
-        _send_button.callback([this]() {            
+        _send_button.callback([this]() {
             kf::memory::StringView s{_message.data(), _message.size()};
             s = s.sub(0, s.find('\0').valueOr(s.size()));
 
             logger.debug(s);
 
-            _control.sendRawMessage({reinterpret_cast<const kf::u8 *>(s.data()), s.size()});
+            (void) _transport_link.send({reinterpret_cast<const kf::u8 *>(s.data()), s.size()});
         });
     }
 
     void onEntry() noexcept override {
-        _control.mode(Control::Mode::Raw);
-        _control.onRawMessage([](kf::memory::Slice<const kf::u8> buffer) {
+        _protocol_link.protocol(_protocol_registry.raw());
+
+        _protocol_registry.raw().callback([](kf::memory::Slice<const kf::u8> buffer) {
             logger.info(
                 kf::memory::ArrayString<64>::formatted(
                     "Got %d bytes from primary peer",
@@ -45,14 +53,16 @@ struct RawControlPage : UI::Page {
     }
 
     void onExit() noexcept override {
-        _control.onRawMessage(Control::RawMessageCallback{nullptr});
+        _protocol_registry.raw().callback(protocol::RawProtocol::CallbackType{});
     }
 
 private:
     static constexpr auto logger{kf::Logger::create("RawControlPage")};
 
     kf::memory::Array<char, 200> _message{};
-    Control &_control;
+    protocol::ProtocolRegistry &_protocol_registry;
+    protocol::ProtocolLink &_protocol_link;
+    transport::TransportLink &_transport_link;
 
     // widgets
 
