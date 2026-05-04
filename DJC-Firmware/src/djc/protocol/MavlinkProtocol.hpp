@@ -80,10 +80,10 @@ struct MavlinkProtocol :
             _heartbeat_timer_reset_required = false;
             _heartbear_timer.start(now);
 
-            sendHeartbeat(transport_link);
+            (void) sendHeartbeat(transport_link);
         }
 
-        sendManualControl(transport_link, input);
+        (void) sendManualControl(transport_link, input);
     }
 
     void receive(kf::memory::Slice<const kf::u8> buffer) noexcept override {
