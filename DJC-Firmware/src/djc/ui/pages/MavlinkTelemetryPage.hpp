@@ -17,9 +17,9 @@
 namespace djc::ui::pages {
 
 /// @brief MAVLink telemetry page
-struct MavLinkTelemetryPage : UI::Page {
-    explicit MavLinkTelemetryPage(UI::Page &root, Control &control) noexcept :
-        Page{"MAV Link: Telemetry"}, _control{control},
+struct MavlinkTelemetryPage : UI::Page {
+    explicit MavlinkTelemetryPage(UI::Page &root, Control &control) noexcept :
+        Page{"Mavlink: Telemetry"}, _control{control},
         _layout{{
             &root.link(),
             &_imu_display,
@@ -47,7 +47,7 @@ struct MavLinkTelemetryPage : UI::Page {
     }
 
 private:
-    static constexpr auto logger{kf::Logger::create("MavLinkTelemetryPage")};
+    static constexpr auto logger{kf::Logger::create("MavlinkTelemetryPage")};
 
     Control &_control;
     bool _need_update{false}; 
