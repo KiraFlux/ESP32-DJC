@@ -6,6 +6,7 @@
 #include <kf/memory/Array.hpp>
 
 #include "djc/ConfigManager.hpp"
+#include "djc/protocol/ProtocolRegistry.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/widgets/TextInput.hpp"
 
@@ -18,7 +19,7 @@ struct ConfigPage : UI::Page {
         _layout{{
             &root.link(),
             &_device_name_input,
-            &_init_mode_selector_label,
+            &_labeled_default_protocol_mode_selector,
             &_save_storage,
             &_load_storage,
             &_reset_storage,
@@ -39,13 +40,14 @@ struct ConfigPage : UI::Page {
             storage.reset();
         });
 
-        _init_mode_selector.callback([](Control::Mode init_mode) {
-            storage.config().control.init_mode = init_mode;
+        _default_protocol_mode_selector.callback([](Mode mode) {
+            storage.config().init_protocol_mode = mode;
         });
     }
 
 private:
-    using ControlModeSelectWidget = UI::ComboBox<Control::Mode>;
+    using Mode = protocol::ProtocolRegistry::Mode;
+    using ProtocolModeSelector = UI::ComboBox<Mode>;
 
     inline static auto &storage{djc::ConfigManager::instance()};
 
@@ -53,21 +55,21 @@ private:
     widgets::TextInput _device_name_input{};
     UI::Button _save_storage{"Save"};
     UI::Button _load_storage{"Load"};
-    UI::Button _reset_storage{"Reset"};
+    UI::Button _reset_storage{"Reset (RAM)"};
 
-    kf::memory::Array<ControlModeSelectWidget::Item, 2> _control_mode_options{{
-        {Control::stringFromMode(Control::Mode::MavLink), Control::Mode::MavLink},
-        {Control::stringFromMode(Control::Mode::Raw), Control::Mode::Raw},
+    kf::memory::Array<ProtocolModeSelector::Item, 2> _control_mode_options{{
+        {protocol::ProtocolRegistry::stringFromMode(Mode::Mavlink), Mode::Mavlink},
+        {protocol::ProtocolRegistry::stringFromMode(Mode::Raw), Mode::Raw},
     }};
 
-    ControlModeSelectWidget::Config _control_mode_config{
+    ProtocolModeSelector::Config _control_mode_config{
         .items = {_control_mode_options.data(), _control_mode_options.size()},
     };
 
     // TODO: set init value from storage
-    ControlModeSelectWidget _init_mode_selector{_control_mode_config};
+    ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};
 
-    UI::Labeled _init_mode_selector_label{"Init Control", _init_mode_selector};
+    UI::Labeled _labeled_default_protocol_mode_selector{"Default Protocol", _default_protocol_mode_selector};
 
     // layout
     kf::memory::Array<UI::Widget *, 6> _layout;
