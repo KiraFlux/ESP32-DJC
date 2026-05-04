@@ -4,6 +4,7 @@
 #pragma once
 
 #include <kf/aliases.hpp>
+#include <kf/memory/StringView.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
@@ -43,16 +44,18 @@ struct ProtocolRegistry final :
 
     using kf::mixin::Configurable<Config>::Configurable;
 
-    Protocol &get(Mode mode) noexcept {
+    [[nodiscard]] Protocol &get(Mode mode) noexcept {
         switch (mode) {
             case Mode::Raw: return _raw_protocol;
             case Mode::Mavlink: return _mavlink_protocol;
         }
     }
 
-    RawProtocol &raw() noexcept { return _raw_protocol; }
+    [[nodiscard]] RawProtocol &raw() noexcept { return _raw_protocol; }
 
-    MavlinkProtocol &mavlink() noexcept { return _mavlink_protocol; }
+    [[nodiscard]] MavlinkProtocol &mavlink() noexcept { return _mavlink_protocol; }
+
+    [[nodiscard]] static constexpr kf::memory::StringView stringFromMode(Mode mode) noexcept { return (mode == Mode::Raw) ? "Raw" : "MavLink"; }
 
 private:
     RawProtocol _raw_protocol{};
