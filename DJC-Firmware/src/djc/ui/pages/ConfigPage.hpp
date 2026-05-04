@@ -55,7 +55,7 @@ private:
     widgets::TextInput _device_name_input{};
     UI::Button _save_storage{"Save"};
     UI::Button _load_storage{"Load"};
-    UI::Button _reset_storage{"Reset (RAM)"};
+    UI::Button _reset_storage{"Reset (RAM cache)"};
 
     kf::memory::Array<ProtocolModeSelector::Item, 2> _control_mode_options{{
         {protocol::ProtocolRegistry::stringFromMode(Mode::Mavlink), Mode::Mavlink},
@@ -69,7 +69,7 @@ private:
     // TODO: set init value from storage
     ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};
 
-    UI::Labeled _labeled_default_protocol_mode_selector{"Default Protocol", _default_protocol_mode_selector};
+    UI::Labeled _labeled_default_protocol_mode_selector{"Init Protocol", _default_protocol_mode_selector};
 
     // layout
     kf::memory::Array<UI::Widget *, 6> _layout;
