@@ -1,25 +1,35 @@
 // Copyright (c) 2026 KiraFlux
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+// framework
 #include <Arduino.h>
 
+// lib
 #include <kf/Logger.hpp>
 #include <kf/memory/Storage.hpp>
 #include <kf/memory/StringView.hpp>
 
+// djc
 #include "djc/ConfigManager.hpp"
 #include "djc/Control.hpp"
 #include "djc/DisplayManager.hpp"
+#include "djc/ManualInput.hpp"
 #include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
+
 #include "djc/input/InputHandler.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
+
+#include "djc/protocol/ProtocolLink.hpp"
+#include "djc/protocol/ProtocolRegistry.hpp"
+
 #include "djc/transport/EspNowTransport.hpp"
 #include "djc/transport/TransportLink.hpp"
+
 #include "djc/ui/pages/ConfigPage.hpp"
-#include "djc/ui/pages/MavLinkTelemetryPage.hpp"
+#include "djc/ui/pages/MavlinkTelemetryPage.hpp"
 #include "djc/ui/pages/PeerExplorerPage.hpp"
-#include "djc/ui/pages/RawControlPage.hpp"
+#include "djc/ui/pages/RawProtocolPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
 
 // services
@@ -52,9 +62,17 @@ static djc::PeerScanner peer_scanner{
     transport_link,
 };
 
+static djc::protocol::ProtocolLink protocol_link{
+    storage.config().protocol_link,
+};
+
+static djc::protocol::ProtocolRegistry protocol_registry{
+    storage.config().protocol_registry,
+};
+
 static djc::Control control{
-    storage.config().control,
     transport_link,
+    protocol_link,
 };
 
 static djc::DisplayManager display_manager{
@@ -67,14 +85,17 @@ static djc::DisplayManager display_manager{
 
 static djc::ui::pages::RootPage root_page{};
 
-static djc::ui::pages::MavLinkTelemetryPage mavlink_telemetry_page{
+static djc::ui::pages::MavlinkTelemetryPage mavlink_telemetry_page{
     root_page,
-    control,
+    protocol_registry,
+    protocol_link,
 };
 
-static djc::ui::pages::RawControlPage raw_control_page{
+static djc::ui::pages::RawProtocolPage raw_protocol_page{
     root_page,
-    control,
+    protocol_registry,
+    protocol_link,
+    transport_link,
 };
 
 static djc::ui::pages::PeerExplorerPage peer_explorer_page{
@@ -115,9 +136,13 @@ void setup() {
         logger.error("failed to initialize espnow transport");
     }
 
-    peer_scanner.init();
+    protocol_link.protocol(protocol_registry.get(storage.config().init_protocol_mode));
 
-    control.init();
+    transport_link.onReceive([](const djc::transport::PeerAddress &, kf::memory::Slice<const kf::u8> buffer){
+        protocol_link.receive(buffer);
+    });
+
+    peer_scanner.init();
 
     {
         using E = djc::ui::UI::Event;
@@ -161,7 +186,7 @@ void setup() {
 
         // apply page links
         root_page.attach(mavlink_telemetry_page);
-        root_page.attach(raw_control_page);
+        root_page.attach(raw_protocol_page);
         root_page.attach(peer_explorer_page);
         root_page.attach(config_page);
 
@@ -182,7 +207,7 @@ void loop() {
     peer_scanner.poll(now);
 
     if (control.enabled()) {
-        using I = djc::Control::Input;
+        using I = djc::ManualInput;
 
         const I control_input{
             .left_x = I::fromNormalized(periphery.left_joystick.axis_x.read()),
