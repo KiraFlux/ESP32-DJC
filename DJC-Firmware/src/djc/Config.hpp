@@ -7,11 +7,12 @@
 #include <kf/memory/Array.hpp>
 #include <kf/memory/StringView.hpp>
 
-#include "djc/Control.hpp"
 #include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/input/InputHandler.hpp"
 #include "djc/memory/Box.hpp"
+#include "djc/protocol/ProtocolLink.hpp"
+#include "djc/protocol/ProtocolRegistry.hpp"
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 
@@ -26,17 +27,20 @@ struct Config {
 
     using PeerFavoritesConfig = djc::memory::Box<PeerNote, kf::u8, 8>;
 
-    static constexpr auto latest_version{5};
+    static constexpr auto latest_version{6};
 
     kf::u16 version;
+    kf::memory::Array<char, 16> device_name;
+    PeerFavoritesConfig peer_favorites;
 
     Periphery::Config periphery;
     InputHandler::Config input_handler;
+
     transport::TransportLink::Config transport_link;
-    Control::Config control;
     PeerScanner::Config peer_scanner;
-    PeerFavoritesConfig peer_favorites;
-    kf::memory::Array<char, 16> device_name;
+
+    protocol::ProtocolLink::Config protocol_link;
+    protocol::ProtocolRegistry::Config protocol_registry;
 
     [[nodiscard]] constexpr kf::memory::StringView deviceName() const noexcept {
         return kf::memory::StringView{device_name.data(), device_name.size()};
@@ -47,13 +51,17 @@ struct Config {
     static constexpr Config defaults() noexcept {
         return Config{
             .version = latest_version,
+            .device_name = {"ESP32-DJC"},
+            .peer_favorites = PeerFavoritesConfig::defaults(),
+
             .periphery = Periphery::Config::defaults(),
             .input_handler = InputHandler::Config::defaults(),
+
             .transport_link = transport::TransportLink::Config::defaults(),
-            .control = Control::Config::defaults(),
             .peer_scanner = PeerScanner::Config::defaults(),
-            .peer_favorites = PeerFavoritesConfig::defaults(),
-            .device_name = {"ESP32-DJC"},
+
+            .protocol_link = protocol::ProtocolLink::Config::defaults(),
+            .protocol_registry = protocol::ProtocolRegistry::Config::defaults(),
         };
     }
 };
