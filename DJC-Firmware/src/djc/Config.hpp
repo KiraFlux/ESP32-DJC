@@ -30,8 +30,8 @@ struct Config {
     static constexpr auto latest_version{6};
 
     kf::u16 version;
-    
-    protocol::ProtocolRegistry::Mode init_mode;
+
+    protocol::ProtocolRegistry::Mode init_protocol_mode;
     kf::memory::Array<char, 16> device_name;
     PeerFavoritesConfig peer_favorites;
 
@@ -54,7 +54,7 @@ struct Config {
         return Config{
             .version = latest_version,
 
-            .init_mode = protocol::ProtocolRegistry::Mode::Mavlink,
+            .init_protocol_mode = protocol::ProtocolRegistry::Mode::Mavlink,
             .device_name = {"ESP32-DJC"},
             .peer_favorites = PeerFavoritesConfig::defaults(),
 
