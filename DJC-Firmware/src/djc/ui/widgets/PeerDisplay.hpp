@@ -8,14 +8,16 @@
 #include <kf/math/units.hpp>
 #include <kf/memory/ArrayString.hpp>
 #include <kf/memory/StringView.hpp>
+#include <kf/mixin/Callbacked.hpp>
 
 #include "djc/PeerScanner.hpp"
+#include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 
 namespace djc::ui::widgets {
 
-struct PeerDisplay final : UI::Widget {
+struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::PeerAddress &> {
 
     enum class State : char {
         Cleared = '\xF8',
@@ -23,16 +25,14 @@ struct PeerDisplay final : UI::Widget {
         PreCleared = '\xF9',
     };
 
-    static constexpr kf::math::Milliseconds pre_cleared_highligt_timespan{2000};
+    static constexpr auto extreme_age_factor{0.75f};
 
-    void transportLink(transport::TransportLink &new_transport_link) noexcept { _transport_link = &new_transport_link; }
-
-    void update(const kf::Option<PeerScanner::Entry> &entry_option, kf::math::Milliseconds now,kf::math::Milliseconds max_life_time) noexcept {
+    void update(const kf::Option<PeerScanner::Entry> &entry_option, kf::math::Milliseconds now, kf::math::Milliseconds max_life_time) noexcept {
         _entry_option = entry_option;
 
         if (_entry_option.hasValue()) {
             const auto age = now - _entry_option.value().last_seen;
-            _state = (age + pre_cleared_highligt_timespan >= max_life_time) ? State::PreCleared : State::Stable;
+            _state = (age >= max_life_time * extreme_age_factor) ? State::PreCleared : State::Stable;
         } else {
             _state = State::Cleared;
         }
@@ -52,17 +52,15 @@ struct PeerDisplay final : UI::Widget {
     }
 
     bool onClick() noexcept override {
-        if (not _entry_option.hasValue()) { return false; }
-
-        if (_transport_link != nullptr and _transport_link->connect(_entry_option.value().address)) {
-            clear();
+        if (_entry_option.hasValue()) {
+            this->invoke(_entry_option.value().address);
+            return true;
+        } else {
+            return false;
         }
-
-        return true;
     }
 
 private:
-    transport::TransportLink *_transport_link{nullptr};
     kf::Option<PeerScanner::Entry> _entry_option{};
     State _state{State::Cleared};
 };
