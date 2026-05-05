@@ -11,6 +11,7 @@
 #include <kf/memory/ArrayString.hpp>
 #include <kf/memory/StringView.hpp>
 
+#include "djc/MavlinkTelemetryRegistry.hpp"
 #include "djc/protocol/MavlinkProtocol.hpp"
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
@@ -20,8 +21,15 @@ namespace djc::ui::pages {
 
 /// @brief MAVLink telemetry page
 struct MavlinkTelemetryPage : UI::Page {
-    explicit MavlinkTelemetryPage(UI::Page &root, protocol::ProtocolRegistry &protocol_registry, protocol::ProtocolLink &protocol_link) noexcept :
-        Page{"Mavlink: Telemetry"}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link},
+    explicit MavlinkTelemetryPage(
+        UI::Page &root,
+        protocol::ProtocolRegistry &protocol_registry,
+        protocol::ProtocolLink &protocol_link,
+        MavlinkTelemetryRegistry &mavlink_telemetry_registry) noexcept :
+        Page{"Mavlink: Telemetry"},
+        _protocol_registry{protocol_registry},
+        _protocol_link{protocol_link},
+        _mavlink_telemetry_registry{mavlink_telemetry_registry},
 
         _layout{{
             &root.link(),
@@ -32,19 +40,50 @@ struct MavlinkTelemetryPage : UI::Page {
     }
 
     void onEntry() noexcept override {
-        _protocol_registry.mavlink().callback([this](const mavlink_message_t &message) {
-            _need_update |= onMavlinkMessage(message);
-        });
         _protocol_link.protocol(_protocol_registry.mavlink());
-    }
-
-    void onExit() noexcept override {
-        _protocol_registry.mavlink().callback(protocol::MavlinkProtocol::CallbackType{});
+        _last_imu = _last_attitude = _last_serial_control = 0;
     }
 
     void onUpdate(kf::math::Milliseconds now) noexcept override {
-        if (_need_update) {
-            _need_update = false;
+        bool need_update{false};
+
+        if (_mavlink_telemetry_registry.scaled_imu.updatedSince(_last_imu)) {
+            _last_imu = now;
+            const auto &imu = _mavlink_telemetry_registry.scaled_imu.value();
+
+            (void) _imu_buffer.format(
+                "Acc %+.3f %+.3f %+.3f",
+                float(imu.xacc * 0.001f),
+                float(imu.yacc * 0.001f),
+                float(imu.zacc * 0.001f));
+            _imu_display.value(_imu_buffer.view());
+
+            need_update = true;
+        }
+
+        if (_mavlink_telemetry_registry.attitude_quaternion.updatedSince(_last_attitude)) {
+            _last_attitude = now;
+            const auto &attitude = _mavlink_telemetry_registry.attitude_quaternion.value();
+
+            (void) _attitude_buffer.format(
+                "Q %+.2f %+.2f %+.2f %+.2f",
+                attitude.q1,
+                attitude.q2,
+                attitude.q3,
+                attitude.q4);
+            _attitude_display.value(_attitude_buffer.view());
+
+            need_update = true;
+        }
+
+        if (_mavlink_telemetry_registry.serial_control.updatedSince(_last_serial_control)) {
+            _last_serial_control = now;
+            const auto &s = _mavlink_telemetry_registry.serial_control.value();
+
+            logger.debug({reinterpret_cast<const char *>(s.data), s.count});// temp.
+        }
+
+        if (need_update) {
             UI::instance().addEvent(UI::Event::update());
         }
     }
@@ -54,66 +93,15 @@ private:
 
     protocol::ProtocolRegistry &_protocol_registry;
     protocol::ProtocolLink &_protocol_link;
-    bool _need_update{false};
+    MavlinkTelemetryRegistry &_mavlink_telemetry_registry;
+    kf::math::Milliseconds _last_imu{}, _last_attitude{}, _last_serial_control{};
 
     // widgets
+    kf::memory::ArrayString<64> _attitude_buffer{"..."}, _imu_buffer{"..."};
 
-    kf::memory::ArrayString<64> _attitude_buffer{"..."};
-    kf::memory::ArrayString<64> _imu_display_buffer{"..."};
-
-    UI::Display<kf::memory::StringView> _attitude_display{_attitude_buffer.view()};
-    UI::Display<kf::memory::StringView> _imu_display{_imu_display_buffer.view()};
+    UI::Display<kf::memory::StringView> _attitude_display{_attitude_buffer.view()}, _imu_display{_imu_buffer.view()};
 
     kf::memory::Array<UI::Widget *, 3> _layout;
-
-    [[nodiscard]] bool onMavlinkMessage(const mavlink_message_t &message) noexcept {
-        switch (message.msgid) {
-            case MAVLINK_MSG_ID_ATTITUDE_QUATERNION: {
-                mavlink_attitude_quaternion_t attitude_quaternion;
-                mavlink_msg_attitude_quaternion_decode(&message, &attitude_quaternion);
-
-                (void) _attitude_buffer.format(
-                    "AtQ %+.2f %+.2f %+.2f %+.2f",
-                    float(attitude_quaternion.q1),
-                    float(attitude_quaternion.q2),
-                    float(attitude_quaternion.q3),
-                    float(attitude_quaternion.q4));
-                _attitude_display.value(_attitude_buffer.view());
-
-                return true;
-            }
-
-            case MAVLINK_MSG_ID_SERIAL_CONTROL: {
-                mavlink_serial_control_t serial_control;
-                mavlink_msg_serial_control_decode(&message, &serial_control);
-
-                constexpr auto len{sizeof(serial_control.data)};
-                serial_control.data[len - 1] = '\0';
-
-                logger.info({reinterpret_cast<const char *>(serial_control.data), static_cast<kf::usize>(serial_control.count)});
-
-                return false;
-            }
-
-            case MAVLINK_MSG_ID_SCALED_IMU: {
-                mavlink_scaled_imu_t imu;
-                mavlink_msg_scaled_imu_decode(&message, &imu);
-
-                (void) _imu_display_buffer.format(
-                    "Acc %+.3f %+.3f %+.3f",
-                    float(imu.xacc * 0.001f),
-                    float(imu.yacc * 0.001f),
-                    float(imu.zacc * 0.001f));
-                _imu_display.value(_imu_display_buffer.view());
-
-                return true;
-            }
-
-            default:
-                // Unhandled message type
-                return false;
-        }
-    }
 };
 
 }// namespace djc::ui::pages
