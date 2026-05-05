@@ -146,8 +146,8 @@ void setup() {
         protocol_link.receive(buffer);
     });
 
-    protocol_registry.mavlink().callback([](const mavlink_message_t &message){
-        mavlink_telemetry_registry.update(millis(), message);
+    protocol_registry.mavlink().callback([](const mavlink_message_t &message) {
+        mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(millis()), message);
     });
 
     peer_scanner.init();
