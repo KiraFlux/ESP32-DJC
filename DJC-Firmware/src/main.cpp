@@ -14,6 +14,7 @@
 #include "djc/Control.hpp"
 #include "djc/DisplayManager.hpp"
 #include "djc/ManualInput.hpp"
+#include "djc/MavlinkTelemetryRegistry.hpp"
 #include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
 
@@ -65,6 +66,8 @@ static djc::protocol::ProtocolRegistry protocol_registry{
     storage.config().protocol_registry,
 };
 
+static djc::MavlinkTelemetryRegistry mavlink_telemetry_registry{};
+
 static djc::PeerScanner peer_scanner{
     storage.config().peer_scanner,
     transport_link,
@@ -95,6 +98,7 @@ static djc::ui::pages::MavlinkTelemetryPage mavlink_telemetry_page{
     root_page,
     protocol_registry,
     protocol_link,
+    mavlink_telemetry_registry,
 };
 
 static djc::ui::pages::RawProtocolPage raw_protocol_page{
@@ -138,8 +142,12 @@ void setup() {
 
     protocol_link.protocol(protocol_registry.get(storage.config().init_protocol_mode));
 
-    transport_link.onReceive([](const djc::transport::PeerAddress &, kf::memory::Slice<const kf::u8> buffer){
+    transport_link.onReceive([](const djc::transport::PeerAddress &, kf::memory::Slice<const kf::u8> buffer) {
         protocol_link.receive(buffer);
+    });
+
+    protocol_registry.mavlink().callback([](const mavlink_message_t &message){
+        mavlink_telemetry_registry.update(millis(), message);
     });
 
     peer_scanner.init();
