@@ -6,6 +6,7 @@
 #include <kf/Option.hpp>
 #include <kf/memory/Array.hpp>
 #include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StringView.hpp>
 
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
@@ -13,6 +14,10 @@
 namespace djc::ui::pages {
 
 struct PeerDetailPage final : UI::Page {
+
+    static constexpr kf::memory::StringView
+        label_connect_ready{"Connect"},
+        label_connect_failed{"Failed to connect"};
 
     explicit PeerDetailPage(UI::Page &root, transport::TransportLink &transport_link) noexcept :
         Page{"Oh no!"},
@@ -24,9 +29,13 @@ struct PeerDetailPage final : UI::Page {
     {
         widgets({_layout.data(), _layout.size()});
 
-        _connection_button.callback([this, &transport_link]() -> void {
+        _connection_button.callback([this, &transport_link, &root]() -> void {
             if (_peer_address.hasValue()) {
-                (void) transport_link.connect(_peer_address.value());
+                if (transport_link.connect(_peer_address.value())) {
+                    UI::instance().bindPage(root);
+                } else {
+                    _connection_button.label(label_connect_failed);
+                }
             }
         });
     }
@@ -35,13 +44,14 @@ struct PeerDetailPage final : UI::Page {
         _peer_address.value(new_peer_address);
         _label_buffer = new_peer_address.toString();
         this->label(_label_buffer.view());
+        _connection_button.label(label_connect_ready);
     }
 
 private:
     kf::Option<transport::PeerAddress> _peer_address{};
 
     transport::PeerAddress::ReprString _label_buffer{};
-    UI::Button _connection_button{"Connect"};
+    UI::Button _connection_button{label_connect_ready};
     kf::memory::Array<UI::Widget *, 2> _layout;
 };
 
