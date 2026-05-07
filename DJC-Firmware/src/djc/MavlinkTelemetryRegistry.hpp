@@ -44,11 +44,19 @@ struct MavlinkTelemetryRegistry final : kf::mixin::NonCopyable {
         kf::math::Milliseconds _last_update_time{0u};
     };
 
+    // slow telemetry
+
     Entry<mavlink_heartbeat_t> heartbeat{mavlink_msg_heartbeat_decode};
-    Entry<mavlink_attitude_quaternion_t> attitude_quaternion{mavlink_msg_attitude_quaternion_decode};
-    Entry<mavlink_serial_control_t> serial_control{mavlink_msg_serial_control_decode};
-    Entry<mavlink_scaled_imu_t> scaled_imu{mavlink_msg_scaled_imu_decode};
+    Entry<mavlink_extended_sys_state_t> extended_sys_state{mavlink_msg_extended_sys_state_decode};
     Entry<mavlink_battery_status_t> battery_status{mavlink_msg_battery_status_decode};
+    Entry<mavlink_serial_control_t> serial_control{mavlink_msg_serial_control_decode};
+
+    // fast telemetry
+
+    Entry<mavlink_attitude_quaternion_t> attitude_quaternion{mavlink_msg_attitude_quaternion_decode};
+    Entry<mavlink_scaled_imu_t> scaled_imu{mavlink_msg_scaled_imu_decode};
+    Entry<mavlink_rc_channels_raw_t> rc_channels_raw{mavlink_msg_rc_channels_raw_decode};
+    Entry<mavlink_actuator_control_target_t> actuator_control_target{mavlink_msg_actuator_control_target_decode};
 
     /// @brief Route an incoming MAVLink message to the correct entry based on its ID
     /// @note Only known message types are dispatched; unknown IDs are silently ignored.
@@ -58,20 +66,32 @@ struct MavlinkTelemetryRegistry final : kf::mixin::NonCopyable {
                 heartbeat.update(now, message);
                 return;
 
-            case MAVLINK_MSG_ID_ATTITUDE_QUATERNION:
-                attitude_quaternion.update(now, message);
+            case MAVLINK_MSG_ID_EXTENDED_SYS_STATE:
+                extended_sys_state.update(now, message);
+                return;
+
+            case MAVLINK_MSG_ID_BATTERY_STATUS:
+                battery_status.update(now, message);
                 return;
 
             case MAVLINK_MSG_ID_SERIAL_CONTROL:
                 serial_control.update(now, message);
                 return;
 
+            case MAVLINK_MSG_ID_ATTITUDE_QUATERNION:
+                attitude_quaternion.update(now, message);
+                return;
+
             case MAVLINK_MSG_ID_SCALED_IMU:
                 scaled_imu.update(now, message);
                 return;
 
-            case MAVLINK_MSG_ID_BATTERY_STATUS:
-                battery_status.update(now, message);
+            case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+                rc_channels_raw.update(now, message);
+                return;
+
+            case MAVLINK_MSG_ID_ACTUATOR_CONTROL_TARGET:
+                actuator_control_target.update(now, message);
                 return;
         }
     }
