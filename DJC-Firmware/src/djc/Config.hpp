@@ -21,13 +21,13 @@ namespace djc {
 struct Config {
 
     struct PeerNote {
-        char address;// temp
-        kf::memory::Array<char, 10> info;
+        transport::PeerAddress address;
+        kf::memory::Array<char, 9> info;
     };
 
     using PeerFavoritesConfig = djc::memory::Box<PeerNote, kf::u8, 8>;
 
-    static constexpr auto latest_version{6};
+    static constexpr auto latest_version{7};
 
     kf::u16 version;
 
