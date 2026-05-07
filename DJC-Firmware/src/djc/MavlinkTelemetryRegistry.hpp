@@ -48,6 +48,7 @@ struct MavlinkTelemetryRegistry final : kf::mixin::NonCopyable {
     Entry<mavlink_attitude_quaternion_t> attitude_quaternion{mavlink_msg_attitude_quaternion_decode};
     Entry<mavlink_serial_control_t> serial_control{mavlink_msg_serial_control_decode};
     Entry<mavlink_scaled_imu_t> scaled_imu{mavlink_msg_scaled_imu_decode};
+    Entry<mavlink_battery_status_t> battery_status{mavlink_msg_battery_status_decode};
 
     /// @brief Route an incoming MAVLink message to the correct entry based on its ID
     /// @note Only known message types are dispatched; unknown IDs are silently ignored.
@@ -67,6 +68,10 @@ struct MavlinkTelemetryRegistry final : kf::mixin::NonCopyable {
 
             case MAVLINK_MSG_ID_SCALED_IMU:
                 scaled_imu.update(now, message);
+                return;
+
+            case MAVLINK_MSG_ID_BATTERY_STATUS:
+                battery_status.update(now, message);
                 return;
         }
     }
