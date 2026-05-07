@@ -134,7 +134,7 @@ private:
         }
 
         espnow.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::memory::Slice<const kf::u8> buffer){
-            invokeReceiveForeign(PeerAddress{mac}, buffer);    
+            invokeReceiveForeign(PeerAddress::fromEspnowMac(mac), buffer);    
         });
 
         _broadcast_peer = addPeer(broadcast_mac_address);

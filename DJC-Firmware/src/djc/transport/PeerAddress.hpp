@@ -18,10 +18,14 @@ struct PeerAddress {
 
     using ReprString = kf::memory::ArrayString<32>;
 
-    /// @brief Construct an ESP‑NOW peer address from a MAC.
+    /// @brief create an ESP‑NOW peer address from a MAC.
     /// @param mac 6‑byte MAC address (EspNow::Mac).
-    explicit constexpr PeerAddress(const kf::network::EspNow::Mac &mac) noexcept :
-        _kind{Kind::EspNow}, _mac{mac} {}
+    static constexpr PeerAddress fromEspnowMac(const kf::network::EspNow::Mac &mac) noexcept {
+        PeerAddress ret{};
+        ret._kind = Kind::EspNow,
+        ret._mac = mac;
+        return ret;
+    }
 
     /// @brief Return the kind of transport this address belongs to.
     [[nodiscard]] Kind kind() const noexcept { return _kind; }
