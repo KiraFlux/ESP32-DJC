@@ -15,6 +15,7 @@
 #include "djc/DisplayManager.hpp"
 #include "djc/ManualInput.hpp"
 #include "djc/MavlinkTelemetryRegistry.hpp"
+#include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
 
@@ -68,9 +69,14 @@ static djc::protocol::ProtocolRegistry protocol_registry{
 
 static djc::MavlinkTelemetryRegistry mavlink_telemetry_registry{};
 
+static djc::PeerFavoritesRegistry peer_favoriter_registry{
+    {storage.config().peer_favorites.data(), storage.config().peer_favorites.size()},
+};
+
 static djc::PeerScanner peer_scanner{
     storage.config().peer_scanner,
     transport_link,
+    peer_favoriter_registry,
 };
 
 static djc::Control control{
@@ -90,8 +96,9 @@ static djc::ui::pages::RootPage root_page{};
 
 static djc::ui::pages::PeerExplorerPage peer_explorer_page{
     root_page,
-    peer_scanner,
     transport_link,
+    peer_scanner,
+    peer_favoriter_registry,
 };
 
 static djc::ui::pages::MavlinkTelemetryPage mavlink_telemetry_page{
