@@ -9,6 +9,7 @@
 #include <kf/memory/ArrayString.hpp>
 #include <kf/memory/Slice.hpp>
 
+#include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/PeerScanner.hpp"
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
@@ -25,21 +26,23 @@ struct PeerExplorerPage : UI::Page {
 
     explicit PeerExplorerPage(
         UI::Page &root,
+        transport::TransportLink &transport_link,
         PeerScanner &peer_scanner,
-        transport::TransportLink &transport_link) noexcept :
+        PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{"Peer Explorer"},
-        _peer_scanner{peer_scanner},
         _transport_link{transport_link},
+        _peer_scanner{peer_scanner},
         _layout{{
             &root.link(),
             &_primary_connection_status_button,
             &_available_label,
-        }}
+        }},
+        _peer_detail_page{*this, _transport_link, peer_favorites_registry}
 
     {
         for (auto i = 0u; i < _peer_displays.size(); i += 1) {
             _peer_displays[i].callback([this](const transport::PeerAddress &address) -> void {
-                _peer_detail_page.peerAddress(address);
+                _peer_detail_page.bindPeer(address);
                 UI::instance().bindPage(_peer_detail_page);
             });
 
@@ -83,20 +86,20 @@ struct PeerExplorerPage : UI::Page {
     }
 
 private:
-    PeerScanner &_peer_scanner;
     transport::TransportLink &_transport_link;
+    PeerScanner &_peer_scanner;
     kf::math::Timer _redraw_timer{redraw_period};
 
     kf::memory::ArrayString<64> _available_label_buffer{}, _connection_button_buffer{};
 
-    UI::Button _primary_connection_status_button{""};
+    UI::Button _primary_connection_status_button{{}};
     UI::Display<kf::memory::StringView> _available_label{_available_label_buffer.view()};
     kf::memory::Array<widgets::PeerDisplay, PeerScanner::max_entries> _peer_displays{};
 
     kf::memory::Array<UI::Widget *, (peer_display_start_index + PeerScanner::max_entries)> _layout;
 
     // child pages
-    PeerDetailPage _peer_detail_page{*this, _transport_link};
+    PeerDetailPage _peer_detail_page;
 
     kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
         return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);

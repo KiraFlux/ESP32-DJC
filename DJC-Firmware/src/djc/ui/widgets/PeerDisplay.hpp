@@ -42,12 +42,9 @@ struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::Pe
         render.beginBlock();
 
         if (_entry_option.hasValue()) {
-            render.value(
-                kf::memory::ArrayString<64>::formatted(
-                    "%c%s\x80",
-                    static_cast<char>(_state),
-                    _entry_option.value().address.toString().data())
-                    .view());
+            const auto content = (nullptr == _entry_option.value().peer_favorites_registry_record) ? _entry_option.value().address.toString().data() : _entry_option.value().peer_favorites_registry_record->description.data();
+
+            render.value(kf::memory::ArrayString<64>::formatted("%c%s\x80", static_cast<char>(_state), content).view());
         }
 
         render.endBlock();
