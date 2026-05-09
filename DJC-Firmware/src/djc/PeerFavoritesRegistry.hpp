@@ -4,6 +4,8 @@
 #pragma once
 
 #include <kf/Option.hpp>
+#include <kf/Range.hpp>
+#include <kf/aliases.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Slice.hpp>
 #include <kf/mixin/NonCopyable.hpp>
@@ -21,16 +23,20 @@ namespace djc {
 struct PeerFavoritesRegistry final : kf::mixin::NonCopyable {
 
     /// @brief A single favorite‑peer record.
-    struct Entry final : kf::mixin::NonCopyable {
+    struct Entry final {
+        using TrustType = kf::u8;
+
+        static constexpr kf::Range<TrustType> trust_range{.start = 0, .end = 10};
+
         transport::PeerAddress address;         ///< Peer address.
-        bool trusted;                           ///< Trust flag (reserved for future use).
+        TrustType trust;                        ///< Trust priority (0 - no trust, 1.. - auto connect)
         kf::memory::Array<char, 16> description;///< Human‑readable description.
 
         /// @brief Factory method for a new, empty‑description entry.
         [[nodiscard]] static Entry create(const transport::PeerAddress &address) noexcept {
             return Entry{
                 .address = address,
-                .trusted = false,
+                .trust = trust_range.start,
                 .description = {},
             };
         }
@@ -42,43 +48,39 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable {
     /// @brief Return the entire slot array, including empty slots.
     [[nodiscard]] kf::memory::Slice<const kf::Option<Entry>> all() const noexcept { return _entries; }
 
-    /// @brief Obtain a mutable pointer to an entry by address.
+    /// @brief Obtain a const pointer to an entry by address.
     /// @param address Peer address to search for.
-    /// @return Pointer to the entry, or nullptr if not found.
-    // todo replace with Option<Entry &> (not exists yet..)
-    [[nodiscard]] Entry *get(const transport::PeerAddress &address) noexcept {
-        const auto index = indexOf(address);
-        if (index.hasValue()) {
-            auto &option = _entries[index.value()];
-            if (option.hasValue()) { return &option.value(); }
+    [[nodiscard]] const kf::Option<Entry> &get(const transport::PeerAddress &address) const noexcept {
+        static constexpr kf::Option<Entry> none{};
+
+        if (const auto index = indexOf(address); index.hasValue()) {
+            if (const auto &option = _entries[index.value()]; option.hasValue()) { return option; }
         }
 
-        return nullptr;
+        return none;
     }
 
-    /// @brief Obtain a read‑only pointer to an entry by address.
-    /// @param address Peer address to search for.
-    /// @return Pointer to a const entry, or nullptr if not found.
-    [[nodiscard]] const Entry *get(const transport::PeerAddress &address) const noexcept {
-        return const_cast<PeerFavoritesRegistry *>(this)->get(address);
+    /// @brief Check exists to an entry by address
+    [[nodiscard]] bool exists(const transport::PeerAddress &address) const noexcept {
+        return indexOf(address).hasValue();
     }
 
-    /// @brief Add a new entry.
-    /// @param address Peer address to add.
-    /// @return true if the entry was added, false if it already exists or the list is full.
-    [[nodiscard]] bool add(const transport::PeerAddress &address) noexcept {
-        const auto can_add = not indexOf(address).hasValue();
+    /// @brief Update already existed or Add a new entry
+    /// @return true, or false if the list is full.
+    [[nodiscard]] bool put(const Entry &entry_to_add) noexcept {
+        if (const auto same_address_entry_index = indexOf(entry_to_add.address); same_address_entry_index.hasValue()) {
+            _entries[same_address_entry_index.value()].value(entry_to_add);
+            return true;
+        }
 
-        if (can_add) {
-            for (auto &entry: _entries) {
-                if (not entry.hasValue()) {
-                    entry.value(Entry::create(address));
-                    break;
-                }
+        for (auto &entry: _entries) {
+            if (not entry.hasValue()) {
+                entry.value(entry_to_add);
+                return true;
             }
         }
 
-        return can_add;
+        return false;
     }
 
     /// @brief Remove an entry by address.
@@ -94,7 +96,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable {
     }
 
 private:
-    kf::memory::Slice<kf::Option<Entry>> _entries;///< External slot array
+    kf::memory::Slice<kf::Option<Entry>> _entries;
 
     /// @brief Find the index of an entry by address.
     /// @param address Peer address to search for.
