@@ -37,7 +37,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable {
             return Entry{
                 .address = address,
                 .trust = trust_range.start,
-                .description = {},
+                .description = {"New-Peer"},
             };
         }
     };
