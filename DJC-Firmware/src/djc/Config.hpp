@@ -3,10 +3,12 @@
 
 #pragma once
 
+#include <kf/Option.hpp>
 #include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
 #include <kf/memory/StringView.hpp>
 
+#include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/input/InputHandler.hpp"
@@ -18,12 +20,13 @@
 namespace djc {
 
 struct Config {
-    static constexpr auto latest_version{7};
+    static constexpr auto latest_version{7u}, max_peer_favorites{8u};
 
     kf::u16 version;
 
     protocol::ProtocolRegistry::Mode init_protocol_mode;
     kf::memory::Array<char, 16> device_name;
+    kf::memory::Array<kf::Option<PeerFavoritesRegistry::Entry>, max_peer_favorites> peer_favorites;
 
     Periphery::Config periphery;
     InputHandler::Config input_handler;
@@ -46,6 +49,7 @@ struct Config {
 
             .init_protocol_mode = protocol::ProtocolRegistry::Mode::Mavlink,
             .device_name = {"ESP32-DJC"},
+            .peer_favorites = {},
 
             .periphery = Periphery::Config::defaults(),
             .input_handler = InputHandler::Config::defaults(),
