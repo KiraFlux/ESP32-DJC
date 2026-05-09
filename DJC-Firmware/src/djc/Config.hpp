@@ -10,7 +10,6 @@
 #include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/input/InputHandler.hpp"
-#include "djc/memory/Box.hpp"
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
 #include "djc/transport/PeerAddress.hpp"
@@ -19,21 +18,12 @@
 namespace djc {
 
 struct Config {
-
-    struct PeerNote {
-        transport::PeerAddress address;
-        kf::memory::Array<char, 9> info;
-    };
-
-    using PeerFavoritesConfig = djc::memory::Box<PeerNote, kf::u8, 8>;
-
     static constexpr auto latest_version{7};
 
     kf::u16 version;
 
     protocol::ProtocolRegistry::Mode init_protocol_mode;
     kf::memory::Array<char, 16> device_name;
-    PeerFavoritesConfig peer_favorites;
 
     Periphery::Config periphery;
     InputHandler::Config input_handler;
@@ -56,7 +46,6 @@ struct Config {
 
             .init_protocol_mode = protocol::ProtocolRegistry::Mode::Mavlink,
             .device_name = {"ESP32-DJC"},
-            .peer_favorites = PeerFavoritesConfig::defaults(),
 
             .periphery = Periphery::Config::defaults(),
             .input_handler = InputHandler::Config::defaults(),
