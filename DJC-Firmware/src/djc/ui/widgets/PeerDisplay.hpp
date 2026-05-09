@@ -20,7 +20,7 @@ namespace djc::ui::widgets {
 struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::PeerAddress &> {
 
     enum class State : char {
-        Cleared = '\xF8',
+        Cleared = 0,
         Stable = '\xFC',
         PreCleared = '\xF9',
     };
@@ -38,26 +38,26 @@ struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::Pe
         }
     }
 
-    void clear() noexcept {
-        _entry_option = {};
-    }
-
     void doRender(UI::RenderImpl &render) const noexcept override {
-        constexpr auto empty_string = "    -    -    ";
-        const auto content = (_entry_option.hasValue()) ? _entry_option.value().address.toString().data() : empty_string;
-
         render.beginBlock();
-        render.value(kf::memory::ArrayString<64>::formatted("%c%s\x80", static_cast<char>(_state), content).view());
+
+        if (_entry_option.hasValue()) {
+            render.value(
+                kf::memory::ArrayString<64>::formatted(
+                    "%c%s\x80",
+                    static_cast<char>(_state),
+                    _entry_option.value().address.toString().data())
+                    .view());
+        }
+
         render.endBlock();
     }
 
     bool onClick() noexcept override {
         if (_entry_option.hasValue()) {
             this->invoke(_entry_option.value().address);
-            return true;
-        } else {
-            return false;
         }
+        return _entry_option.hasValue();
     }
 
 private:

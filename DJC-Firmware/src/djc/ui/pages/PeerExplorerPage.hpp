@@ -52,44 +52,39 @@ struct PeerExplorerPage : UI::Page {
             }
         });
 
-        widgets({_layout.data(), _layout.size()});
+        widgets(layout(0));
 
         _redraw_timer.start(0);// enable timer
     }
 
     void onUpdate(kf::math::Milliseconds now) noexcept override {
-        if (_redraw_timer.expired(now)) {
-            _redraw_timer.start(now);
+        if (not _redraw_timer.expired(now)) { return; }
+        _redraw_timer.start(now);
 
-            if (_transport_link.activePeerAddress().hasValue()) {
-                (void) _connection_button_buffer.format("\xFC%s\x80", _transport_link.activePeerAddress().value().toString().data());
-                _primary_connection_status_button.label(_connection_button_buffer.view());
-            } else {
-                _primary_connection_status_button.label("\xF9"
-                                                        "Disconnected\x80");
-            }
-
-            const auto available_peers = _peer_scanner.peers();
-
-            (void) _available_label_buffer.format(" Available: %d", available_peers.size());
-            _available_label.value(_available_label_buffer.view());
-
-            for (auto i = 0u; i < _peer_displays.size(); i += 1) {
-                if (i < available_peers.size()) {
-                    _peer_displays[i].update(available_peers[i], now, _peer_scanner.config().entry_max_life_time);
-                } else {
-                    _peer_displays[i].clear();
-                }
-            }
-
-            UI::instance().addEvent(UI::Event::update());
+        if (_transport_link.activePeerAddress().hasValue()) {
+            (void) _connection_button_buffer.format("\xFC%s\x80", _transport_link.activePeerAddress().value().toString().data());
+            _primary_connection_status_button.label(_connection_button_buffer.view());
+        } else {
+            _primary_connection_status_button.label(
+                "\xF9"
+                "Disconnected\x80");
         }
+
+        const auto available_peers = _peer_scanner.peers();
+        (void) _available_label_buffer.format(" Available: %d", available_peers.size());
+        _available_label.value(_available_label_buffer.view());
+
+        for (auto i = 0u; i < available_peers.size(); i += 1) {
+            _peer_displays[i].update(available_peers[i], now, _peer_scanner.config().entry_max_life_time);
+        }
+
+        widgets(layout(available_peers.size()));
+        UI::instance().addEvent(UI::Event::update());
     }
 
 private:
     PeerScanner &_peer_scanner;
     transport::TransportLink &_transport_link;
-
     kf::math::Timer _redraw_timer{redraw_period};
 
     kf::memory::ArrayString<64> _available_label_buffer{}, _connection_button_buffer{};
@@ -101,8 +96,11 @@ private:
     kf::memory::Array<UI::Widget *, (peer_display_start_index + PeerScanner::max_entries)> _layout;
 
     // child pages
-
     PeerDetailPage _peer_detail_page{*this, _transport_link};
+
+    kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
+        return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
+    }
 };
 
 }// namespace djc::ui::pages
