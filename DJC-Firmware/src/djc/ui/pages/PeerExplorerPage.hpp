@@ -103,25 +103,25 @@ private:
         return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
     }
 
-    kf::Option<kf::memory::StringView> getPeerName(const kf::Option<PeerFavoritesRegistry::Entry> &record) const noexcept {
-        if (record.hasValue()) {
-            const auto &name = record.value().name;
-            return {{name.data(), name.size()}};
-        } else {
-            return {};
-        }
-    }
-
     kf::Option<widgets::PeerDisplay::State> createPeerDisplayState(const kf::Option<PeerScanner::Entry> &entry, kf::math::Milliseconds now) const noexcept {
         using P = widgets::PeerDisplay;
         constexpr auto extreme_age_factor{0.75f};
+
+        const auto map_record = [](const kf::Option<PeerFavoritesRegistry::Entry> &record) -> kf::Option<kf::memory::StringView> {
+            if (record.hasValue()) {
+                const auto &name = record.value().name;
+                return {{name.data(), name.size()}};
+            } else {
+                return {};
+            }
+        };
 
         if (entry.hasValue()) {
             const auto age = now - entry.value().last_seen;
             const auto extreme_age = _peer_scanner.config().entry_max_life_time * extreme_age_factor;
             return {P::State{
                 .address = entry.value().address,
-                .name = getPeerName(_peer_favorites_registry.get(entry.value().address)),
+                .name = map_record(_peer_favorites_registry.get(entry.value().address)),
                 .label_color = (age < extreme_age) ? P::Color::Normal : P::Color::Warn,
             }};
         } else {
