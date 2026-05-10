@@ -76,7 +76,6 @@ static djc::PeerFavoritesRegistry peer_favoriter_registry{
 static djc::PeerScanner peer_scanner{
     storage.config().peer_scanner,
     transport_link,
-    peer_favoriter_registry,
 };
 
 static djc::Control control{

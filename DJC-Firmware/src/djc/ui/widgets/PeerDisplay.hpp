@@ -27,11 +27,12 @@ struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::Pe
 
     static constexpr auto extreme_age_factor{0.75f};
 
-    void update(const kf::Option<PeerScanner::Entry> &entry_option, kf::math::Milliseconds now, kf::math::Milliseconds max_life_time) noexcept {
-        _entry_option = entry_option;
+    void update(const kf::Option<PeerScanner::Entry> &entry, kf::Option<kf::memory::StringView> entry_name, kf::math::Milliseconds now, kf::math::Milliseconds max_life_time) noexcept {
+        _entry = entry;
+        _entry_name = entry_name;
 
-        if (_entry_option.hasValue()) {
-            const auto age = now - _entry_option.value().last_seen;
+        if (_entry.hasValue()) {
+            const auto age = now - _entry.value().last_seen;
             _state = (age >= max_life_time * extreme_age_factor) ? State::PreCleared : State::Stable;
         } else {
             _state = State::Cleared;
@@ -41,9 +42,8 @@ struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::Pe
     void doRender(UI::RenderImpl &render) const noexcept override {
         render.beginBlock();
 
-        if (_entry_option.hasValue()) {
-            const auto content = (nullptr == _entry_option.value().peer_favorites_registry_record) ? _entry_option.value().address.toString().data() : _entry_option.value().peer_favorites_registry_record->description.data();
-
+        if (_entry.hasValue()) {
+            const auto content = _entry_name.hasValue() ? _entry_name.value().data() : _entry.value().address.toString().data();
             render.value(kf::memory::ArrayString<64>::formatted("%c%s\x80", static_cast<char>(_state), content).view());
         }
 
@@ -51,14 +51,15 @@ struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::Pe
     }
 
     bool onClick() noexcept override {
-        if (_entry_option.hasValue()) {
-            this->invoke(_entry_option.value().address);
+        if (_entry.hasValue()) {
+            this->invoke(_entry.value().address);
         }
-        return _entry_option.hasValue();
+        return _entry.hasValue();
     }
 
 private:
-    kf::Option<PeerScanner::Entry> _entry_option{};
+    kf::Option<PeerScanner::Entry> _entry{};
+    kf::Option<kf::memory::StringView> _entry_name{};
     State _state{State::Cleared};
 };
 

@@ -14,7 +14,6 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
-#include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 
@@ -57,14 +56,13 @@ struct PeerScanner final :
     struct Entry final {
         transport::PeerAddress address;  ///< Address of the peer.
         kf::math::Milliseconds last_seen;///< Timestamp of the last received packet (millis).
-        const PeerFavoritesRegistry::Entry *peer_favorites_registry_record; // todo replace with Option<T&> when will available
     };
 
     /// @brief Maximum number of peers the scanner can remember simultaneously
     static constexpr auto max_entries{8};
 
-    explicit constexpr PeerScanner(const Config &config, transport::TransportLink &transport_link, const PeerFavoritesRegistry& peer_favorites_registry) noexcept :
-        Configurable<Config>{config}, _transport_link{transport_link}, _peer_favorites_registry{peer_favorites_registry} {}
+    explicit constexpr PeerScanner(const Config &config, transport::TransportLink &transport_link) noexcept :
+        Configurable<Config>{config}, _transport_link{transport_link} {}
 
     /// @brief Returns a slice of the currently active peer entries.
     /// @return A contiguous view of the first `_active_count` elements of the internal array.
@@ -78,7 +76,6 @@ private:
     kf::memory::Array<kf::Option<Entry>, max_entries> _entries{};
     kf::math::Timer _update_poll_timer{this->config().entries_list_update_period};
     transport::TransportLink &_transport_link;
-    const PeerFavoritesRegistry& _peer_favorites_registry;
     kf::math::Milliseconds _last_poll_time{0};
     kf::usize _active_count{0};
 
@@ -101,11 +98,9 @@ private:
             // search for first empty entry
             for (auto &entry: _entries) {
                 if (not entry.hasValue()) {
-                    const auto &record = _peer_favorites_registry.get(address);
                     entry = Entry{
                         .address = address,
                         .last_seen = _last_poll_time,
-                        .peer_favorites_registry_record = (record.hasValue() ? &record.value() : nullptr),
                     };
                     return;
                 }

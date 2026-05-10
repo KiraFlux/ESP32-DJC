@@ -21,9 +21,6 @@ namespace djc::ui::pages {
 
 struct PeerExplorerPage : UI::Page {
 
-    static constexpr auto peer_display_start_index{3};
-    static constexpr kf::math::Milliseconds redraw_period{1'000};
-
     explicit PeerExplorerPage(
         UI::Page &root,
         transport::TransportLink &transport_link,
@@ -32,14 +29,12 @@ struct PeerExplorerPage : UI::Page {
         Page{"Peer Explorer"},
         _transport_link{transport_link},
         _peer_scanner{peer_scanner},
+        _peer_favorites_registry{peer_favorites_registry},
         _layout{{
             &root.link(),
             &_primary_connection_status_button,
             &_available_label,
-        }},
-        _peer_detail_page{*this, _transport_link, peer_favorites_registry}
-
-    {
+        }} {
         for (auto i = 0u; i < _peer_displays.size(); i += 1) {
             _peer_displays[i].callback([this](const transport::PeerAddress &address) -> void {
                 _peer_detail_page.bindPeer(address);
@@ -78,7 +73,8 @@ struct PeerExplorerPage : UI::Page {
         _available_label.value(_available_label_buffer.view());
 
         for (auto i = 0u; i < available_peers.size(); i += 1) {
-            _peer_displays[i].update(available_peers[i], now, _peer_scanner.config().entry_max_life_time);
+            const auto &entry = available_peers[i];
+            _peer_displays[i].update(entry, peerName(entry), now, _peer_scanner.config().entry_max_life_time);
         }
 
         widgets(layout(available_peers.size()));
@@ -86,8 +82,12 @@ struct PeerExplorerPage : UI::Page {
     }
 
 private:
+    static constexpr auto peer_display_start_index{3u};
+    static constexpr kf::math::Milliseconds redraw_period{500};
+
     transport::TransportLink &_transport_link;
     PeerScanner &_peer_scanner;
+    PeerFavoritesRegistry &_peer_favorites_registry;
     kf::math::Timer _redraw_timer{redraw_period};
 
     kf::memory::ArrayString<64> _available_label_buffer{}, _connection_button_buffer{};
@@ -99,10 +99,20 @@ private:
     kf::memory::Array<UI::Widget *, (peer_display_start_index + PeerScanner::max_entries)> _layout;
 
     // child pages
-    PeerDetailPage _peer_detail_page;
+    PeerDetailPage _peer_detail_page{*this, _transport_link, _peer_favorites_registry};
 
     kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
         return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
+    }
+
+    kf::Option<kf::memory::StringView> peerName(const kf::Option<PeerScanner::Entry> &entry) const noexcept {
+        if (not entry.hasValue()) { return {}; }
+
+        const auto &favorite_record = _peer_favorites_registry.get(entry.value().address);
+        if (not favorite_record.hasValue()) { return {}; }
+
+        const auto &description = favorite_record.value().description;
+        return {{description.data(), description.size()}};
     }
 };
 
