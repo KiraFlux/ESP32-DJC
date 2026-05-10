@@ -116,6 +116,7 @@ static djc::ui::pages::RawProtocolPage raw_protocol_page{
 
 static djc::ui::pages::ConfigPage config_page{
     root_page,
+    peer_favoriter_registry,
 };
 
 void setup() {
@@ -125,6 +126,7 @@ void setup() {
     kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
 
     storage.load();
+    peer_favoriter_registry.init();
 
     if (not periphery.init()) {
         logger.error("Periphery init failed. Resseting periphery config to defaults");
