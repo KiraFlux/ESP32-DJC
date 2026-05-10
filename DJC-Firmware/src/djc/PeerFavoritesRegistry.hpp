@@ -28,16 +28,16 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable {
 
         static constexpr kf::Range<TrustType> trust_range{.start = 0, .end = 10};
 
-        transport::PeerAddress address;         ///< Peer address.
-        TrustType trust;                        ///< Trust priority (0 - no trust, 1.. - auto connect)
-        kf::memory::Array<char, 16> description;///< Human‑readable description.
+        transport::PeerAddress address;  ///< Peer address.
+        TrustType trust;                 ///< Trust priority (0 - no trust, 1.. - auto connect)
+        kf::memory::Array<char, 16> name;///< Human‑readable description.
 
         /// @brief Factory method for a new, empty‑description entry.
         [[nodiscard]] static Entry create(const transport::PeerAddress &address) noexcept {
             return Entry{
                 .address = address,
                 .trust = trust_range.start,
-                .description = {"New-Peer"},
+                .name = {"New-Peer"},
             };
         }
     };
