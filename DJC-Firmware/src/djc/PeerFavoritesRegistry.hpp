@@ -10,6 +10,7 @@
 #include <kf/aliases.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Slice.hpp>
+#include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
@@ -22,7 +23,7 @@ namespace djc {
 /// The registry does not own the memory, only manipulates it.
 ///
 /// @note All methods are safe to call from different UI callbacks as long as the underlying storage is exclusively owned by the registry.
-struct PeerFavoritesRegistry final : kf::mixin::NonCopyable {
+struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable<PeerFavoritesRegistry, void> {
 
     /// @brief A single favorite‑peer record.
     struct Entry final {
@@ -44,11 +45,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable {
         }
     };
 
-    explicit PeerFavoritesRegistry(kf::memory::Slice<kf::Option<Entry>> entries) noexcept : _entries{entries} {
-        for (const auto &entry: _entries) {
-            _active_count += static_cast<kf::usize>(entry.hasValue());
-        }
-    }
+    explicit constexpr PeerFavoritesRegistry(kf::memory::Slice<kf::Option<Entry>> entries) noexcept : _entries{entries} {}
 
     /// @brief Return the entire slot array, including empty slots.
     [[nodiscard]] kf::memory::Slice<const kf::Option<Entry>> all() const noexcept {
@@ -123,6 +120,15 @@ private:
             }
         }
         return {};
+    }
+
+    // impl
+    KF_IMPL_INITABLE(PeerFavoritesRegistry, void);
+    void initImpl() noexcept {
+        _active_count = 0;
+        for (const auto &entry: _entries) {
+            _active_count += static_cast<kf::usize>(entry.hasValue());
+        }
     }
 };
 
