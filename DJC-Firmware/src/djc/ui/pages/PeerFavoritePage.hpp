@@ -57,7 +57,7 @@ struct PeerFavoritePage final : UI::Page {
         (void) _label_buffer.format("%s Peer favorite\n%s", (entry_option.hasValue() ? "Edit" : "Add"), address.toString().data());
         this->label(_label_buffer.view());
 
-        _description_input.source({_temp_entry.value().description.data(), _temp_entry.value().description.size()});
+        _description_input.source({_temp_entry.value().name.data(), _temp_entry.value().name.size()});
         _trust_input.value(_temp_entry.value().trust);
         _confirm_button.label("Confirm");
 
