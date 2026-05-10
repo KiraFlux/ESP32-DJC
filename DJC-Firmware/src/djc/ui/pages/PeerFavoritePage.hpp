@@ -17,7 +17,7 @@ namespace djc::ui::pages {
 struct PeerFavoritePage final : UI::Page {
 
     explicit PeerFavoritePage(UI::Page &root, PeerFavoritesRegistry &peer_favorites_registry) noexcept :
-        Page{"oh_no_2"},
+        Page{{}},
         _peer_favorites_registry{peer_favorites_registry},
         _layout{{
             // address and transport shows in title

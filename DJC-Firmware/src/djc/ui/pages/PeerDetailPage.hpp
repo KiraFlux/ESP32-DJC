@@ -20,7 +20,7 @@ struct PeerDetailPage final : UI::Page {
         UI::Page &root,
         transport::TransportLink &transport_link,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
-        Page{"oh_no"},
+        Page{{}},
         _peer_favorites_registry{peer_favorites_registry},
         _layout{{
             &root.link(),
