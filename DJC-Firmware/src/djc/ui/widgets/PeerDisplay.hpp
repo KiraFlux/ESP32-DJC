@@ -4,63 +4,58 @@
 #pragma once
 
 #include <kf/Option.hpp>
-#include <kf/math/Timer.hpp>
-#include <kf/math/units.hpp>
 #include <kf/memory/ArrayString.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/Callbacked.hpp>
 
-#include "djc/PeerScanner.hpp"
 #include "djc/transport/PeerAddress.hpp"
-#include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 
 namespace djc::ui::widgets {
 
 struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::PeerAddress &> {
 
-    enum class State : char {
-        Cleared = 0,
-        Stable = '\xFC',
-        PreCleared = '\xF9',
+    enum class Color : char {
+        Normal = '\xFC',
+        Warn = '\xF9',
     };
 
-    static constexpr auto extreme_age_factor{0.75f};
+    struct State final {
+        transport::PeerAddress address;
+        kf::Option<kf::memory::StringView> name;
+        Color label_color;
 
-    void update(const kf::Option<PeerScanner::Entry> &entry, kf::Option<kf::memory::StringView> entry_name, kf::math::Milliseconds now, kf::math::Milliseconds max_life_time) noexcept {
-        _entry = entry;
-        _entry_name = entry_name;
-
-        if (_entry.hasValue()) {
-            const auto age = now - _entry.value().last_seen;
-            _state = (age >= max_life_time * extreme_age_factor) ? State::PreCleared : State::Stable;
-        } else {
-            _state = State::Cleared;
+        kf::memory::StringView displayName() const noexcept {
+            return name.hasValue() ? name.value().data() : address.toString().data();
         }
-    }
+    };
+
+    void state(const kf::Option<State> &new_state) noexcept { _state = new_state; }
 
     void doRender(UI::RenderImpl &render) const noexcept override {
-        render.beginBlock();
+        render.beginAltBlock();
 
-        if (_entry.hasValue()) {
-            const auto content = _entry_name.hasValue() ? _entry_name.value().data() : _entry.value().address.toString().data();
-            render.value(kf::memory::ArrayString<64>::formatted("%c%s\x80", static_cast<char>(_state), content).view());
+        if (_state.hasValue()) {
+            render.value(
+                kf::memory::ArrayString<64>::formatted(
+                    "%c%s\x80",
+                    static_cast<char>(_state.value().label_color),
+                    _state.value().displayName())
+                    .view());
         }
 
-        render.endBlock();
+        render.endAltBlock();
     }
 
     bool onClick() noexcept override {
-        if (_entry.hasValue()) {
-            this->invoke(_entry.value().address);
+        if (_state.hasValue()) {
+            this->invoke(_state.value().address);
         }
-        return _entry.hasValue();
+        return _state.hasValue();
     }
 
 private:
-    kf::Option<PeerScanner::Entry> _entry{};
-    kf::Option<kf::memory::StringView> _entry_name{};
-    State _state{State::Cleared};
+    kf::Option<State> _state{};
 };
 
 }// namespace djc::ui::widgets

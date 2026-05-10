@@ -73,8 +73,7 @@ struct PeerExplorerPage : UI::Page {
         _available_label.value(_available_label_buffer.view());
 
         for (auto i = 0u; i < available_peers.size(); i += 1) {
-            const auto &entry = available_peers[i];
-            _peer_displays[i].update(entry, peerName(entry), now, _peer_scanner.config().entry_max_life_time);
+            _peer_displays[i].state(createPeerDisplayState(available_peers[i], now));
         }
 
         widgets(layout(available_peers.size()));
@@ -83,12 +82,11 @@ struct PeerExplorerPage : UI::Page {
 
 private:
     static constexpr auto peer_display_start_index{3u};
-    static constexpr kf::math::Milliseconds redraw_period{500};
 
     transport::TransportLink &_transport_link;
     PeerScanner &_peer_scanner;
     PeerFavoritesRegistry &_peer_favorites_registry;
-    kf::math::Timer _redraw_timer{redraw_period};
+    kf::math::Timer _redraw_timer{static_cast<kf::math::Milliseconds>(500)};
 
     kf::memory::ArrayString<64> _available_label_buffer{}, _connection_button_buffer{};
 
@@ -105,14 +103,30 @@ private:
         return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
     }
 
-    kf::Option<kf::memory::StringView> peerName(const kf::Option<PeerScanner::Entry> &entry) const noexcept {
-        if (not entry.hasValue()) { return {}; }
+    kf::Option<kf::memory::StringView> getPeerName(const kf::Option<PeerFavoritesRegistry::Entry> &record) const noexcept {
+        if (record.hasValue()) {
+            const auto &name = record.value().name;
+            return {{name.data(), name.size()}};
+        } else {
+            return {};
+        }
+    }
 
-        const auto &favorite_record = _peer_favorites_registry.get(entry.value().address);
-        if (not favorite_record.hasValue()) { return {}; }
+    kf::Option<widgets::PeerDisplay::State> createPeerDisplayState(const kf::Option<PeerScanner::Entry> &entry, kf::math::Milliseconds now) const noexcept {
+        using P = widgets::PeerDisplay;
+        constexpr auto extreme_age_factor{0.75f};
 
-        const auto &description = favorite_record.value().description;
-        return {{description.data(), description.size()}};
+        if (entry.hasValue()) {
+            const auto age = now - entry.value().last_seen;
+            const auto extreme_age = _peer_scanner.config().entry_max_life_time * extreme_age_factor;
+            return {P::State{
+                .address = entry.value().address,
+                .name = getPeerName(_peer_favorites_registry.get(entry.value().address)),
+                .label_color = (age < extreme_age) ? P::Color::Normal : P::Color::Warn,
+            }};
+        } else {
+            return {};
+        }
     }
 };
 
