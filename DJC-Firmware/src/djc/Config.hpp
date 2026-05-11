@@ -8,6 +8,7 @@
 #include <kf/memory/Array.hpp>
 #include <kf/memory/StringView.hpp>
 
+#include "djc/AutoConnectService.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
@@ -20,7 +21,7 @@
 namespace djc {
 
 struct Config {
-    static constexpr auto latest_version{7u}, max_peer_favorites{8u};
+    static constexpr auto latest_version{8u}, max_peer_favorites{8u};
 
     kf::u16 version;
 
@@ -33,6 +34,7 @@ struct Config {
 
     transport::TransportLink::Config transport_link;
     PeerScanner::Config peer_scanner;
+    AutoConnectService::Config auto_connect_service;
 
     protocol::ProtocolLink::Config protocol_link;
     protocol::ProtocolRegistry::Config protocol_registry;
@@ -56,6 +58,7 @@ struct Config {
 
             .transport_link = transport::TransportLink::Config::defaults(),
             .peer_scanner = PeerScanner::Config::defaults(),
+            .auto_connect_service = AutoConnectService::Config::defaults(),
 
             .protocol_link = protocol::ProtocolLink::Config::defaults(),
             .protocol_registry = protocol::ProtocolRegistry::Config::defaults(),

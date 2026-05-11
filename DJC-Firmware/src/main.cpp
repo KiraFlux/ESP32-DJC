@@ -10,6 +10,7 @@
 #include <kf/memory/StringView.hpp>
 
 // djc
+#include "djc/AutoConnectService.hpp"
 #include "djc/ConfigManager.hpp"
 #include "djc/Control.hpp"
 #include "djc/DisplayManager.hpp"
@@ -75,6 +76,11 @@ static djc::PeerFavoritesRegistry peer_favoriter_registry{
 
 static djc::PeerScanner peer_scanner{
     storage.config().peer_scanner,
+    transport_link,
+};
+
+static djc::AutoConnectService auto_connect_service{
+    storage.config().auto_connect_service,
     transport_link,
 };
 
@@ -160,6 +166,11 @@ void setup() {
 
     peer_scanner.init();
 
+    auto_connect_service.callback([](const djc::transport::PeerAddress &address) -> void {
+        logger.info("Auto Connect");
+        (void) transport_link.connect(address);
+    });
+
     {
         using E = djc::ui::UI::Event;
 
@@ -221,6 +232,25 @@ void loop() {
     input_handler.poll(now);
     transport_link.poll(now);
     peer_scanner.poll(now);
+
+    if (auto_connect_service.config().enabled and not auto_connect_service.target().hasValue()) {
+        // todo: find fav with max trust -> keep -> set target
+
+        for (const auto &peer: peer_scanner.peers()) {
+            if (not peer.hasValue()) { continue; }
+
+            const auto favorite = peer_favoriter_registry.get(peer.value().address);
+            if (favorite.hasValue() and favorite.value().trust > 0) {
+                auto_connect_service.target(djc::AutoConnectService::Target{
+                    .address = favorite.value().address,
+                    .last_seen = now,
+                });
+
+                break;
+            }
+        }
+    }
+    auto_connect_service.poll(now);
 
     if (control.enabled()) {
         using I = djc::ManualInput;
