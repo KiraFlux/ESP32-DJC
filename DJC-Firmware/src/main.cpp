@@ -234,19 +234,27 @@ void loop() {
     peer_scanner.poll(now);
 
     if (auto_connect_service.config().enabled and not auto_connect_service.target().hasValue()) {
-        // todo: find fav with max trust -> keep -> set target
+        const auto favorites = peer_favoriter_registry.all();
 
-        for (const auto &peer: peer_scanner.peers()) {
-            if (not peer.hasValue()) { continue; }
+        if (favorites.size() > 0) {
+            auto most_trusted_favorite_index = 0u;
 
-            const auto favorite = peer_favoriter_registry.get(peer.value().address);
-            if (favorite.hasValue() and favorite.value().trust > 0) {
-                auto_connect_service.target(djc::AutoConnectService::Target{
-                    .address = favorite.value().address,
-                    .last_seen = now,
-                });
+            for (auto index = 1u; index < favorites.size(); index += 1) {
+                if (favorites[index].hasValue() and favorites[index].value().trust > favorites[most_trusted_favorite_index].value().trust) {
+                    most_trusted_favorite_index = index;
+                }
+            }
 
-                break;
+            const auto &most_trusted = favorites[most_trusted_favorite_index].value();
+
+            for (const auto &peer: peer_scanner.peers()) {
+                if (peer.hasValue() and peer.value().address == most_trusted.address) {
+                    auto_connect_service.target(djc::AutoConnectService::Target{
+                        .address = most_trusted.address,
+                        .last_seen = now,
+                    });
+                    break;
+                }
             }
         }
     }
