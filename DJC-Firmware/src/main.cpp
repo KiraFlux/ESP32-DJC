@@ -249,10 +249,7 @@ void loop() {
 
             for (const auto &peer: peer_scanner.peers()) {
                 if (peer.hasValue() and peer.value().address == most_trusted.address) {
-                    auto_connect_service.target(djc::AutoConnectService::Target{
-                        .address = most_trusted.address,
-                        .last_seen = now,
-                    });
+                    auto_connect_service.target(most_trusted.address);
                     break;
                 }
             }

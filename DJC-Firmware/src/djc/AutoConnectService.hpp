@@ -4,6 +4,7 @@
 #pragma once
 
 #include <kf/Option.hpp>
+#include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
 #include <kf/mixin/Callbacked.hpp>
 #include <kf/mixin/Configurable.hpp>
@@ -34,7 +35,7 @@ struct AutoConnectServiceConfig final : kf::mixin::NonCopyable {
 
 /// @brief Service that automatically connects to a trusted peer after a configurable delay
 /// @note
-/// Receives a `Target` (address + detection timestamp) from outside.
+/// Receives a target from outside.
 /// When the timeout expires, the service invokes its callback with the peer address.
 /// After the callback, the target is cleared and the service waits for a new one.
 struct AutoConnectService final :
@@ -48,22 +49,18 @@ struct AutoConnectService final :
     /// @brief Configuration for the AutoConnectService
     using Config = internal::AutoConnectServiceConfig;
 
-    /// @brief Information about a detected peer supplied to the service
-    struct Target final {
-        transport::PeerAddress address;  ///< Address of the peer.
-        kf::math::Milliseconds last_seen;///< Timestamp when the peer was last seen (used for cooldown).
-    };
+    explicit AutoConnectService(const Config &config, const transport::TransportLink &transport_link) noexcept :
+        kf::mixin::Configurable<Config>{config}, _transport_link{transport_link} {
+        _cooldown_timer.start(0);
+    }
 
-    explicit constexpr AutoConnectService(const Config &config, const transport::TransportLink &transport_link) noexcept :
-        kf::mixin::Configurable<Config>{config}, _transport_link{transport_link} {}
-
-    [[nodiscard]] const kf::Option<Target> &target() const noexcept { return _target; }
+    [[nodiscard]] const kf::Option<transport::PeerAddress> &target() const noexcept { return _target; }
 
     /// @brief Assign a new target for automatic connection
     /// @note
     /// The target is ignored if the transport is already connected.
     /// This prevents interrupting an active connection.
-    void target(const Target &new_target) noexcept {
+    void target(const transport::PeerAddress &new_target) noexcept {
         if (not _transport_link.connected()) {
             _target.value(new_target);
         }
@@ -71,17 +68,20 @@ struct AutoConnectService final :
 
 private:
     const transport::TransportLink &_transport_link;
-    kf::Option<Target> _target{};
+    kf::Option<transport::PeerAddress> _target{};
+    kf::math::Timer _cooldown_timer{this->config().cooldown};
 
     KF_IMPL_TIMED_POLLABLE(AutoConnectService);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         if (not this->config().enabled) { return; }
         if (not _target.hasValue()) { return; }
 
-        if (now > _target.value().last_seen + this->config().cooldown) {
-            this->invoke(_target.value().address);
-            _target = {};
-        }
+        if (not _cooldown_timer.expired(now)) { return; }
+
+        this->invoke(_target.value());
+        _target = {};
+
+        _cooldown_timer.start(now);
     }
 };
 
