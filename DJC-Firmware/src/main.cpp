@@ -26,8 +26,8 @@
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
 
-#include "djc/transport/EspNowTransport.hpp"
 #include "djc/transport/TransportLink.hpp"
+#include "djc/transport/TransportRegistry.hpp"
 
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavlinkTelemetryPage.hpp"
@@ -54,11 +54,11 @@ static djc::InputHandler input_handler{
     periphery.right_button_listener,
 };
 
-static djc::transport::EspNowTransport espnow_transport{};
-
 static djc::transport::TransportLink transport_link{
     storage.config().transport_link,
 };
+
+static djc::transport::TransportRegistry transport_registry{};
 
 static djc::protocol::ProtocolLink protocol_link{
     storage.config().protocol_link,
@@ -148,13 +148,11 @@ void setup() {
 
     display_manager.init();
 
-    if (espnow_transport.init()) {
-        transport_link.transport(espnow_transport);
-    } else {
+    if (not transport_registry.espnow().init()) {
         logger.error("failed to initialize espnow transport");
     }
 
-    protocol_link.protocol(protocol_registry.get(storage.config().init_protocol_mode));
+    transport_link.transport(transport_registry.get(storage.config().init_transport_kind));
 
     transport_link.onReceive([](const djc::transport::PeerAddress &, kf::memory::Slice<const kf::u8> buffer) {
         protocol_link.receive(buffer);
@@ -163,6 +161,8 @@ void setup() {
     protocol_registry.mavlink().callback([](const mavlink_message_t &message) {
         mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(millis()), message);
     });
+
+    protocol_link.protocol(protocol_registry.get(storage.config().init_protocol_mode));
 
     peer_scanner.init();
 
