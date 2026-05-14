@@ -13,17 +13,25 @@
 
 namespace djc {
 
+/// @brief Thin bridge between transport and protocol layers, enabling manual control transmission.
+/// @note
+/// Stores the current joystick input and a flag that enables/disables output.
+/// When enabled and the transport is connected, `pollImpl()` forwards the input to the active protocol via `ProtocolLink::poll()`.
 struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control> {
 
     explicit Control(transport::TransportLink &transport_link, protocol::ProtocolLink &protocol_link) noexcept :
         _transport_link{transport_link}, _protocol_link{protocol_link} {}
 
+    /// @brief Returns the current manual input values.
     [[nodiscard]] const ManualInput &input() const noexcept { return _manual_input; }
 
+    /// @brief Updates the manual input to be transmitted.
     void input(const ManualInput &new_input) noexcept { _manual_input = new_input; }
 
+    /// @brief Checks whether control output is enabled.
     [[nodiscard]] bool enabled() const noexcept { return _enabled; }
 
+    /// @brief Enables or disables control output.
     void enabled(bool is_enabled) noexcept { _enabled = is_enabled; }
 
 private:
@@ -32,7 +40,6 @@ private:
     ManualInput _manual_input{};
     bool _enabled{false};
 
-    // impl
     KF_IMPL_TIMED_POLLABLE(Control);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         if (_enabled and _transport_link.connected()) {
