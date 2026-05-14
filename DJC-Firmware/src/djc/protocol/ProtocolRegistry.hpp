@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <kf/aliases.hpp>
-#include <kf/memory/StringView.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
@@ -16,9 +14,10 @@ namespace djc::protocol {
 
 namespace internal {
 
+/// @brief Configuration container for the ProtocolRegistry.
 struct ProtocolRegistryConfig final : kf::mixin::NonCopyable {
 
-    MavlinkProtocol::Config mavlink;
+    MavlinkProtocol::Config mavlink;///< MAVLink protocol configuration
 
     [[nodiscard]] static constexpr ProtocolRegistryConfig defaults() noexcept {
         return ProtocolRegistryConfig{
@@ -29,6 +28,7 @@ struct ProtocolRegistryConfig final : kf::mixin::NonCopyable {
 
 }// namespace internal
 
+/// @brief Storage for all available protocol implementations.
 struct ProtocolRegistry final :
 
     kf::mixin::NonCopyable,
@@ -37,13 +37,17 @@ struct ProtocolRegistry final :
 {
     using Config = internal::ProtocolRegistryConfig;
 
-    enum class Mode : kf::u8 {
-        Raw = 0x00,
-        Mavlink = 0x01,
+    /// @brief Available protocol modes.
+    enum class Mode : char {
+        Raw = 0x00,    ///< Raw binary protocol (sends ManualInput as-is)
+        Mavlink = 0x01,///< MAVLink protocol (sends MANUAL_CONTROL and HEARTBEAT)
     };
 
     using kf::mixin::Configurable<Config>::Configurable;
 
+    /// @brief Retrieve a protocol instance by mode.
+    /// @param mode Requested protocol mode
+    /// @return Reference to the corresponding protocol object.
     [[nodiscard]] Protocol &get(Mode mode) noexcept {
         switch (mode) {
             case Mode::Mavlink:
@@ -55,8 +59,10 @@ struct ProtocolRegistry final :
         }
     }
 
+    /// @brief Direct access to the Raw protocol instance.
     [[nodiscard]] RawProtocol &raw() noexcept { return _raw_protocol; }
 
+    /// @brief Direct access to the MAVLink protocol instance.
     [[nodiscard]] MavlinkProtocol &mavlink() noexcept { return _mavlink_protocol; }
 
 private:
