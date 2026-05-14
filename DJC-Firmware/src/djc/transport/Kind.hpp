@@ -6,10 +6,10 @@
 namespace djc::transport {
 
 /// @brief Identifies the underlying transport technology of a peer address.
-enum class Kind {
+enum class Kind : char {
 
     /// @brief ESP‑NOW protocol (built‑in WiFi, peer‑to‑peer frames).
-    EspNow,
+    EspNow = 0x00,
 };
 
 }// namespace djc::transport
