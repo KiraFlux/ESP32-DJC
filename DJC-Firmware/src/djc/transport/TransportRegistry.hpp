@@ -9,13 +9,18 @@
 
 namespace djc::transport {
 
+/// @brief Registry providing access to available transport implementations.
 struct TransportRegistry {
 
+    /// @brief Returns a transport instance by kind (ignored, always returns ESP-NOW).
+    /// @param kind Requested transport kind (not used, kept for future extension).
+    /// @return Reference to the ESP‑NOW transport.
     [[nodiscard]] Transport &get(Kind kind) noexcept {
         (void) kind;
         return _espnow_transport;
     }
 
+    /// @brief Direct access to the ESP‑NOW transport instance.
     [[nodiscard]] EspNowTransport &espnow() noexcept { return _espnow_transport; }
 
 private:
