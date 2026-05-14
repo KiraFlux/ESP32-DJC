@@ -3,50 +3,81 @@
 
 #pragma once
 
+// lib
+#include <kf/Option.hpp>
 #include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/StringView.hpp>
 
-#include "djc/Control.hpp"
+// periphery
 #include "djc/Periphery.hpp"
+
+// transport
+#include "djc/transport/Kind.hpp"
+#include "djc/transport/PeerAddress.hpp"
+#include "djc/transport/TransportLink.hpp"
+
+// protocol
+#include "djc/protocol/ProtocolLink.hpp"
+#include "djc/protocol/ProtocolRegistry.hpp"
+
+// services
+#include "djc/AutoConnectService.hpp"
+#include "djc/PeerFavoritesRegistry.hpp"
+#include "djc/PeerScanner.hpp"
 #include "djc/input/InputHandler.hpp"
-#include "djc/memory/Box.hpp"
 
 namespace djc {
 
+/// @brief Persistent configuration structure stored in NVS.
 struct Config {
-
-    struct PeerNote {
-        EspNow::Mac mac;
-        kf::memory::Array<char, 10> info;
-    };
-
-    using PeerFavoritesConfig = djc::memory::Box<PeerNote, kf::u8, 8>;
-
-    static constexpr auto latest_version{4};
+    static constexpr auto
+        latest_version{9u},
+        max_peer_favorites{8u};
 
     kf::u16 version;
 
-    Periphery::Config periphery;
-    InputHandler::Config input_handler;
-    Control::Config control;
-    PeerFavoritesConfig peer_favorites;
+    // user
+    protocol::ProtocolRegistry::Mode init_protocol_mode;
+    transport::Kind init_transport_kind;
     kf::memory::Array<char, 16> device_name;
+    kf::memory::Array<kf::Option<PeerFavoritesRegistry::Entry>, max_peer_favorites> peer_favorites;
 
-    [[nodiscard]] constexpr kf::memory::StringView deviceName() const noexcept {
-        return kf::memory::StringView{device_name.data(), device_name.size()};
-    }
+    // periphery
+    Periphery::Config periphery;
+
+    // transport
+    transport::TransportLink::Config transport_link;
+
+    // protocol
+    protocol::ProtocolLink::Config protocol_link;
+    protocol::ProtocolRegistry::Config protocol_registry;
+
+    // services
+    InputHandler::Config input_handler;
+    PeerScanner::Config peer_scanner;
+    AutoConnectService::Config auto_connect_service;
 
     [[nodiscard]] bool isLatestVersion() const noexcept { return version == latest_version; }
 
     static constexpr Config defaults() noexcept {
         return Config{
             .version = latest_version,
-            .periphery = Periphery::Config::defaults(),
-            .input_handler = InputHandler::Config::defaults(),
-            .control = Control::Config::defaults(),
-            .peer_favorites = PeerFavoritesConfig::defaults(),
+
+            .init_protocol_mode = protocol::ProtocolRegistry::Mode::Mavlink,
+            .init_transport_kind = transport::Kind::EspNow,
             .device_name = {"ESP32-DJC"},
+            .peer_favorites = {},
+
+            .periphery = Periphery::Config::defaults(),
+
+            .transport_link = transport::TransportLink::Config::defaults(),
+
+            .protocol_link = protocol::ProtocolLink::Config::defaults(),
+            .protocol_registry = protocol::ProtocolRegistry::Config::defaults(),
+
+            .input_handler = InputHandler::Config::defaults(),
+            .peer_scanner = PeerScanner::Config::defaults(),
+            .auto_connect_service = AutoConnectService::Config::defaults(),
         };
     }
 };

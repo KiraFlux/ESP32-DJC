@@ -3,125 +3,130 @@
 
 #pragma once
 
-#include <Arduino.h>// for millis
-
-#include <kf/Logger.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
 #include <kf/memory/ArrayString.hpp>
 #include <kf/memory/Slice.hpp>
 
-#include "djc/Control.hpp"
+#include "djc/PeerFavoritesRegistry.hpp"
+#include "djc/PeerScanner.hpp"
+#include "djc/transport/PeerAddress.hpp"
+#include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
+#include "djc/ui/pages/PeerDetailPage.hpp"
 #include "djc/ui/widgets/PeerDisplay.hpp"
-#include "djc/prelude.hpp"
 
 namespace djc::ui::pages {
 
 struct PeerExplorerPage : UI::Page {
 
-    static constexpr auto max_peer_display{8};
-    static constexpr auto peer_display_start_index{3};
-    static constexpr kf::math::Milliseconds redraw_period{500};
-
-    explicit constexpr PeerExplorerPage(UI::Page &root, Control &control) noexcept :
+    explicit PeerExplorerPage(
+        UI::Page &root,
+        transport::TransportLink &transport_link,
+        PeerScanner &peer_scanner,
+        PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{"Peer Explorer"},
-        _control{control},
+        _transport_link{transport_link},
+        _peer_scanner{peer_scanner},
+        _peer_favorites_registry{peer_favorites_registry},
         _layout{{
             &root.link(),
-            &_connection_button,
+            &_primary_connection_status_button,
             &_available_label,
-        }}
+        }} {
+        for (auto i = 0u; i < _peer_displays.size(); i += 1) {
+            _peer_displays[i].callback([this](const transport::PeerAddress &address) -> void {
+                _peer_detail_page.bindPeer(address);
+                UI::instance().bindPage(_peer_detail_page);
+            });
 
-    {
-        for (auto i = 0; i < _peer_displays.size(); i += 1) {
-            _peer_displays[i].control(_control);
             _layout[i + peer_display_start_index] = &_peer_displays[i];
         }
 
-        _connection_button.callback([this]() {
-            if (_control.activeMac().hasValue()) {
-                _control.disconnect();
+        _primary_connection_status_button.callback([this]() {
+            if (_transport_link.connected()) {
+                _transport_link.disconnect();
             }
         });
 
-        widgets({_layout.data(), _layout.size()});
+        widgets(layout(0));
 
-        _redraw_timer.start(millis());
-    }
-
-    void onEntry() noexcept override {
-        _control.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::memory::Slice<const kf::u8> data) {
-            logger.debug(
-                kf::memory::ArrayString<64>::formatted(
-                    "Got %d bytes from %s",
-                    data.size(),
-                    EspNow::stringFromMac(mac).data()));
-
-            getMatched(mac).update(mac, millis());
-        });
-    }
-
-    void onExit() noexcept override {
-        _control.onReceiveFromUnknown(Control::ReceiveFromUnknownCallback{nullptr});
+        _redraw_timer.start(0);// enable timer
     }
 
     void onUpdate(kf::math::Milliseconds now) noexcept override {
-        for (auto &_peer_display: _peer_displays) {
-            _peer_display.checkForClear(now);
+        if (not _redraw_timer.expired(now)) { return; }
+        _redraw_timer.start(now);
+
+        if (_transport_link.activePeerAddress().hasValue()) {
+            (void) _connection_button_buffer.format("\xFC%s\x80", _transport_link.activePeerAddress().value().toString().data());
+            _primary_connection_status_button.label(_connection_button_buffer.view());
+        } else {
+            _primary_connection_status_button.label(
+                "\xF9"
+                "Disconnected\x80");
         }
 
-        if (_redraw_timer.expired(now)) {
-            _redraw_timer.start(now);
+        const auto available_peers = _peer_scanner.peers();
+        (void) _available_label_buffer.format(" Available: %d", available_peers.size());
+        _available_label.value(_available_label_buffer.view());
 
-            if (_control.activeMac().hasValue()) {
-                (void) _connection_button_label.format(
-                    "\xFC""OK: %s\x80",
-                    EspNow::stringFromMac(_control.activeMac().value()).data());
-                _connection_button.label(_connection_button_label.view());
-            } else {
-                _connection_button.label("\xF9""Disconnected\x80");
-            }
-
-            (void) _available_label_value.format(" Available: %d", countAvailablePeers());
-            _available_label.value(_available_label_value.view());
-
-            UI::instance().addEvent(UI::Event::update());
+        for (auto i = 0u; i < available_peers.size(); i += 1) {
+            _peer_displays[i].state(createPeerDisplayState(available_peers[i], now));
         }
+
+        widgets(layout(available_peers.size()));
+        UI::instance().addEvent(UI::Event::update());
     }
 
 private:
-    static constexpr auto logger{kf::Logger::create("PeerExplorerPage")};
+    static constexpr auto peer_display_start_index{3u};
 
-    Control &_control;
-    kf::math::Timer _redraw_timer{redraw_period};
-    kf::memory::ArrayString<16> _available_label_value{""};
-    kf::memory::ArrayString<64> _connection_button_label{};
+    transport::TransportLink &_transport_link;
+    PeerScanner &_peer_scanner;
+    PeerFavoritesRegistry &_peer_favorites_registry;
+    kf::math::Timer _redraw_timer{static_cast<kf::math::Milliseconds>(500)};
 
-    // widgets
-    UI::Button _connection_button{""};
-    UI::Display<kf::memory::StringView> _available_label{_available_label_value.view()};
-    kf::memory::Array<widgets::PeerDisplay, max_peer_display> _peer_displays{};
+    kf::memory::ArrayString<64> _available_label_buffer{}, _connection_button_buffer{};
 
-    // layout
-    kf::memory::Array<UI::Widget *, (peer_display_start_index + max_peer_display)> _layout;
+    UI::Button _primary_connection_status_button{{}};
+    UI::Display<kf::memory::StringView> _available_label{_available_label_buffer.view()};
+    kf::memory::Array<widgets::PeerDisplay, PeerScanner::max_entries> _peer_displays{};
 
-    widgets::PeerDisplay &getMatched(const EspNow::Mac &mac) noexcept {
-        for (auto &_peer_display: _peer_displays) {
-            if (not _peer_display.mac().hasValue()) { return _peer_display; }
-            if (_peer_display.mac().value() == mac) { return _peer_display; }
-        }
+    kf::memory::Array<UI::Widget *, (peer_display_start_index + PeerScanner::max_entries)> _layout;
 
-        return _peer_displays[0];
+    // child pages
+    PeerDetailPage _peer_detail_page{*this, _transport_link, _peer_favorites_registry};
+
+    kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
+        return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
     }
 
-    int countAvailablePeers() const noexcept {
-        int available = 0;
-        for (auto &_peer_display: _peer_displays) {
-            available += int(_peer_display.mac().hasValue());
+    kf::Option<widgets::PeerDisplay::State> createPeerDisplayState(const kf::Option<PeerScanner::Entry> &entry, kf::math::Milliseconds now) const noexcept {
+        using P = widgets::PeerDisplay;
+        constexpr auto extreme_age_factor{0.75f};
+
+        const auto map_record = [](const kf::Option<PeerFavoritesRegistry::Entry> &record) -> kf::Option<kf::memory::StringView> {
+            if (record.hasValue()) {
+                const auto &name = record.value().name;
+                return {{name.data(), name.size()}};
+            } else {
+                return {};
+            }
+        };
+
+        if (entry.hasValue()) {
+            const auto age = now - entry.value().last_seen;
+            const auto extreme_age = _peer_scanner.config().entry_max_life_time * extreme_age_factor;
+            return {P::State{
+                .address = entry.value().address,
+                .name = map_record(_peer_favorites_registry.get(entry.value().address)),
+                .label_color = (age < extreme_age) ? P::Color::Normal : P::Color::Warn,
+            }};
+        } else {
+            return {};
         }
-        return available;
     }
 };
 
