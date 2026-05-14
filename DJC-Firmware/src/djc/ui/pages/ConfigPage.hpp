@@ -5,6 +5,7 @@
 
 #include <kf/memory/Array.hpp>
 #include <kf/memory/ArrayString.hpp>
+#include <kf/mixin/Initable.hpp>
 
 #include "djc/Config.hpp"
 #include "djc/ConfigManager.hpp"
@@ -17,7 +18,7 @@
 
 namespace djc::ui::pages {
 
-struct ConfigPage : UI::Page {
+struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
     explicit ConfigPage(UI::Page &root, PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
         Page{"Config"},
@@ -53,6 +54,7 @@ struct ConfigPage : UI::Page {
             this->onEntry();
             UI::instance().addEvent(UI::Event::update());
         });
+
         _default_protocol_mode_selector.callback([](Mode mode) {
             storage.config().init_protocol_mode = mode;
         });
@@ -130,8 +132,7 @@ private:
         _reset_storage{"Reset (RAM cache)"},
         _show_favorite_peers{{}};
 
-    ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};// TODO: set init value from storage
-
+    ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};
     UI::Labeled _labeled_default_protocol_mode_selector{"Init Protocol", _default_protocol_mode_selector};
 
     kf::memory::Array<widgets::PeerDisplay, Config::max_peer_favorites> _peer_favorite_displays{};
@@ -149,6 +150,13 @@ private:
 
     kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
         return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);
+    }
+
+    // impl
+    KF_IMPL_INITABLE(ConfigPage, void);
+    void initImpl() noexcept {
+        // _default_protocol_mode_selector.value(storage.config().init_protocol_mode); // todo: Combobox::value(T)
+        _autoconnect_enabled_input.value(storage.config().auto_connect_service.enabled);
     }
 };
 

@@ -133,6 +133,7 @@ void setup() {
 
     storage.load();
     peer_favoriter_registry.init();
+    config_page.init();
 
     if (not periphery.init()) {
         logger.error("Periphery init failed. Resseting periphery config to defaults");
