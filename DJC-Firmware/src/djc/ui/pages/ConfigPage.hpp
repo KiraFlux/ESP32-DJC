@@ -109,8 +109,8 @@ private:
     // widgets
 
     kf::memory::Array<ProtocolModeSelector::Item, 2> _control_mode_options{{
-        {protocol::ProtocolRegistry::stringFromMode(Mode::Mavlink), Mode::Mavlink},
-        {protocol::ProtocolRegistry::stringFromMode(Mode::Raw), Mode::Raw},
+        {"Mavlink", Mode::Mavlink},
+        {"Raw", Mode::Raw},
     }};
 
     ProtocolModeSelector::Config _control_mode_config{

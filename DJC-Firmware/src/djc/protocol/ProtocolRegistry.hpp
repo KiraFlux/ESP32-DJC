@@ -59,8 +59,6 @@ struct ProtocolRegistry final :
 
     [[nodiscard]] MavlinkProtocol &mavlink() noexcept { return _mavlink_protocol; }
 
-    [[nodiscard]] static constexpr kf::memory::StringView stringFromMode(Mode mode) noexcept { return (mode == Mode::Raw) ? "Raw" : "MavLink"; }
-
 private:
     RawProtocol _raw_protocol{};
     MavlinkProtocol _mavlink_protocol{this->config().mavlink};
