@@ -7,7 +7,6 @@
 #include <kf/Option.hpp>
 #include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/StringView.hpp>
 
 // periphery
 #include "djc/Periphery.hpp"
