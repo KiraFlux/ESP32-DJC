@@ -25,6 +25,7 @@ struct ConfigPage : UI::Page {
         _layout{{
             &root.link(),
             &_device_name_input,
+            &_labeled_autoconnect_enabled_input,
             &_labeled_default_protocol_mode_selector,
             &_save_storage,
             &_load_storage,
@@ -54,6 +55,10 @@ struct ConfigPage : UI::Page {
         });
         _default_protocol_mode_selector.callback([](Mode mode) {
             storage.config().init_protocol_mode = mode;
+        });
+
+        _autoconnect_enabled_input.callback([](bool value) {
+            storage.config().auto_connect_service.enabled = value;
         });
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
@@ -96,7 +101,7 @@ private:
     using Mode = protocol::ProtocolRegistry::Mode;
     using ProtocolModeSelector = UI::ComboBox<Mode>;
 
-    static constexpr auto layout_regular_widgets{7u};
+    static constexpr auto layout_regular_widgets{8u};
 
     inline static auto &storage{djc::ConfigManager::instance()};
 
@@ -130,6 +135,9 @@ private:
     UI::Labeled _labeled_default_protocol_mode_selector{"Init Protocol", _default_protocol_mode_selector};
 
     kf::memory::Array<widgets::PeerDisplay, Config::max_peer_favorites> _peer_favorite_displays{};
+
+    UI::CheckBox _autoconnect_enabled_input{false};
+    UI::Labeled _labeled_autoconnect_enabled_input{"Autoconnect", _autoconnect_enabled_input};
 
     // layout
 
