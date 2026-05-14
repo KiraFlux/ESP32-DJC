@@ -15,33 +15,32 @@
 #include "djc/input/InputHandler.hpp"
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
+#include "djc/transport/Kind.hpp"
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 
 namespace djc {
 
 struct Config {
-    static constexpr auto latest_version{8u}, max_peer_favorites{8u};
+    static constexpr auto latest_version{9u}, max_peer_favorites{8u};
 
     kf::u16 version;
 
     protocol::ProtocolRegistry::Mode init_protocol_mode;
+    transport::Kind init_transport_kind;
     kf::memory::Array<char, 16> device_name;
     kf::memory::Array<kf::Option<PeerFavoritesRegistry::Entry>, max_peer_favorites> peer_favorites;
 
     Periphery::Config periphery;
-    InputHandler::Config input_handler;
 
     transport::TransportLink::Config transport_link;
-    PeerScanner::Config peer_scanner;
-    AutoConnectService::Config auto_connect_service;
 
     protocol::ProtocolLink::Config protocol_link;
     protocol::ProtocolRegistry::Config protocol_registry;
 
-    [[nodiscard]] constexpr kf::memory::StringView deviceName() const noexcept {
-        return kf::memory::StringView{device_name.data(), device_name.size()};
-    }
+    InputHandler::Config input_handler;
+    PeerScanner::Config peer_scanner;
+    AutoConnectService::Config auto_connect_service;
 
     [[nodiscard]] bool isLatestVersion() const noexcept { return version == latest_version; }
 
@@ -50,18 +49,20 @@ struct Config {
             .version = latest_version,
 
             .init_protocol_mode = protocol::ProtocolRegistry::Mode::Mavlink,
+            .init_transport_kind = transport::Kind::EspNow,
             .device_name = {"ESP32-DJC"},
             .peer_favorites = {},
 
             .periphery = Periphery::Config::defaults(),
-            .input_handler = InputHandler::Config::defaults(),
-
+            
             .transport_link = transport::TransportLink::Config::defaults(),
-            .peer_scanner = PeerScanner::Config::defaults(),
-            .auto_connect_service = AutoConnectService::Config::defaults(),
 
             .protocol_link = protocol::ProtocolLink::Config::defaults(),
             .protocol_registry = protocol::ProtocolRegistry::Config::defaults(),
+
+            .input_handler = InputHandler::Config::defaults(),
+            .peer_scanner = PeerScanner::Config::defaults(),
+            .auto_connect_service = AutoConnectService::Config::defaults(),
         };
     }
 };
