@@ -3,41 +3,57 @@
 
 #pragma once
 
+// lib
 #include <kf/Option.hpp>
 #include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
 #include <kf/memory/StringView.hpp>
 
-#include "djc/AutoConnectService.hpp"
-#include "djc/PeerFavoritesRegistry.hpp"
-#include "djc/PeerScanner.hpp"
+// periphery
 #include "djc/Periphery.hpp"
-#include "djc/input/InputHandler.hpp"
-#include "djc/protocol/ProtocolLink.hpp"
-#include "djc/protocol/ProtocolRegistry.hpp"
+
+// transport
 #include "djc/transport/Kind.hpp"
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 
+// protocol
+#include "djc/protocol/ProtocolLink.hpp"
+#include "djc/protocol/ProtocolRegistry.hpp"
+
+// services
+#include "djc/AutoConnectService.hpp"
+#include "djc/PeerFavoritesRegistry.hpp"
+#include "djc/PeerScanner.hpp"
+#include "djc/input/InputHandler.hpp"
+
 namespace djc {
 
+/// @brief Persistent configuration structure stored in NVS.
 struct Config {
-    static constexpr auto latest_version{9u}, max_peer_favorites{8u};
+    static constexpr auto
+        latest_version{9u},
+        max_peer_favorites{8u};
 
     kf::u16 version;
 
+    // user
     protocol::ProtocolRegistry::Mode init_protocol_mode;
     transport::Kind init_transport_kind;
     kf::memory::Array<char, 16> device_name;
     kf::memory::Array<kf::Option<PeerFavoritesRegistry::Entry>, max_peer_favorites> peer_favorites;
 
+    // periphery
     Periphery::Config periphery;
 
+    // transport
     transport::TransportLink::Config transport_link;
 
+    // protocol
     protocol::ProtocolLink::Config protocol_link;
     protocol::ProtocolRegistry::Config protocol_registry;
 
+    // services
     InputHandler::Config input_handler;
     PeerScanner::Config peer_scanner;
     AutoConnectService::Config auto_connect_service;
@@ -54,7 +70,7 @@ struct Config {
             .peer_favorites = {},
 
             .periphery = Periphery::Config::defaults(),
-            
+
             .transport_link = transport::TransportLink::Config::defaults(),
 
             .protocol_link = protocol::ProtocolLink::Config::defaults(),
