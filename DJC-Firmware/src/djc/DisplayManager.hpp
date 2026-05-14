@@ -19,6 +19,7 @@
 
 namespace djc {
 
+/// @brief Service that manages display rendering, including UI and virtual keyboard overlay.
 struct DisplayManager final : kf::mixin::NonCopyable, kf::mixin::Initable<DisplayManager, void> {
 
     explicit DisplayManager(DisplayDriver &display, const Control &control, const transport::TransportLink &transport_link) noexcept :
