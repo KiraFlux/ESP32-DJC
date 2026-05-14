@@ -11,6 +11,7 @@
 #include "djc/ConfigManager.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
+#include "djc/transport/Kind.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/PeerFavoritePage.hpp"
 #include "djc/ui/widgets/PeerDisplay.hpp"
@@ -27,6 +28,7 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
             &root.link(),
             &_device_name_input,
             &_labeled_autoconnect_enabled_input,
+            &_labeled_default_transport_kind_selector,
             &_labeled_default_protocol_mode_selector,
             &_save_storage,
             &_load_storage,
@@ -100,10 +102,12 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
     }
 
 private:
+    using TransportKindSelector = UI::ComboBox<transport::Kind>;
+
     using Mode = protocol::ProtocolRegistry::Mode;
     using ProtocolModeSelector = UI::ComboBox<Mode>;
 
-    static constexpr auto layout_regular_widgets{8u};
+    static constexpr auto layout_regular_widgets{9u};
 
     inline static auto &storage{djc::ConfigManager::instance()};
 
@@ -114,6 +118,14 @@ private:
     bool show_favorites{true};
 
     // widgets
+
+    kf::memory::Array<TransportKindSelector::Item, 1> _transport_kind_options{{
+        {"EspNow", transport::Kind::EspNow},
+    }};
+
+    TransportKindSelector::Config _transport_kind_config{
+        .items = {_transport_kind_options.data(), _transport_kind_options.size()},
+    };
 
     kf::memory::Array<ProtocolModeSelector::Item, 2> _control_mode_options{{
         {"Mavlink", Mode::Mavlink},
@@ -131,6 +143,9 @@ private:
         _load_storage{"Load"},
         _reset_storage{"Reset (RAM cache)"},
         _show_favorite_peers{{}};
+
+    TransportKindSelector _default_transport_kind_selector{_transport_kind_config};
+    UI::Labeled _labeled_default_transport_kind_selector{"Init Transport", _default_transport_kind_selector};
 
     ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};
     UI::Labeled _labeled_default_protocol_mode_selector{"Init Protocol", _default_protocol_mode_selector};
