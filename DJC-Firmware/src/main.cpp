@@ -29,7 +29,7 @@
 #include "djc/service/Control.hpp"
 #include "djc/service/DisplayManager.hpp"
 #include "djc/service/InputHandler.hpp"
-#include "djc/service/PeerScanner.hpp"
+#include "djc/service/PeerScanningService.hpp"
 
 // djc::ui::pages
 #include "djc/ui/pages/ConfigPage.hpp"
@@ -77,7 +77,7 @@ static djc::service::InputHandler input_handler{
     periphery.right_button_listener,
 };
 
-static djc::service::PeerScanner peer_scanner{
+static djc::service::PeerScanningService peer_scanner{
     config_manager.config().peer_scanner,
     transport_link,
 };

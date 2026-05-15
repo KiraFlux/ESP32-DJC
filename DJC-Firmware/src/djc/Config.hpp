@@ -23,7 +23,7 @@
 // services
 #include "djc/service/AutoConnectService.hpp"
 #include "djc/service/InputHandler.hpp"
-#include "djc/service/PeerScanner.hpp"
+#include "djc/service/PeerScanningService.hpp"
 
 namespace djc {
 
@@ -53,7 +53,7 @@ struct Config {
 
     // services
     service::InputHandler::Config input_handler;
-    service::PeerScanner::Config peer_scanner;
+    service::PeerScanningService::Config peer_scanner;
     service::AutoConnectService::Config auto_connect_service;
 
     [[nodiscard]] bool isLatestVersion() const noexcept { return version == latest_version; }
@@ -75,7 +75,7 @@ struct Config {
             .protocol_registry = protocol::ProtocolRegistry::Config::defaults(),
 
             .input_handler = service::InputHandler::Config::defaults(),
-            .peer_scanner = service::PeerScanner::Config::defaults(),
+            .peer_scanner = service::PeerScanningService::Config::defaults(),
             .auto_connect_service = service::AutoConnectService::Config::defaults(),
         };
     }

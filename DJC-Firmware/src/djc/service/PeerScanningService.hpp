@@ -20,7 +20,7 @@ namespace djc::service {
 
 namespace internal {
 
-/// @brief Configuration parameters for the PeerScanner service.
+/// @brief Configuration parameters for the PeerScanningService service.
 struct PeerScannerConfig final : kf::mixin::NonCopyable {
     kf::math::Milliseconds
         entry_max_life_time,       ///< How long an entry stays in the list without being refreshed.
@@ -41,10 +41,10 @@ struct PeerScannerConfig final : kf::mixin::NonCopyable {
 /// The scanner subscribes to `TransportLink::onReceiveForeign` and keeps up to `max_entries` entries
 /// Entries are refreshed every time a packet from the corresponding peer is received.
 /// Periodically, expired entries are removed and the list is compacted so that the first `peers().size()` elements are always valid.
-struct PeerScanner final :
+struct PeerScanningService final :
 
-    Service<PeerScanner>,
-    kf::mixin::Initable<PeerScanner, void>,
+    Service<PeerScanningService>,
+    kf::mixin::Initable<PeerScanningService, void>,
     kf::mixin::Configurable<internal::PeerScannerConfig>
 
 {
@@ -59,7 +59,7 @@ struct PeerScanner final :
     /// @brief Maximum number of peers the scanner can remember simultaneously
     static constexpr auto max_entries{8};
 
-    explicit constexpr PeerScanner(const Config &config, transport::TransportLink &transport_link) noexcept :
+    explicit constexpr PeerScanningService(const Config &config, transport::TransportLink &transport_link) noexcept :
         Configurable<Config>{config}, _transport_link{transport_link} {}
 
     /// @brief Returns a slice of the currently active peer entries.
@@ -78,7 +78,7 @@ private:
     kf::usize _active_count{0};
 
     // impl
-    using This = PeerScanner;
+    using This = PeerScanningService;
 
     KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {
