@@ -11,10 +11,11 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
-#include "transport/PeerAddress.hpp"
-#include "transport/TransportLink.hpp"
+#include "djc/service/Service.hpp"
+#include "djc/transport/PeerAddress.hpp"
+#include "djc/transport/TransportLink.hpp"
 
-namespace djc {
+namespace djc::service {
 
 namespace internal {
 
@@ -40,10 +41,9 @@ struct AutoConnectServiceConfig final : kf::mixin::NonCopyable {
 /// After the callback, the target is cleared and the service waits for a new one.
 struct AutoConnectService final :
 
-    kf::mixin::NonCopyable,
-    kf::mixin::Callbacked<const transport::PeerAddress &>,
+    Service<AutoConnectService>,
     kf::mixin::Configurable<internal::AutoConnectServiceConfig>,
-    kf::mixin::TimedPollable<AutoConnectService>
+    kf::mixin::Callbacked<const transport::PeerAddress &>
 
 {
     /// @brief Configuration for the AutoConnectService
@@ -85,4 +85,4 @@ private:
     }
 };
 
-}// namespace djc
+}// namespace djc::service
