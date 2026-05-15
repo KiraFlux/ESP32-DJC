@@ -11,13 +11,12 @@
 #include <kf/memory/Slice.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
-#include <kf/mixin/NonCopyable.hpp>
-#include <kf/mixin/TimedPollable.hpp>
 
+#include "djc/service/Service.hpp"
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 
-namespace djc {
+namespace djc::service {
 
 namespace internal {
 
@@ -44,10 +43,9 @@ struct PeerScannerConfig final : kf::mixin::NonCopyable {
 /// Periodically, expired entries are removed and the list is compacted so that the first `peers().size()` elements are always valid.
 struct PeerScanner final :
 
-    kf::mixin::NonCopyable,
+    Service<PeerScanner>,
     kf::mixin::Initable<PeerScanner, void>,
-    kf::mixin::Configurable<internal::PeerScannerConfig>,
-    kf::mixin::TimedPollable<PeerScanner>
+    kf::mixin::Configurable<internal::PeerScannerConfig>
 
 {
     using Config = internal::PeerScannerConfig;
@@ -156,4 +154,4 @@ private:
     }
 };
 
-}// namespace djc
+}// namespace djc::service
