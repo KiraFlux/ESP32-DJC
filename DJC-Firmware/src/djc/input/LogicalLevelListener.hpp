@@ -17,22 +17,25 @@ namespace djc::input {
 
 namespace internal {
 
-struct ButtonConfig final : kf::mixin::NonCopyable {
+struct LogicalLevelListenerConfig final : kf::mixin::NonCopyable {
     kf::math::Milliseconds debounce;
 };
 
 }// namespace internal
 
 /// @brief Minimal button with press detection only
-template<typename I>
-struct LogicalLevelListener : kf::mixin::Initable<LogicalLevelListener<I>, void>,
-                kf::mixin::NonCopyable,
-                kf::mixin::TimedPollable<LogicalLevelListener<I>>,
-                kf::mixin::Configurable<internal::ButtonConfig> {
+template<typename I> struct LogicalLevelListener :
+
+    kf::mixin::NonCopyable,
+    kf::mixin::TimedPollable<LogicalLevelListener<I>>,
+    kf::mixin::Initable<LogicalLevelListener<I>, void>,
+    kf::mixin::Configurable<internal::LogicalLevelListenerConfig>
+
+{
     KF_CHECK_IMPL(I, kf::gpio::DigitalInputTag);
 
     using PinImpl = I;
-    using Config = internal::ButtonConfig;
+    using Config = internal::LogicalLevelListenerConfig;
 
     explicit LogicalLevelListener(const Config &config, PinImpl &&pin) noexcept :
         kf::mixin::Configurable<Config>{config}, _pin{std::move(pin)} {}
@@ -76,8 +79,6 @@ private:
             _last_raw = state;
             _last_stable = state;
         }
-
-        // todo use Timer here
 
         if (state != _last_raw) {
             _last_raw = state;
