@@ -33,7 +33,7 @@ struct DisplayManager final :
     void showConnectionStatusOverlay(bool show) noexcept { _show_connection_status_overlay = show; }
 
 private:
-    using P = kf::gfx::Palette<DisplayDriver::PixelImpl>;
+    using Palette = kf::gfx::Palette<DisplayDriver::PixelImpl>;
 
     inline static const auto &virtual_keyboard = input::VirtualKeyboard::instance();
 
@@ -44,8 +44,8 @@ private:
     kf::gfx::Canvas<DisplayDriver::PixelImpl> _canvas{};
 
     void onRender(kf::memory::StringView str) noexcept {
-        _canvas.background(P::black);
-        _canvas.foreground(P::white);
+        _canvas.background(Palette::black);
+        _canvas.foreground(Palette::white);
 
         _canvas.fill();
 
@@ -61,13 +61,13 @@ private:
             const auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
             const auto overlay = _transport_link.connected() ? _transport_link.activePeerAddress().value().toString().data() : "Disconnected";
 
-            _canvas.background(P::bright_blue);
-            _canvas.foreground(P::black);
+            _canvas.background(Palette::bright_blue);
+            _canvas.foreground(Palette::black);
             _canvas.text(0, y, overlay);
         }
 
-        _canvas.background(P::black);
-        _canvas.foreground(P::white);
+        _canvas.background(Palette::black);
+        _canvas.foreground(Palette::white);
         _canvas.text(0, 0, str.data());
     }
 
@@ -83,8 +83,8 @@ private:
         _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", virtual_keyboard.available(), virtual_keyboard.text().size()).data());
         _canvas.text(0, _canvas.glyphHeight(), virtual_keyboard.text().data());
 
-        _canvas.background(P::bright_black);
-        _canvas.foreground(P::bright_black);
+        _canvas.background(Palette::bright_black);
+        _canvas.foreground(Palette::bright_black);
         _canvas.rect(0, keyboard_offset_y, _canvas.maxX(), _canvas.maxY(), true);
 
         for (auto row = 0; row < virtual_keyboard.rowsTotal(); row += 1) {
@@ -97,14 +97,14 @@ private:
                 const auto x = col * key_width + x_offset;
 
                 if (row == virtual_keyboard.cursorRow() and col == virtual_keyboard.cursorCol()) {
-                    _canvas.foreground(P::blue);
+                    _canvas.foreground(Palette::blue);
                     _canvas.rect(x, y, x + key_width, y + key_height - 1, true);
 
-                    _canvas.background(P::blue);
-                    _canvas.foreground(P::bright_white);
+                    _canvas.background(Palette::blue);
+                    _canvas.foreground(Palette::bright_white);
                 } else {
-                    _canvas.background(P::bright_black);
-                    _canvas.foreground(P::black);
+                    _canvas.background(Palette::bright_black);
+                    _canvas.foreground(Palette::black);
                 }
 
                 const auto &key = input::VirtualKeyboard::keyAt(row, col);
