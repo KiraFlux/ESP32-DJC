@@ -15,6 +15,7 @@
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
+#include "djc/prelude.hpp"
 
 // djc::transport
 #include "djc/transport/TransportLink.hpp"
@@ -92,7 +93,7 @@ static djc::service::Control control{
     protocol_link,
 };
 
-static djc::service::DisplayManager display_manager{
+static djc::service::DisplayManager<djc::DisplayDriver> display_manager{
     periphery.display,
     transport_link,
 };
