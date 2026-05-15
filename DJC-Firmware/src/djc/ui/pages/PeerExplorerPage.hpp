@@ -10,7 +10,7 @@
 #include <kf/memory/Slice.hpp>
 
 #include "djc/PeerFavoritesRegistry.hpp"
-#include "djc/PeerScanner.hpp"
+#include "djc/service/PeerScanner.hpp"
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
@@ -24,7 +24,7 @@ struct PeerExplorerPage : UI::Page {
     explicit PeerExplorerPage(
         UI::Page &root,
         transport::TransportLink &transport_link,
-        PeerScanner &peer_scanner,
+        service::PeerScanner &peer_scanner,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{"Peer Explorer"},
         _transport_link{transport_link},
@@ -84,7 +84,7 @@ private:
     static constexpr auto peer_display_start_index{3u};
 
     transport::TransportLink &_transport_link;
-    PeerScanner &_peer_scanner;
+    service::PeerScanner &_peer_scanner;
     PeerFavoritesRegistry &_peer_favorites_registry;
     kf::math::Timer _redraw_timer{static_cast<kf::math::Milliseconds>(500)};
 
@@ -92,9 +92,9 @@ private:
 
     UI::Button _primary_connection_status_button{{}};
     UI::Display<kf::memory::StringView> _available_label{_available_label_buffer.view()};
-    kf::memory::Array<widgets::PeerDisplay, PeerScanner::max_entries> _peer_displays{};
+    kf::memory::Array<widgets::PeerDisplay, service::PeerScanner::max_entries> _peer_displays{};
 
-    kf::memory::Array<UI::Widget *, (peer_display_start_index + PeerScanner::max_entries)> _layout;
+    kf::memory::Array<UI::Widget *, (peer_display_start_index + service::PeerScanner::max_entries)> _layout;
 
     // child pages
     PeerDetailPage _peer_detail_page{*this, _transport_link, _peer_favorites_registry};
@@ -103,7 +103,7 @@ private:
         return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
     }
 
-    kf::Option<widgets::PeerDisplay::State> createPeerDisplayState(const kf::Option<PeerScanner::Entry> &entry, kf::math::Milliseconds now) const noexcept {
+    kf::Option<widgets::PeerDisplay::State> createPeerDisplayState(const kf::Option<service::PeerScanner::Entry> &entry, kf::math::Milliseconds now) const noexcept {
         using P = widgets::PeerDisplay;
         constexpr auto extreme_age_factor{0.75f};
 

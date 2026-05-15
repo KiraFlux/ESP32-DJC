@@ -6,38 +6,39 @@
 
 // lib
 #include <kf/Logger.hpp>
-#include <kf/memory/Storage.hpp>
 #include <kf/memory/StringView.hpp>
 
 // djc
-#include "djc/AutoConnectService.hpp"
 #include "djc/ConfigManager.hpp"
-#include "djc/Control.hpp"
-#include "djc/DisplayManager.hpp"
 #include "djc/ManualInput.hpp"
 #include "djc/MavlinkTelemetryRegistry.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
-#include "djc/PeerScanner.hpp"
 #include "djc/Periphery.hpp"
-
-#include "djc/input/InputHandler.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
 
-#include "djc/protocol/ProtocolLink.hpp"
-#include "djc/protocol/ProtocolRegistry.hpp"
-
+// djc::transport
 #include "djc/transport/TransportLink.hpp"
 #include "djc/transport/TransportRegistry.hpp"
 
+// djc::protocol
+#include "djc/protocol/ProtocolLink.hpp"
+#include "djc/protocol/ProtocolRegistry.hpp"
+
+// djc::service
+#include "djc/service/AutoConnectService.hpp"
+#include "djc/service/Control.hpp"
+#include "djc/service/DisplayManager.hpp"
+#include "djc/service/InputHandler.hpp"
+#include "djc/service/PeerScanner.hpp"
+
+// djc::ui::pages
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavlinkTelemetryPage.hpp"
 #include "djc/ui/pages/PeerExplorerPage.hpp"
 #include "djc/ui/pages/RawProtocolPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
 
-// services
-
-static auto &ui{djc::ui::UI::instance()};
+static constexpr auto logger{kf::Logger::create("main")};
 
 static auto &storage{djc::ConfigManager::instance()};
 
@@ -45,13 +46,6 @@ static auto &virtual_keyboard{djc::input::VirtualKeyboard::instance()};
 
 static djc::Periphery periphery{
     storage.config().periphery,
-};
-
-static djc::InputHandler input_handler{
-    storage.config().input_handler,
-    periphery.right_joystick,
-    periphery.left_button_listener,
-    periphery.right_button_listener,
 };
 
 static djc::transport::TransportLink transport_link{
@@ -74,26 +68,37 @@ static djc::PeerFavoritesRegistry peer_favoriter_registry{
     {storage.config().peer_favorites.data(), storage.config().peer_favorites.size()},
 };
 
-static djc::PeerScanner peer_scanner{
+// services
+
+static djc::service::InputHandler input_handler{
+    storage.config().input_handler,
+    periphery.right_joystick,
+    periphery.left_button_listener,
+    periphery.right_button_listener,
+};
+
+static djc::service::PeerScanner peer_scanner{
     storage.config().peer_scanner,
     transport_link,
 };
 
-static djc::AutoConnectService auto_connect_service{
+static djc::service::AutoConnectService auto_connect_service{
     storage.config().auto_connect_service,
     transport_link,
 };
 
-static djc::Control control{
+static djc::service::Control control{
     transport_link,
     protocol_link,
 };
 
-static djc::DisplayManager display_manager{
+static djc::service::DisplayManager display_manager{
     periphery.display,
     control,
     transport_link,
 };
+
+static auto &ui{djc::ui::UI::instance()};
 
 // pages
 
@@ -126,8 +131,6 @@ static djc::ui::pages::ConfigPage config_page{
 };
 
 void setup() {
-    static constexpr auto logger{kf::Logger::create("setup")};
-
     Serial.begin(115200);
     kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
 
@@ -191,7 +194,7 @@ void setup() {
             ui.addEvent(E::widgetClick());
         });
 
-        input_handler.onDirection([](djc::InputHandler::JoystickListener::Direction direction) {
+        input_handler.onDirection([](djc::service::InputHandler::JoystickListener::Direction direction) {
             static constexpr E navigation_event_from_direction[4] = {
                 E::pageCursorMove(-1),// Up
                 E::pageCursorMove(+1),// Down
@@ -246,12 +249,12 @@ void loop() {
                 }
             }
 
-            const auto &most_trusted = favorites[most_trusted_favorite_index].value();
-
-            for (const auto &peer: peer_scanner.peers()) {
-                if (peer.hasValue() and peer.value().address == most_trusted.address) {
-                    auto_connect_service.target(most_trusted.address);
-                    break;
+            if (const auto &most_trusted = favorites[most_trusted_favorite_index]; most_trusted.hasValue()) {
+                for (const auto &peer: peer_scanner.peers()) {
+                    if (peer.hasValue() and peer.value().address == most_trusted.value().address) {
+                        auto_connect_service.target(most_trusted.value().address);
+                        break;
+                    }
                 }
             }
         }
@@ -274,4 +277,5 @@ void loop() {
     }
     control.poll(now);
     ui.poll(now);
+    display_manager.poll(now);
 }

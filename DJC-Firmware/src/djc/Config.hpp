@@ -8,7 +8,7 @@
 #include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
 
-// periphery
+#include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/Periphery.hpp"
 
 // transport
@@ -21,10 +21,9 @@
 #include "djc/protocol/ProtocolRegistry.hpp"
 
 // services
-#include "djc/AutoConnectService.hpp"
-#include "djc/PeerFavoritesRegistry.hpp"
-#include "djc/PeerScanner.hpp"
-#include "djc/input/InputHandler.hpp"
+#include "djc/service/AutoConnectService.hpp"
+#include "djc/service/InputHandler.hpp"
+#include "djc/service/PeerScanner.hpp"
 
 namespace djc {
 
@@ -53,9 +52,9 @@ struct Config {
     protocol::ProtocolRegistry::Config protocol_registry;
 
     // services
-    InputHandler::Config input_handler;
-    PeerScanner::Config peer_scanner;
-    AutoConnectService::Config auto_connect_service;
+    service::InputHandler::Config input_handler;
+    service::PeerScanner::Config peer_scanner;
+    service::AutoConnectService::Config auto_connect_service;
 
     [[nodiscard]] bool isLatestVersion() const noexcept { return version == latest_version; }
 
@@ -75,9 +74,9 @@ struct Config {
             .protocol_link = protocol::ProtocolLink::Config::defaults(),
             .protocol_registry = protocol::ProtocolRegistry::Config::defaults(),
 
-            .input_handler = InputHandler::Config::defaults(),
-            .peer_scanner = PeerScanner::Config::defaults(),
-            .auto_connect_service = AutoConnectService::Config::defaults(),
+            .input_handler = service::InputHandler::Config::defaults(),
+            .peer_scanner = service::PeerScanner::Config::defaults(),
+            .auto_connect_service = service::AutoConnectService::Config::defaults(),
         };
     }
 };
