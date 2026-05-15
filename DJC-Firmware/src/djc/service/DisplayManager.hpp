@@ -9,7 +9,6 @@
 #include <kf/math/units.hpp>
 #include <kf/memory/ArrayString.hpp>
 #include <kf/mixin/Initable.hpp>
-#include <kf/mixin/NonCopyable.hpp>
 
 #include "djc/Control.hpp"
 #include "djc/input/VirtualKeyboard.hpp"
@@ -17,10 +16,17 @@
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 
-namespace djc {
+#include "djc/service/Service.hpp"
+
+namespace djc::service {
 
 /// @brief Service that manages display rendering, including UI and virtual keyboard overlay.
-struct DisplayManager final : kf::mixin::NonCopyable, kf::mixin::Initable<DisplayManager, void> {
+struct DisplayManager final :
+
+    Service<DisplayManager>,
+    kf::mixin::Initable<DisplayManager, void>
+
+{
 
     explicit DisplayManager(DisplayDriver &display, const Control &control, const transport::TransportLink &transport_link) noexcept :
         _display{display}, _control{control}, _transport_link{transport_link} {}
@@ -113,8 +119,9 @@ private:
     }
 
     // impl
+    using This = DisplayManager;
 
-    KF_IMPL_INITABLE(DisplayManager, void);
+    KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {
         _canvas = kf::gfx::Canvas<DisplayDriver::PixelImpl>{
             kf::image::DynamicImage<DisplayDriver::PixelImpl>{_display.image()},
@@ -130,6 +137,9 @@ private:
         config.row_max_length = _canvas.widthInGlyphs();
         config.rows_total = _canvas.heightInGlyphs() - 1;
     }
+
+    KF_IMPL_TIMED_POLLABLE(This);
+    void pollImpl(kf::math::Milliseconds now) noexcept {}
 };
 
-}// namespace djc
+}// namespace djc::service
