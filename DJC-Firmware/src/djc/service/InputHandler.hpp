@@ -6,17 +6,15 @@
 #include <utility>
 
 #include <kf/Function.hpp>
-#include <kf/aliases.hpp>
 #include <kf/input/JoystickListener.hpp>
 #include <kf/math/units.hpp>
-#include <kf/mixin/NonCopyable.hpp>
-#include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/prelude.hpp"
+#include "djc/service/Service.hpp"
 
-namespace djc {
+namespace djc::service {
 
-struct InputHandler final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<InputHandler> {
+struct InputHandler final : Service<InputHandler> {
     using JoystickListener = kf::input::JoystickListener<Joystick>;
 
     using ClickCallback = kf::Function<void()>;
@@ -61,8 +59,6 @@ private:
     ButtonListener &_right_button_listener;
     ClickCallback _right_click_callback{};
 
-    // impl
-
     KF_IMPL_TIMED_POLLABLE(InputHandler);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         _left_button_listener.poll(now);
@@ -82,4 +78,4 @@ private:
     }
 };
 
-}// namespace djc
+}// namespace djc::service
