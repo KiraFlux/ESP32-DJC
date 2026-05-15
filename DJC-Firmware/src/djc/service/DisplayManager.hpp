@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <kf/drivers/display/DisplayDriver.hpp>
 #include <kf/gfx/Canvas.hpp>
 #include <kf/gfx/Palette.hpp>
 #include <kf/image/DynamicImage.hpp>
@@ -11,7 +12,6 @@
 #include <kf/mixin/Initable.hpp>
 
 #include "djc/input/VirtualKeyboard.hpp"
-#include "djc/prelude.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 
@@ -20,28 +20,31 @@
 namespace djc::service {
 
 /// @brief Service that manages display rendering, including UI and virtual keyboard overlay.
-struct DisplayManager final :
+template<typename I> struct DisplayManager final :
 
-    Service<DisplayManager>,
-    kf::mixin::Initable<DisplayManager, void>
+    Service<DisplayManager<I>>,
+    kf::mixin::Initable<DisplayManager<I>, void>
 
 {
+    KF_CHECK_IMPL(I, ::kf::drivers::display::DisplayDriverTag);
 
-    explicit DisplayManager(DisplayDriver &display, const transport::TransportLink &transport_link) noexcept :
-        _display{display}, _transport_link{transport_link} {}
+    using DisplayDriverImpl = I;
+
+    explicit DisplayManager(DisplayDriverImpl &display_driver, const transport::TransportLink &transport_link) noexcept :
+        _display_driver{display_driver}, _transport_link{transport_link} {}
 
     void showConnectionStatusOverlay(bool show) noexcept { _show_connection_status_overlay = show; }
 
 private:
-    using Palette = kf::gfx::Palette<DisplayDriver::PixelImpl>;
+    using Palette = kf::gfx::Palette<typename DisplayDriverImpl::PixelImpl>;
 
     inline static const auto &virtual_keyboard = input::VirtualKeyboard::instance();
 
-    DisplayDriver &_display;
+    DisplayDriverImpl &_display_driver;
     const transport::TransportLink &_transport_link;
     bool _show_connection_status_overlay{false};
 
-    kf::gfx::Canvas<DisplayDriver::PixelImpl> _canvas{};
+    kf::gfx::Canvas<typename DisplayDriverImpl::PixelImpl> _canvas{};
 
     void onRender(kf::memory::StringView str) noexcept {
         _canvas.background(Palette::black);
@@ -120,12 +123,12 @@ private:
     }
 
     // impl
-    using This = DisplayManager;
+    using This = DisplayManager<I>;
 
     KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {
-        _canvas = kf::gfx::Canvas<DisplayDriver::PixelImpl>{
-            kf::image::DynamicImage<DisplayDriver::PixelImpl>{_display.image()},
+        _canvas = kf::gfx::Canvas<typename DisplayDriverImpl::PixelImpl>{
+            kf::image::DynamicImage<typename DisplayDriverImpl::PixelImpl>{_display_driver.image()},
             kf::gfx::fonts::gyver_5x7_en,
         };
         _canvas.autoNextLine(true);
@@ -133,7 +136,7 @@ private:
         auto &config = ui::UI::instance().renderConfig();
         config.callback([this](kf::memory::StringView str) {
             onRender(str);
-            (void) _display.send();
+            (void) _display_driver.send();
         });
         config.row_max_length = _canvas.widthInGlyphs();
         config.rows_total = _canvas.heightInGlyphs() - 1;
