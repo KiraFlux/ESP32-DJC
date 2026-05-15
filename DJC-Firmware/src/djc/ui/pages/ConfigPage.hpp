@@ -23,10 +23,10 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
     explicit ConfigPage(
         UI::Page &root,
-        djc::ConfigManager &storage,
+        djc::ConfigManager &config_manager,
         PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
         Page{"Config"},
-        _storage{storage},
+        _config_manager{config_manager},
         _peer_favoriter_registry{peer_favoriter_registry},
         _layout{{
             &root.link(),
@@ -34,39 +34,39 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
             &_labeled_autoconnect_enabled_input,
             &_labeled_default_transport_kind_selector,
             &_labeled_default_protocol_mode_selector,
-            &_save_storage,
-            &_load_storage,
-            &_reset_storage,
-            &_show_favorite_peers,
+            &_save_config_button,
+            &_load_config_button,
+            &_reset_config_button,
+            &_favorite_peers_fold_toggle_button,
         }} {
         widgets(layout(0));
 
-        _device_name_input.source({storage.config().device_name.data(), storage.config().device_name.size()});
+        _device_name_input.source({_config_manager.config().device_name.data(), _config_manager.config().device_name.size()});
 
-        _save_storage.callback([this]() { _storage.save(); });
+        _save_config_button.callback([this]() { _config_manager.save(); });
 
-        _load_storage.callback([this]() {
-            _storage.load();
+        _load_config_button.callback([this]() {
+            _config_manager.load();
             this->init();
         });
 
-        _reset_storage.callback([this]() {
-            _storage.reset();
+        _reset_config_button.callback([this]() {
+            _config_manager.reset();
             this->init();
         });
 
-        _show_favorite_peers.callback([this]() {
+        _favorite_peers_fold_toggle_button.callback([this]() {
             show_favorites = not show_favorites;
             this->onEntry();
             UI::instance().addEvent(UI::Event::update());
         });
 
         _default_protocol_mode_selector.callback([this](Mode mode) {
-            _storage.config().init_protocol_mode = mode;
+            _config_manager.config().init_protocol_mode = mode;
         });
 
         _autoconnect_enabled_input.callback([this](bool value) {
-            _storage.config().auto_connect_service.enabled = value;
+            _config_manager.config().auto_connect_service.enabled = value;
         });
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
@@ -87,7 +87,7 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
             ((show_favorites) ? 'V' : '>'),
             all_favorites.size(),
             Config::max_peer_favorites);
-        _show_favorite_peers.label(_label_favorites_buffer.view());
+        _favorite_peers_fold_toggle_button.label(_label_favorites_buffer.view());
 
         if (show_favorites) {
             for (auto i = 0u; i < all_favorites.size(); i += 1) {
@@ -115,7 +115,7 @@ private:
 
     // state
 
-    djc::ConfigManager &_storage;
+    djc::ConfigManager &_config_manager;
     PeerFavoritesRegistry &_peer_favoriter_registry;
     kf::memory::ArrayString<32> _label_favorites_buffer{};
     bool show_favorites{true};
@@ -142,10 +142,10 @@ private:
     widgets::TextInput _device_name_input{};
 
     UI::Button
-        _save_storage{"Save"},
-        _load_storage{"Load"},
-        _reset_storage{"Reset (RAM cache)"},
-        _show_favorite_peers{{}};
+        _save_config_button{"Save"},
+        _load_config_button{"Load"},
+        _reset_config_button{"Reset (RAM cache)"},
+        _favorite_peers_fold_toggle_button{{}};
 
     TransportKindSelector _default_transport_kind_selector{_transport_kind_config};
     UI::Labeled _labeled_default_transport_kind_selector{"Init Transport", _default_transport_kind_selector};
@@ -175,7 +175,7 @@ private:
     void initImpl() noexcept {
         // _default_protocol_mode_selector.value(storage.config().init_protocol_mode); // todo: Combobox::value(T)
         // _default_transport_kind_selector.value(storage.config().init_transport_kind); // todo: Combobox::value(T)
-        _autoconnect_enabled_input.value(_storage.config().auto_connect_service.enabled);
+        _autoconnect_enabled_input.value(_config_manager.config().auto_connect_service.enabled);
     }
 };
 

@@ -40,50 +40,50 @@
 
 static constexpr auto logger{kf::Logger::create("main")};
 
-static djc::ConfigManager storage{};
+static djc::ConfigManager config_manager{};
 
 static auto &virtual_keyboard{djc::input::VirtualKeyboard::instance()};
 
 static djc::Periphery periphery{
-    storage.config().periphery,
+    config_manager.config().periphery,
 };
 
 static djc::transport::TransportLink transport_link{
-    storage.config().transport_link,
+    config_manager.config().transport_link,
 };
 
 static djc::transport::TransportRegistry transport_registry{};
 
 static djc::protocol::ProtocolLink protocol_link{
-    storage.config().protocol_link,
+    config_manager.config().protocol_link,
 };
 
 static djc::protocol::ProtocolRegistry protocol_registry{
-    storage.config().protocol_registry,
+    config_manager.config().protocol_registry,
 };
 
 static djc::MavlinkTelemetryRegistry mavlink_telemetry_registry{};
 
 static djc::PeerFavoritesRegistry peer_favoriter_registry{
-    {storage.config().peer_favorites.data(), storage.config().peer_favorites.size()},
+    {config_manager.config().peer_favorites.data(), config_manager.config().peer_favorites.size()},
 };
 
 // services
 
 static djc::service::InputHandler input_handler{
-    storage.config().input_handler,
+    config_manager.config().input_handler,
     periphery.right_joystick,
     periphery.left_button_listener,
     periphery.right_button_listener,
 };
 
 static djc::service::PeerScanner peer_scanner{
-    storage.config().peer_scanner,
+    config_manager.config().peer_scanner,
     transport_link,
 };
 
 static djc::service::AutoConnectService auto_connect_service{
-    storage.config().auto_connect_service,
+    config_manager.config().auto_connect_service,
     transport_link,
 };
 
@@ -127,7 +127,7 @@ static djc::ui::pages::RawProtocolPage raw_protocol_page{
 
 static djc::ui::pages::ConfigPage config_page{
     root_page,
-    storage,
+    config_manager,
     peer_favoriter_registry,
 };
 
@@ -135,20 +135,20 @@ void setup() {
     Serial.begin(115200);
     kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
 
-    storage.load();
+    config_manager.load();
     peer_favoriter_registry.init();
     config_page.init();
 
     if (not periphery.init()) {
         logger.error("Periphery init failed. Resseting periphery config to defaults");
-        storage.config().periphery = djc::Periphery::Config::defaults();
-        storage.modified(true);
+        config_manager.config().periphery = djc::Periphery::Config::defaults();
+        config_manager.modified(true);
     }
 
-    if (not storage.config().periphery.joystick_axes_tuned) {
+    if (not config_manager.config().periphery.joystick_axes_tuned) {
         logger.debug("Tunning axes..");
-        periphery.tune(storage.config().periphery);
-        storage.modified(true);
+        periphery.tune(config_manager.config().periphery);
+        config_manager.modified(true);
     }
 
     display_manager.init();
@@ -157,7 +157,7 @@ void setup() {
         logger.error("failed to initialize espnow transport");
     }
 
-    transport_link.transport(transport_registry.get(storage.config().init_transport_kind));
+    transport_link.transport(transport_registry.get(config_manager.config().init_transport_kind));
 
     transport_link.onReceive([](const djc::transport::PeerAddress &, kf::memory::Slice<const kf::u8> buffer) {
         protocol_link.receive(buffer);
@@ -167,7 +167,7 @@ void setup() {
         mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(millis()), message);
     });
 
-    protocol_link.protocol(protocol_registry.get(storage.config().init_protocol_mode));
+    protocol_link.protocol(protocol_registry.get(config_manager.config().init_protocol_mode));
 
     peer_scanner.init();
 
@@ -226,7 +226,7 @@ void setup() {
         ui.addEvent(E::update());
     }
 
-    if (storage.modified()) { storage.save(); }
+    if (config_manager.modified()) { config_manager.save(); }
 }
 
 void loop() {
