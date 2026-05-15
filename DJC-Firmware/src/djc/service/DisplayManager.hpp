@@ -10,7 +10,7 @@
 #include <kf/memory/ArrayString.hpp>
 #include <kf/mixin/Initable.hpp>
 
-#include "djc/Control.hpp"
+#include "djc/service/Control.hpp" // fixme: service deps on service
 #include "djc/input/VirtualKeyboard.hpp"
 #include "djc/prelude.hpp"
 #include "djc/transport/TransportLink.hpp"

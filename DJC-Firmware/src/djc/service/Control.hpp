@@ -9,15 +9,16 @@
 
 #include "djc/ManualInput.hpp"
 #include "djc/protocol/ProtocolLink.hpp"
+#include "djc/service/Service.hpp"
 #include "djc/transport/TransportLink.hpp"
 
-namespace djc {
+namespace djc::service {
 
 /// @brief Thin bridge between transport and protocol layers, enabling manual control transmission.
 /// @note
 /// Stores the current joystick input and a flag that enables/disables output.
 /// When enabled and the transport is connected, `pollImpl()` forwards the input to the active protocol via `ProtocolLink::poll()`.
-struct Control final : kf::mixin::NonCopyable, kf::mixin::TimedPollable<Control> {
+struct Control final : Service<Control> {
 
     explicit Control(transport::TransportLink &transport_link, protocol::ProtocolLink &protocol_link) noexcept :
         _transport_link{transport_link}, _protocol_link{protocol_link} {}
@@ -48,4 +49,4 @@ private:
     }
 };
 
-}// namespace djc
+}// namespace djc::service
