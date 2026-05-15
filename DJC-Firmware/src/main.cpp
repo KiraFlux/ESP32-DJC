@@ -40,7 +40,7 @@
 
 static constexpr auto logger{kf::Logger::create("main")};
 
-static auto &storage{djc::ConfigManager::instance()};
+static djc::ConfigManager storage{};
 
 static auto &virtual_keyboard{djc::input::VirtualKeyboard::instance()};
 
@@ -127,6 +127,7 @@ static djc::ui::pages::RawProtocolPage raw_protocol_page{
 
 static djc::ui::pages::ConfigPage config_page{
     root_page,
+    storage,
     peer_favoriter_registry,
 };
 

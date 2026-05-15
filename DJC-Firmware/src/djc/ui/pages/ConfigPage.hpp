@@ -21,8 +21,12 @@ namespace djc::ui::pages {
 
 struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
-    explicit ConfigPage(UI::Page &root, PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
+    explicit ConfigPage(
+        UI::Page &root,
+        djc::ConfigManager &storage,
+        PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
         Page{"Config"},
+        _storage{storage},
         _peer_favoriter_registry{peer_favoriter_registry},
         _layout{{
             &root.link(),
@@ -39,16 +43,16 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
         _device_name_input.source({storage.config().device_name.data(), storage.config().device_name.size()});
 
-        _save_storage.callback([]() {
-            storage.save();
+        _save_storage.callback([this]() { _storage.save(); });
+
+        _load_storage.callback([this]() {
+            _storage.load();
+            this->init();
         });
 
-        _load_storage.callback([]() {
-            storage.load();
-        });
-
-        _reset_storage.callback([]() {
-            storage.reset();
+        _reset_storage.callback([this]() {
+            _storage.reset();
+            this->init();
         });
 
         _show_favorite_peers.callback([this]() {
@@ -57,12 +61,12 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
             UI::instance().addEvent(UI::Event::update());
         });
 
-        _default_protocol_mode_selector.callback([](Mode mode) {
-            storage.config().init_protocol_mode = mode;
+        _default_protocol_mode_selector.callback([this](Mode mode) {
+            _storage.config().init_protocol_mode = mode;
         });
 
-        _autoconnect_enabled_input.callback([](bool value) {
-            storage.config().auto_connect_service.enabled = value;
+        _autoconnect_enabled_input.callback([this](bool value) {
+            _storage.config().auto_connect_service.enabled = value;
         });
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
@@ -109,10 +113,9 @@ private:
 
     static constexpr auto layout_regular_widgets{9u};
 
-    inline static auto &storage{djc::ConfigManager::instance()};
-
     // state
 
+    djc::ConfigManager &_storage;
     PeerFavoritesRegistry &_peer_favoriter_registry;
     kf::memory::ArrayString<32> _label_favorites_buffer{};
     bool show_favorites{true};
@@ -171,7 +174,8 @@ private:
     KF_IMPL_INITABLE(ConfigPage, void);
     void initImpl() noexcept {
         // _default_protocol_mode_selector.value(storage.config().init_protocol_mode); // todo: Combobox::value(T)
-        _autoconnect_enabled_input.value(storage.config().auto_connect_service.enabled);
+        // _default_transport_kind_selector.value(storage.config().init_transport_kind); // todo: Combobox::value(T)
+        _autoconnect_enabled_input.value(_storage.config().auto_connect_service.enabled);
     }
 };
 
