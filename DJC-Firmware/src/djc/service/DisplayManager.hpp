@@ -10,7 +10,6 @@
 #include <kf/memory/ArrayString.hpp>
 #include <kf/mixin/Initable.hpp>
 
-#include "djc/service/Control.hpp" // fixme: service deps on service
 #include "djc/input/VirtualKeyboard.hpp"
 #include "djc/prelude.hpp"
 #include "djc/transport/TransportLink.hpp"
@@ -28,8 +27,10 @@ struct DisplayManager final :
 
 {
 
-    explicit DisplayManager(DisplayDriver &display, const Control &control, const transport::TransportLink &transport_link) noexcept :
-        _display{display}, _control{control}, _transport_link{transport_link} {}
+    explicit DisplayManager(DisplayDriver &display, const transport::TransportLink &transport_link) noexcept :
+        _display{display}, _transport_link{transport_link} {}
+
+    void showConnectionStatusOverlay(bool show) noexcept { _show_connection_status_overlay = show; }
 
 private:
     using P = kf::gfx::Palette<DisplayDriver::PixelImpl>;
@@ -37,8 +38,9 @@ private:
     inline static const auto &virtual_keyboard = input::VirtualKeyboard::instance();
 
     DisplayDriver &_display;
-    const Control &_control;
     const transport::TransportLink &_transport_link;
+    bool _show_connection_status_overlay{false};
+
     kf::gfx::Canvas<DisplayDriver::PixelImpl> _canvas{};
 
     void onRender(kf::memory::StringView str) noexcept {
@@ -55,8 +57,7 @@ private:
     }
 
     void renderUi(kf::memory::StringView str) noexcept {
-        // Control mode overlay
-        if (_control.enabled()) {
+        if (_show_connection_status_overlay) {
             const auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
             const auto overlay = _transport_link.connected() ? _transport_link.activePeerAddress().value().toString().data() : "Disconnected";
 

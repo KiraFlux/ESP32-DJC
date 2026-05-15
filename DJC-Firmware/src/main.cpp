@@ -94,7 +94,6 @@ static djc::service::Control control{
 
 static djc::service::DisplayManager display_manager{
     periphery.display,
-    control,
     transport_link,
 };
 
@@ -184,6 +183,7 @@ void setup() {
                 virtual_keyboard.quit();
             } else {
                 control.enabled(not control.enabled());
+                display_manager.showConnectionStatusOverlay(control.enabled());
             }
 
             ui.addEvent(E::update());
