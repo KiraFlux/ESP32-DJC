@@ -15,24 +15,26 @@
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 
-namespace djc::service {
+namespace djc::internal {
 
-namespace internal {
+struct AutoConnectServiceConfig final {
 
-struct AutoConnectServiceConfig final : kf::mixin::NonCopyable {
-
-    kf::math::Milliseconds cooldown;///< Delay before the service reacts to a new target.
-    bool enabled;                   ///< Whether the service is active.
+    kf::math::Timer::Config cooldown_timer;///< Delay before the service reacts to a new target.
+    bool enabled;                          ///< Whether the service is active.
 
     [[nodiscard]] static constexpr AutoConnectServiceConfig defaults() noexcept {
         return AutoConnectServiceConfig{
-            .cooldown = 10'000,
+            .cooldown_timer = {
+                .period = 10'000,
+            },
             .enabled = true,
         };
     }
 };
 
-}// namespace internal
+}// namespace djc::internal
+
+namespace djc::service {
 
 /// @brief Service that automatically connects to a trusted peer after a configurable delay
 /// @note
@@ -54,7 +56,9 @@ struct AutoConnectService final :
         _cooldown_timer.start(0);
     }
 
-    [[nodiscard]] const kf::Option<transport::PeerAddress> &target() const noexcept { return _target; }
+    [[nodiscard]] auto target() const noexcept -> const kf::TrivialOption<transport::PeerAddress> & {
+        return _target;
+    }
 
     /// @brief Assign a new target for automatic connection
     /// @note
@@ -62,24 +66,24 @@ struct AutoConnectService final :
     /// This prevents interrupting an active connection.
     void target(const transport::PeerAddress &new_target) noexcept {
         if (not _transport_link.connected()) {
-            _target.value(new_target);
+            _target = kf::someTrivial(new_target);
         }
     }
 
 private:
     const transport::TransportLink &_transport_link;
-    kf::Option<transport::PeerAddress> _target{};
-    kf::math::Timer _cooldown_timer{this->config().cooldown};
+    kf::TrivialOption<transport::PeerAddress> _target{};
+    kf::math::Timer _cooldown_timer{this->config().cooldown_timer};
 
     KF_IMPL_TIMED_POLLABLE(AutoConnectService);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         if (not this->config().enabled) { return; }
-        if (not _target.hasValue()) { return; }
+        if (_target.isNone()) { return; }
 
         if (not _cooldown_timer.expired(now)) { return; }
 
-        this->invoke(_target.value());
-        _target = {};
+        this->invoke(_target.unwrap());
+        _target.reset();
 
         _cooldown_timer.start(now);
     }

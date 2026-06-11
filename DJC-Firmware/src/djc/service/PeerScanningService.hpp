@@ -4,37 +4,38 @@
 #pragma once
 
 #include <kf/Option.hpp>
-#include <kf/primitives.hpp>
+#include <kf/Slice.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/Slice.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/service/Service.hpp"
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/TransportLink.hpp"
 
-namespace djc::service {
-
-namespace internal {
+namespace djc::internal {
 
 /// @brief Configuration parameters for the PeerScanningService service.
 struct PeerScannerConfig final : kf::mixin::NonCopyable {
-    kf::math::Milliseconds
-        entry_max_life_time,       ///< How long an entry stays in the list without being refreshed.
-        entries_list_update_period;///< Interval between periodic clean-ups and list compaction.
+    kf::math::Milliseconds entry_max_life_time;       ///< How long an entry stays in the list without being refreshed.
+    kf::math::Timer::Config entries_list_update_timer;///< Interval between periodic clean-ups and list compaction.
 
     [[nodiscard]] static constexpr PeerScannerConfig defaults() noexcept {
         return PeerScannerConfig{
             .entry_max_life_time = 8'000,
-            .entries_list_update_period = 100,
+            .entries_list_update_timer = {
+                .period = 100,
+            },
         };
     }
 };
 
-}// namespace internal
+}// namespace djc::internal
+
+namespace djc::service {
 
 /// @brief Background service that listens for foreign (broadcast) packets and maintains a list of visible peers.
 /// @note
@@ -66,40 +67,37 @@ struct PeerScanningService final :
     /// @return A contiguous view of the first `_active_count` elements of the internal array.
     /// @note The slice is valid only until the next call to `poll()`.
     ///       The entries are sorted in order of registration (oldest first).
-    [[nodiscard]] kf::Slice<const kf::Option<Entry>> peers() const noexcept {
+    [[nodiscard]] kf::Slice<const kf::TrivialOption<Entry>> peers() const noexcept {
         return {_entries.data(), _active_count};
     }
 
 private:
-    kf::memory::Array<kf::Option<Entry>, max_entries> _entries{};
-    kf::math::Timer _update_poll_timer{this->config().entries_list_update_period};
+    kf::memory::Array<kf::TrivialOption<Entry>, max_entries> _entries{};
+    kf::math::Timer _update_poll_timer{this->config().entries_list_update_timer};
     transport::TransportLink &_transport_link;
     kf::math::Milliseconds _last_poll_time{0};
     kf::usize _active_count{0};
 
-    // impl
-    using This = PeerScanningService;
-
-    KF_IMPL_INITABLE(This, void);
+    KF_IMPL_INITABLE(PeerScanningService, void);
     void initImpl() noexcept {
         _update_poll_timer.start(0);// enable timer
 
         _transport_link.onReceiveForeign([this](const transport::PeerAddress &address, kf::Slice<const kf::u8> buffer) -> void {
             // search for mathing entry
             for (auto &entry: _entries) {
-                if (entry.hasValue() and entry.value().address == address) {
-                    entry.value().last_seen = _last_poll_time;
+                if (entry.isSome() and entry.unwrap().address == address) {
+                    entry.unwrap().last_seen = _last_poll_time;
                     return;
                 }
             }
 
             // search for first empty entry
             for (auto &entry: _entries) {
-                if (not entry.hasValue()) {
-                    entry = Entry{
+                if (entry.isNone()) {
+                    entry = kf::someTrivial(Entry{
                         .address = address,
                         .last_seen = _last_poll_time,
-                    };
+                    });
                     return;
                 }
             }
@@ -107,15 +105,15 @@ private:
             // no available entries -> replace oldest with newest
             kf::usize oldest_entry_index{0};
             for (auto i = 1u; i < max_entries; i += 1) {
-                if (_entries[i].value().last_seen < _entries[oldest_entry_index].value().last_seen) {
+                if (_entries[i].unwrap().last_seen < _entries[oldest_entry_index].unwrap().last_seen) {
                     oldest_entry_index = i;
                 }
             }
-            _entries[oldest_entry_index] = Entry{address, _last_poll_time};
+            _entries[oldest_entry_index] = kf::someTrivial(Entry{address, _last_poll_time});
         });
     }
 
-    KF_IMPL_TIMED_POLLABLE(This);
+    KF_IMPL_TIMED_POLLABLE(PeerScanningService);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         _last_poll_time = now;
 
@@ -123,10 +121,10 @@ private:
             _update_poll_timer.start(now);
 
             if (_transport_link.connected()) {
-                const auto &active_address = _transport_link.activePeerAddress().value();
+                const auto &active_address = _transport_link.activePeerAddress().unwrap();
                 for (auto &entry: _entries) {
-                    if (entry.hasValue() and entry.value().address == active_address) {
-                        entry = {};
+                    if (entry.isSome() and entry.unwrap().address == active_address) {
+                        entry.reset();
                         break;
                     }
                 }
@@ -134,9 +132,9 @@ private:
 
             auto write_index = 0u;
             for (auto read_index = 0u; read_index < max_entries; read_index += 1) {
-                if (_entries[read_index].hasValue()) {
-                    if (now > _entries[read_index].value().last_seen + this->config().entry_max_life_time) {
-                        _entries[read_index] = {};
+                if (_entries[read_index].isSome()) {
+                    if (now > _entries[read_index].unwrap().last_seen + this->config().entry_max_life_time) {
+                        _entries[read_index].reset();
                     } else {
                         if (write_index != read_index) {
                             _entries[write_index] = _entries[read_index];
@@ -147,7 +145,7 @@ private:
             }
 
             for (auto i = write_index; i < max_entries; i += 1) {
-                _entries[i] = {};
+                _entries[i].reset();
             }
             _active_count = write_index;
         }

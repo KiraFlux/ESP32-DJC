@@ -24,16 +24,24 @@ struct Control final : Service<Control> {
         _transport_link{transport_link}, _protocol_link{protocol_link} {}
 
     /// @brief Returns the current manual input values.
-    [[nodiscard]] const ManualInput &input() const noexcept { return _manual_input; }
+    [[nodiscard]] const ManualInput &input() const noexcept {
+        return _manual_input;
+    }
 
     /// @brief Updates the manual input to be transmitted.
-    void input(const ManualInput &new_input) noexcept { _manual_input = new_input; }
+    void input(const ManualInput &new_input) noexcept {
+        _manual_input = new_input;
+    }
 
     /// @brief Checks whether control output is enabled.
-    [[nodiscard]] bool enabled() const noexcept { return _enabled; }
+    [[nodiscard]] bool enabled() const noexcept {
+        return _enabled;
+    }
 
     /// @brief Enables or disables control output.
-    void enabled(bool is_enabled) noexcept { _enabled = is_enabled; }
+    void enabled(bool is_enabled) noexcept {
+        _enabled = is_enabled;
+    }
 
 private:
     transport::TransportLink &_transport_link;

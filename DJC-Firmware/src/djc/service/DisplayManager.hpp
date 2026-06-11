@@ -33,10 +33,13 @@ template<typename I> struct DisplayManager final :
     explicit DisplayManager(DisplayDriverImpl &display_driver, const transport::TransportLink &transport_link) noexcept :
         _display_driver{display_driver}, _transport_link{transport_link} {}
 
-    void showConnectionStatusOverlay(bool show) noexcept { _show_connection_status_overlay = show; }
+    void showConnectionStatusOverlay(bool show) noexcept {
+        _show_connection_status_overlay = show;
+    }
 
 private:
-    using Palette = kf::gfx::Palette<typename DisplayDriverImpl::PixelImpl>;
+    using P = typename DisplayDriverImpl::PixelImpl;
+    using Palette = kf::gfx::Palette<P>;
 
     inline static const auto &virtual_keyboard = input::VirtualKeyboard::instance();
 
@@ -44,7 +47,7 @@ private:
     const transport::TransportLink &_transport_link;
     bool _show_connection_status_overlay{false};
 
-    kf::gfx::Canvas<typename DisplayDriverImpl::PixelImpl> _canvas{};
+    kf::gfx::Canvas<P> _canvas{};
 
     void onRender(kf::memory::StringView str) noexcept {
         _canvas.background(Palette::black);
@@ -127,8 +130,8 @@ private:
 
     KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {
-        _canvas = kf::gfx::Canvas<typename DisplayDriverImpl::PixelImpl>{
-            kf::image::DynamicImage<typename DisplayDriverImpl::PixelImpl>{_display_driver.image()},
+        _canvas = kf::gfx::Canvas<P>{
+            kf::image::DynamicImage<P>{_display_driver.image()},
             kf::gfx::fonts::gyver_5x7_en,
         };
         _canvas.autoNextLine(true);
