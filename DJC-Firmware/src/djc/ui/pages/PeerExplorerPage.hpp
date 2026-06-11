@@ -65,10 +65,12 @@ struct PeerExplorerPage : UI::Page {
         if (_transport_link.activePeerAddress().isSome()) {
             (void) _connection_button_buffer.format("%s", _transport_link.activePeerAddress().unwrap().toString().data());
             _primary_connection_status_button.label(_connection_button_buffer.view());
+            _primary_connection_status_button.foreground(UI::Color::Normal);
             _primary_connection_status_button.background(UI::Color::Success);
         } else {
             _primary_connection_status_button.label("Disconnected");
             _primary_connection_status_button.foreground(UI::Color::Disabled);
+            _primary_connection_status_button.background(UI::Color::Normal);
         }
 
         const auto available_peers = _peer_scanner.peers();
