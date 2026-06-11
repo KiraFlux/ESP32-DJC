@@ -271,7 +271,7 @@ void loop() {
             auto most_trusted_favorite_index = 0u;
 
             for (auto index = 1u; index < favorites.size(); index += 1) {
-                if (favorites[index].isSome() and favorites[index].unwrap().trust > favorites[most_trusted_favorite_index].unwrap().trust) {
+                if (favorites[index].isSome() and favorites[most_trusted_favorite_index].isSome() and favorites[index].unwrap().trust > favorites[most_trusted_favorite_index].unwrap().trust) {
                     most_trusted_favorite_index = index;
                 }
             }
