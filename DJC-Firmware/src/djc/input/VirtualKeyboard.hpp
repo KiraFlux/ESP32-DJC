@@ -3,17 +3,15 @@
 
 #pragma once
 
-#include <kf/algorithm.hpp>
-#include <kf/primitives.hpp>
-#include <kf/memory/Array.hpp>
 #include <kf/Slice.hpp>
+#include <kf/algorithm.hpp>
+#include <kf/memory/Array.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/Singleton.hpp>
+#include <kf/primitives.hpp>
 
-namespace djc::input {
-
-namespace internal {
+namespace djc::internal {
 
 struct Key {
 
@@ -37,7 +35,9 @@ struct Key {
     }
 };
 
-}// namespace internal
+}// namespace djc::internal
+
+namespace djc::input {
 
 struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
 
@@ -154,7 +154,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         _active = true;
 
         _text_source = text_source;
-        _text_cursor = text().find('\0').value();
+        _text_cursor = text().find('\0').unwrapOr(0);
     }
 
     void quit() noexcept {
