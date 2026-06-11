@@ -96,7 +96,7 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
             for (auto i = 0u; i < all_favorites.size(); i += 1) {
                 const auto &favorite = all_favorites[i];
                 if (favorite.isSome()) {
-                    _peer_favorite_displays[i].state(kf::some(widgets::PeerDisplay::State{
+                    _peer_favorite_displays[i].state(kf::some(UI::PeerDisplay::State{
                         .address = favorite.unwrap().address,
                         .name = kf::some(kf::memory::StringView{favorite.unwrap().name.data(), favorite.unwrap().name.size()}),
                     }));
@@ -157,7 +157,7 @@ private:
     ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};
     UI::Labeled _labeled_default_protocol_mode_selector{"Init Protocol", _default_protocol_mode_selector};
 
-    kf::memory::Array<widgets::PeerDisplay, Config::max_peer_favorites> _peer_favorite_displays{};
+    kf::memory::Array<UI::PeerDisplay, Config::max_peer_favorites> _peer_favorite_displays{};
 
     UI::CheckBox _autoconnect_enabled_input{false};
     UI::Labeled _labeled_autoconnect_enabled_input{"Autoconnect", _autoconnect_enabled_input};

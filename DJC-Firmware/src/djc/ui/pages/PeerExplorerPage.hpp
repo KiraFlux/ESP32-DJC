@@ -110,7 +110,7 @@ private:
 
     UI::Button _primary_connection_status_button{{}};
     UI::Display<kf::memory::StringView> _available_label{_available_label_buffer.view()};
-    kf::memory::Array<widgets::PeerDisplay, service::PeerScanningService::max_entries> _peer_displays{};
+    kf::memory::Array<UI::PeerDisplay, service::PeerScanningService::max_entries> _peer_displays{};
 
     kf::memory::Array<UI::Widget *, (peer_display_start_index + service::PeerScanningService::max_entries)> _layout;
 
@@ -121,8 +121,8 @@ private:
         return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
     }
 
-    kf::Option<widgets::PeerDisplay::State> createPeerDisplayState(const kf::TrivialOption<service::PeerScanningService::Entry> &entry, kf::math::Milliseconds now) const noexcept {
-        using P = widgets::PeerDisplay;
+    kf::Option<UI::PeerDisplay::State> createPeerDisplayState(const kf::TrivialOption<service::PeerScanningService::Entry> &entry, kf::math::Milliseconds now) const noexcept {
+        using P = UI::PeerDisplay;
 
         const auto map_record = [](kf::Option<const PeerFavoritesRegistry::Entry &> record) -> kf::Option<kf::memory::StringView> {
             if (record.isSome()) {

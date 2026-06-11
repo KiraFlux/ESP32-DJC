@@ -4,17 +4,20 @@
 #pragma once
 
 #include <kf/Option.hpp>
-#include <kf/memory/StaticString.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/Callbacked.hpp>
+#include <kf/ui/widgets/Widget.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
-#include "djc/ui/UI.hpp"
 
 namespace djc::ui::widgets {
 
-struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::PeerAddress &> {
+template<typename U> struct PeerDisplay :
 
+    kf::ui::widgets::Widget<U>,
+    kf::mixin::Callbacked<const transport::PeerAddress &>
+
+{
     struct State final {
         transport::PeerAddress address;
         kf::Option<kf::memory::StringView> name;
@@ -28,7 +31,7 @@ struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::Pe
         _state = new_state;
     }
 
-    void doRender(UI::Traits::RenderImpl &render) const noexcept override {
+    void doRender(typename U::RenderImpl &render) const noexcept override {
         render.beginAltBlock();
         if (_state.isSome()) {
             render.value(_state.unwrap().displayName());

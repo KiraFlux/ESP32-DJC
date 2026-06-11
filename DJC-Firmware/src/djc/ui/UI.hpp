@@ -8,13 +8,28 @@
 #include <kf/ui/UiTraits.hpp>
 #include <kf/ui/render/ColoredTextRender.hpp>
 
-namespace djc::ui {
+#include "djc/ui/widgets/PeerDisplay.hpp"
 
-// KiraFlux-Toolkit UI specialization for ESP32-DJC
-using UI = kf::ui::UI<
-    kf::ui::UiTraits<
+namespace djc::internal {
+
+using UiBase = kf::ui::UI<kf::ui::UiTraits<
     kf::ui::render::ColoredTextRender<256>,// Render Engine: Buffered Colored Text UI render engine
     kf::ui::Event<6>                       // Event: 6-bit Event value encoding
     >>;
 
-}// namespace djc
+}
+
+namespace djc::ui {
+
+/// @brief KiraFlux-Toolkit UI expended specializalization for ESP32-DJC
+struct UI : internal::UiBase {
+    using internal::UiBase::UiBase;
+
+    using Widget = internal::UiBase::Widget;
+
+    struct PeerDisplay : widgets::PeerDisplay<Traits> {
+        using widgets::PeerDisplay<Traits>::PeerDisplay;
+    };
+};
+
+}// namespace djc::ui
