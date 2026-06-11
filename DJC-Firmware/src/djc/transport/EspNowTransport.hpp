@@ -48,9 +48,11 @@ protected:
         _active_peer = addPeer(address.mac());
         if (_active_peer.isNone()) { return false; }
 
-        _active_peer.unwrap().callback([this](kf::Slice<const kf::u8> buffer) {
-            invokeReceive(buffer);
-        });
+        // KF-toolkit issue with callback dispatching
+        // _active_peer.unwrap().callback([this](kf::Slice<const kf::u8> buffer) {
+        //     invokeReceive(buffer);
+        //     logger.debug("unicast");
+        // });
 
         logger.info("Connected: OK");
         return true;
@@ -72,7 +74,7 @@ protected:
 
         delPeer(peer);
 
-        _active_peer = {};
+        _active_peer.reset();
         logger.info("Disconnected: OK");
     }
 
@@ -123,7 +125,11 @@ private:
         }
 
         espnow.callback([this](const kf::network::MacAddress &mac, kf::Slice<const kf::u8> buffer) {
-            invokeReceiveForeign(PeerAddress::fromEspnowMac(mac), buffer);
+            if (_active_peer.isSome() and _active_peer.unwrap().mac() == mac) {
+                invokeReceive(buffer);
+            } else {
+                invokeReceiveForeign(PeerAddress::fromEspnowMac(mac), buffer);
+            }
         });
 
         _broadcast_peer = addPeer(broadcast_mac_address);
