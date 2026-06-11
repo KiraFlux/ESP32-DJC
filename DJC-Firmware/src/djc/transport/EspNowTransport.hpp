@@ -8,8 +8,9 @@
 #include <kf/Slice.hpp>
 #include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
-#include <kf/network/EspNow.hpp>
 #include <kf/network/MacAddress.hpp>
+
+#include "kf-patch/EspNow.hpp"// patched version
 
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/Transport.hpp"
@@ -48,12 +49,6 @@ protected:
         _active_peer = addPeer(address.mac());
         if (_active_peer.isNone()) { return false; }
 
-        // KF-toolkit issue with callback dispatching
-        // _active_peer.unwrap().callback([this](kf::Slice<const kf::u8> buffer) {
-        //     invokeReceive(buffer);
-        //     logger.debug("unicast");
-        // });
-
         logger.info("Connected: OK");
         return true;
     }
@@ -71,8 +66,6 @@ protected:
             logger.error("Disconnect failed: Peer not exit");
             return;
         }
-
-        delPeer(peer);
 
         _active_peer.reset();
         logger.info("Disconnected: OK");
