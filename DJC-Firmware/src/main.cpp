@@ -3,6 +3,7 @@
 
 // framework
 #include <Arduino.h>
+#include <WiFi.h>
 
 // lib
 #include <kf/Logger.hpp>
@@ -38,6 +39,9 @@
 #include "djc/ui/pages/PeerExplorerPage.hpp"
 #include "djc/ui/pages/RawProtocolPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
+
+using UiRender = djc::ui::UI::Traits::RenderImpl;
+using UiEvent = djc::ui::UI::Traits::EventImpl;
 
 static constexpr auto logger{kf::Logger::create("main")};
 
@@ -98,13 +102,26 @@ static djc::service::DisplayManager<djc::DisplayDriver> display_manager{
     transport_link,
 };
 
-static djc::ui::UI ui{};
+static UiRender::Config ui_render_config{
+    UiRender::Config::defaults(),
+};
+
+static UiRender ui_render{
+    ui_render_config,
+};
+
+static djc::ui::UI ui{
+    ui_render,
+};
 
 // pages
 
-static djc::ui::pages::RootPage root_page{};
+static djc::ui::pages::RootPage root_page{
+    ui,
+};
 
 static djc::ui::pages::PeerExplorerPage peer_explorer_page{
+    ui,
     root_page,
     transport_link,
     peer_scanner,
@@ -112,6 +129,7 @@ static djc::ui::pages::PeerExplorerPage peer_explorer_page{
 };
 
 static djc::ui::pages::MavlinkTelemetryPage mavlink_telemetry_page{
+    ui,
     root_page,
     protocol_registry,
     protocol_link,
@@ -119,6 +137,7 @@ static djc::ui::pages::MavlinkTelemetryPage mavlink_telemetry_page{
 };
 
 static djc::ui::pages::RawProtocolPage raw_protocol_page{
+    ui,
     root_page,
     protocol_registry,
     protocol_link,
@@ -126,6 +145,7 @@ static djc::ui::pages::RawProtocolPage raw_protocol_page{
 };
 
 static djc::ui::pages::ConfigPage config_page{
+    ui,
     root_page,
     config_manager,
     peer_favoriter_registry,
@@ -152,6 +172,13 @@ void setup() {
     }
 
     display_manager.init();
+    ui_render_config.text.row_max_length = display_manager.colsTotal();
+    ui_render_config.text.rows_total = display_manager.rowsTotal();
+    ui_render.callback([](auto str) -> void {
+        display_manager.onRender(str);
+    });
+
+    WiFi.mode(WIFI_MODE_STA);
 
     if (not transport_registry.espnow().init()) {
         logger.error("failed to initialize espnow transport");
@@ -177,8 +204,6 @@ void setup() {
     });
 
     {
-        using E = djc::ui::UI::Event;
-
         input_handler.onLeftButton([]() {
             if (virtual_keyboard.active()) {
                 virtual_keyboard.quit();
@@ -187,28 +212,28 @@ void setup() {
                 display_manager.showConnectionStatusOverlay(control.enabled());
             }
 
-            ui.addEvent(E::update());
+            ui.addEvent(UiEvent::update());
         });
 
         input_handler.onRightButton([]() {
             if (control.enabled()) { return; }
 
-            ui.addEvent(E::widgetClick());
+            ui.addEvent(UiEvent::widgetClick());
         });
 
         input_handler.onDirection([](djc::service::InputHandler::JoystickListener::Direction direction) {
-            static constexpr E navigation_event_from_direction[4] = {
-                E::pageCursorMove(-1),// Up
-                E::pageCursorMove(+1),// Down
-                E::widgetValue(-1),   // Left
-                E::widgetValue(+1),   // Right
+            static constexpr UiEvent navigation_event_from_direction[4] = {
+                UiEvent::pageCursorMove(-1),// Up
+                UiEvent::pageCursorMove(+1),// Down
+                UiEvent::widgetValue(-1),   // Left
+                UiEvent::widgetValue(+1),   // Right
             };
 
-            static constexpr E virtual_keyboard_event_from_direction[4] = {
-                E::widgetValue(0),// Up
-                E::widgetValue(1),// Down
-                E::widgetValue(2),// Left
-                E::widgetValue(3),// Right
+            static constexpr UiEvent virtual_keyboard_event_from_direction[4] = {
+                UiEvent::widgetValue(0),// Up
+                UiEvent::widgetValue(1),// Down
+                UiEvent::widgetValue(2),// Left
+                UiEvent::widgetValue(3),// Right
             };
 
             if (control.enabled()) { return; }
@@ -224,7 +249,7 @@ void setup() {
         root_page.attach(config_page);
 
         ui.bindPage(root_page);
-        ui.addEvent(E::update());
+        ui.addEvent(UiEvent::update());
     }
 
     if (config_manager.modified()) { config_manager.save(); }
@@ -239,22 +264,22 @@ void loop() {
     transport_link.poll(now);
     peer_scanner.poll(now);
 
-    if (auto_connect_service.config().enabled and not auto_connect_service.target().hasValue()) {
+    if (auto_connect_service.config().enabled and auto_connect_service.target().isNone()) {
         const auto favorites = peer_favoriter_registry.all();
 
         if (favorites.size() > 0) {
             auto most_trusted_favorite_index = 0u;
 
             for (auto index = 1u; index < favorites.size(); index += 1) {
-                if (favorites[index].hasValue() and favorites[index].value().trust > favorites[most_trusted_favorite_index].value().trust) {
+                if (favorites[index].isSome() and favorites[index].unwrap().trust > favorites[most_trusted_favorite_index].unwrap().trust) {
                     most_trusted_favorite_index = index;
                 }
             }
 
-            if (const auto &most_trusted = favorites[most_trusted_favorite_index]; most_trusted.hasValue()) {
+            if (const auto &most_trusted = favorites[most_trusted_favorite_index]; most_trusted.isSome()) {
                 for (const auto &peer: peer_scanner.peers()) {
-                    if (peer.hasValue() and peer.value().address == most_trusted.value().address) {
-                        auto_connect_service.target(most_trusted.value().address);
+                    if (peer.isSome() and peer.unwrap().address == most_trusted.unwrap().address) {
+                        auto_connect_service.target(most_trusted.unwrap().address);
                         break;
                     }
                 }

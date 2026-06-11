@@ -15,6 +15,7 @@ struct ManualInput final {
     using Unit = kf::i16;
 
     /// @brief Scale factor - normalised float [‑1, +1] is multiplied by this value
+    /// @note Mavlink manual control compatable scaling
     static constexpr Unit scale_factor{1000};
 
     Unit left_x, left_y, right_x, right_y;///< Joystick axes

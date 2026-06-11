@@ -17,10 +17,14 @@ namespace djc::ui::pages {
 struct PeerDetailPage final : UI::Page {
 
     explicit PeerDetailPage(
+        UI &ui,
         UI::Page &root,
         transport::TransportLink &transport_link,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
-        Page{{}},
+        Page{ui, {}},
+        _ui{ui},
+        _root{root},
+        _transport_link{transport_link},
         _peer_favorites_registry{peer_favorites_registry},
         _layout{{
             &root.link(),
@@ -31,55 +35,58 @@ struct PeerDetailPage final : UI::Page {
     {
         widgets({_layout.data(), _layout.size()});
 
-        _connection_button.callback([this, &transport_link, &root]() -> void {
-            if (not _peer_address.hasValue()) { return; }
+        _connection_button.callback([this]() -> void {
+            if (_peer_address.isNone()) { return; }
 
-            if (transport_link.connect(_peer_address.value())) {
-                UI::instance().bindPage(root);
+            if (_transport_link.connect(_peer_address.unwrap())) {
+                _ui.bindPage(_root);
             } else {
                 _connection_button.label("Failed to connect");
             }
         });
 
         _peer_favorite_button.callback([this]() -> void {
-            if (not _peer_address.hasValue()) { return; }
+            if (_peer_address.isNone()) { return; }
             this->label("Back");
-            _peer_favorite_page.bindPeer(_peer_address.value());
-            UI::instance().bindPage(_peer_favorite_page);
-            UI::instance().addEvent(UI::Event::update());
+            _peer_favorite_page.bindPeer(_peer_address.unwrap());
+            _ui.bindPage(_peer_favorite_page);
+            update();
         });
     }
 
     void bindPeer(const transport::PeerAddress &address) noexcept {
-        _peer_address.value(address);
+        _peer_address = kf::someTrivial(address);
     }
 
     void onEntry() noexcept override {
         _connection_button.label("Connect");
-        if (_peer_address.hasValue()) {
-            _label_buffer = _peer_address.value().toString();
+        if (_peer_address.isSome()) {
+            _label_buffer = _peer_address.unwrap().toString();
             this->label(_label_buffer.view());
-    
-            _peer_favorite_button.label(_peer_favorites_registry.exists(_peer_address.value()) ? "Edit" : "Add to favorites");
+
+            _peer_favorite_button.label(_peer_favorites_registry.exists(_peer_address.unwrap()) ? "Edit" : "Add to favorites");
         }
     }
 
 private:
     // state
 
-    kf::Option<transport::PeerAddress> _peer_address{};
+    UI &_ui;
+    UI::Page &_root;
+    transport::TransportLink &_transport_link;
+    kf::TrivialOption<transport::PeerAddress> _peer_address{};
     PeerFavoritesRegistry &_peer_favorites_registry;
 
     // widgets
 
-    transport::PeerAddress::ReprString _label_buffer{};
+    transport::PeerAddress::StringType _label_buffer{};
     UI::Button _connection_button{{}}, _peer_favorite_button{{}};
 
     kf::memory::Array<UI::Widget *, 3> _layout;
 
     // child pages
 
-    PeerFavoritePage _peer_favorite_page{*this, _peer_favorites_registry};
+    PeerFavoritePage _peer_favorite_page{_ui, *this, _peer_favorites_registry};
 };
 
 }// namespace djc::ui::pages

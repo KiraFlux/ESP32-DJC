@@ -5,8 +5,8 @@
 
 // lib
 #include <kf/Option.hpp>
-#include <kf/primitives.hpp>
 #include <kf/memory/Array.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/Periphery.hpp"
@@ -56,7 +56,9 @@ struct Config {
     service::PeerScanningService::Config peer_scanner;
     service::AutoConnectService::Config auto_connect_service;
 
-    [[nodiscard]] bool isLatestVersion() const noexcept { return version == latest_version; }
+    [[nodiscard]] bool isLatestVersion() const noexcept {
+        return version == latest_version;
+    }
 
     static constexpr Config defaults() noexcept {
         return Config{

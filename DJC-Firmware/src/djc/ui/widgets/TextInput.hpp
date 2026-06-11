@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <kf/algorithm.hpp>
 #include <kf/Slice.hpp>
+#include <kf/algorithm.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/input/VirtualKeyboard.hpp"
@@ -18,11 +18,15 @@ struct TextInput final : UI::Widget {
 
     explicit constexpr TextInput(kf::Slice<char> source) noexcept : _text_source{source} {}
 
-    void source(kf::Slice<char> new_source) noexcept { _text_source = new_source; }
+    void source(kf::Slice<char> new_source) noexcept {
+        _text_source = new_source;
+    }
 
-    bool available() const noexcept { return nullptr != _text_source.data(); }
+    bool available() const noexcept {
+        return _text_source.empty();
+    }
 
-    void doRender(UI::RenderImpl &render) const noexcept override {
+    void doRender(UI::Traits::RenderImpl &render) const noexcept override {
         render.value(kf::memory::StringView{"\xFC'"});
         render.value(string());
         render.value(kf::memory::StringView{"'\x80"});
@@ -40,7 +44,7 @@ struct TextInput final : UI::Widget {
         return true;
     }
 
-    bool onEventValue(UI::Event::Value event_value) noexcept {
+    bool onEventValue(UI::Traits::EventImpl::Value event_value) noexcept {
         if (not virtual_keyboard.active()) {
             return false;
         }
@@ -63,7 +67,7 @@ private:
     [[nodiscard]] kf::memory::StringView string() const noexcept {
         if (available()) {
             const kf::memory::StringView s{_text_source.data(), _text_source.size()};
-            return s.sub(0, s.find('\0').valueOr(s.size()));
+            return s.sub(0, s.find('\0').unwrapOr(s.size()));
         } else {
             return kf::memory::StringView{"not available"};
         }

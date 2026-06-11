@@ -9,10 +9,10 @@
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
-#include <kf/primitives.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/prelude.hpp"
 

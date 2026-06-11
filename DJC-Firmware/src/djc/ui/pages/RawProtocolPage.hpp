@@ -18,11 +18,12 @@ namespace djc::ui::pages {
 
 struct RawProtocolPage : UI::Page {
     explicit RawProtocolPage(
+        UI &ui,
         UI::Page &root,
         protocol::ProtocolRegistry &protocol_registry,
         protocol::ProtocolLink &protocol_link,
         transport::TransportLink &transport_link) noexcept :
-        Page{"Raw Protocol"}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link}, _transport_link{transport_link},
+        Page{ui, "Raw Protocol"}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link}, _transport_link{transport_link},
         _layout{{
             &root.link(),
             &_message_input,
@@ -32,7 +33,7 @@ struct RawProtocolPage : UI::Page {
 
         _send_button.callback([this]() {
             kf::memory::StringView s{_message.data(), _message.size()};
-            s = s.sub(0, s.find('\0').valueOr(s.size()));
+            s = s.sub(0, s.find('\0').unwrapOr(s.size()));
 
             logger.debug(s);
 
@@ -53,7 +54,7 @@ struct RawProtocolPage : UI::Page {
     }
 
     void onExit() noexcept override {
-        _protocol_registry.raw().callback(protocol::RawProtocol::CallbackType{});
+        _protocol_registry.raw().callback(kf::none);
     }
 
 private:

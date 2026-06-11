@@ -24,6 +24,8 @@ namespace djc::transport {
 /// The active kind is stored in a tag field; the union contains the actual address.
 struct PeerAddress : kf::mixin::StringRepresentable<PeerAddress, internal::PeerAddressStringType> {
 
+    using StringType = internal::PeerAddressStringType;
+
     /// @brief create an ESP‑NOW peer address from a MAC.
     /// @param mac 6‑byte MAC address (EspNow::Mac).
     static constexpr PeerAddress fromEspnowMac(const kf::network::MacAddress &mac) noexcept {
@@ -69,17 +71,15 @@ private:
     union {
         kf::network::MacAddress _mac;
     };
-
-    using S = internal::PeerAddressStringType;
     
-    KF_IMPL_STRING_REPRESENTABLE(PeerAddress, S);
+    KF_IMPL_STRING_REPRESENTABLE(PeerAddress, StringType);
     auto toStringImpl() const noexcept {
         switch (_kind) {
             case Kind::EspNow:
-                return S::formatted("%s@EspNow", _mac.toString().data());
+                return StringType::formatted("%s@EspNow", _mac.toString().data());
 
             default:
-                return S{};
+                return StringType{};
         }
     }
 };

@@ -22,11 +22,14 @@ namespace djc::ui::pages {
 struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
     explicit ConfigPage(
+        UI &ui,
         UI::Page &root,
         djc::ConfigManager &config_manager,
         PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
-        Page{"Config"},
+        Page{ui, "Config"},
+        _ui{ui},
         _config_manager{config_manager},
+        _peer_favorite_page{ui, *this, _peer_favoriter_registry},
         _peer_favoriter_registry{peer_favoriter_registry},
         _layout{{
             &root.link(),
@@ -58,7 +61,7 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         _favorite_peers_fold_toggle_button.callback([this]() {
             show_favorites = not show_favorites;
             this->onEntry();
-            UI::instance().addEvent(UI::Event::update());
+            update();
         });
 
         _default_protocol_mode_selector.callback([this](Mode mode) {
@@ -74,7 +77,7 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
             _peer_favorite_displays[i].callback([this](const transport::PeerAddress &address) -> void {
                 _peer_favorite_page.bindPeer(address);
-                UI::instance().bindPage(_peer_favorite_page);
+                _ui.bindPage(_peer_favorite_page);
             });
         }
     }
@@ -92,12 +95,12 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         if (show_favorites) {
             for (auto i = 0u; i < all_favorites.size(); i += 1) {
                 const auto &favorite = all_favorites[i];
-                if (favorite.hasValue()) {
-                    _peer_favorite_displays[i].state({widgets::PeerDisplay::State{
-                        .address = favorite.value().address,
-                        .name = {{favorite.value().name.data(), favorite.value().name.size()}},
-                        .label_color = widgets::PeerDisplay::Color::Normal,
-                    }});
+                if (favorite.isSome()) {
+                    _peer_favorite_displays[i].state(kf::some(widgets::PeerDisplay::State{
+                        .address = favorite.unwrap().address,
+                        .name = kf::some(kf::memory::StringView{favorite.unwrap().name.data(), favorite.unwrap().name.size()}),
+                    }));
+                    _peer_favorite_displays[i].foreground(kf::ui::Color::Primary);
                 }
             }
         }
@@ -115,6 +118,7 @@ private:
 
     // state
 
+    UI &_ui;
     djc::ConfigManager &_config_manager;
     PeerFavoritesRegistry &_peer_favoriter_registry;
     kf::memory::StaticString<32> _label_favorites_buffer{};
@@ -164,7 +168,7 @@ private:
 
     // child pages
 
-    PeerFavoritePage _peer_favorite_page{*this, _peer_favoriter_registry};
+    PeerFavoritePage _peer_favorite_page;
 
     kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
         return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);

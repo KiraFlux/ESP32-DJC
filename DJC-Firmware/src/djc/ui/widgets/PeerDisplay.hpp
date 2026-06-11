@@ -15,43 +15,32 @@ namespace djc::ui::widgets {
 
 struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::PeerAddress &> {
 
-    enum class Color : char {
-        Normal = '\xFC',
-        Warn = '\xF9',
-    };
-
     struct State final {
         transport::PeerAddress address;
         kf::Option<kf::memory::StringView> name;
-        Color label_color;
 
         kf::memory::StringView displayName() const noexcept {
-            return name.hasValue() ? name.value().data() : address.toString().data();
+            return name.isSome() ? name.unwrap().data() : address.toString().data();
         }
     };
 
-    void state(const kf::Option<State> &new_state) noexcept { _state = new_state; }
+    void state(const kf::Option<State> &new_state) noexcept {
+        _state = new_state;
+    }
 
-    void doRender(UI::RenderImpl &render) const noexcept override {
+    void doRender(UI::Traits::RenderImpl &render) const noexcept override {
         render.beginAltBlock();
-
-        if (_state.hasValue()) {
-            render.value(
-                kf::memory::StaticString<64>::formatted(
-                    "%c%s\x80",
-                    static_cast<char>(_state.value().label_color),
-                    _state.value().displayName())
-                    .view());
+        if (_state.isSome()) {
+            render.value(_state.unwrap().displayName());
         }
-
         render.endAltBlock();
     }
 
     bool onClick() noexcept override {
-        if (_state.hasValue()) {
-            this->invoke(_state.value().address);
+        if (_state.isSome()) {
+            this->invoke(_state.unwrap().address);
         }
-        return _state.hasValue();
+        return _state.isSome();
     }
 
 private:

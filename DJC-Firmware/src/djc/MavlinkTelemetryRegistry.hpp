@@ -23,7 +23,9 @@ struct MavlinkTelemetryRegistry final : kf::mixin::NonCopyable {
         explicit constexpr Entry(MessageDecoder message_decoder) noexcept :
             _message_decoder{message_decoder} {}
 
-        [[nodiscard]] const ValueType &value() const noexcept { return _value; }
+        [[nodiscard]] const ValueType &value() const noexcept {
+            return _value;
+        }
 
         /// @brief Check if the entry was updated after the given timestamp
         [[nodiscard]] bool updatedSince(kf::math::Milliseconds since) const noexcept {

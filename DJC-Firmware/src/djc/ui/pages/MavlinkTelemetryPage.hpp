@@ -22,11 +22,12 @@ namespace djc::ui::pages {
 /// @brief MAVLink telemetry page
 struct MavlinkTelemetryPage : UI::Page {
     explicit MavlinkTelemetryPage(
+        UI& ui,
         UI::Page &root,
         protocol::ProtocolRegistry &protocol_registry,
         protocol::ProtocolLink &protocol_link,
         MavlinkTelemetryRegistry &mavlink_telemetry_registry) noexcept :
-        Page{"Mavlink: Telemetry"},
+        Page{ui, "Mavlink: Telemetry"},
         _protocol_registry{protocol_registry},
         _protocol_link{protocol_link},
         _mavlink_telemetry_registry{mavlink_telemetry_registry},
@@ -84,7 +85,7 @@ struct MavlinkTelemetryPage : UI::Page {
         }
 
         if (need_update) {
-            UI::instance().addEvent(UI::Event::update());
+            update();
         }
     }
 
