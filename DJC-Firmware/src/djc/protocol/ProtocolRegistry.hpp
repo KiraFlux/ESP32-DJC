@@ -10,23 +10,23 @@
 #include "djc/protocol/Protocol.hpp"
 #include "djc/protocol/RawProtocol.hpp"
 
-namespace djc::protocol {
-
-namespace internal {
+namespace djc::internal {
 
 /// @brief Configuration container for the ProtocolRegistry.
-struct ProtocolRegistryConfig final : kf::mixin::NonCopyable {
+struct ProtocolRegistryConfig final {
 
-    MavlinkProtocol::Config mavlink;///< MAVLink protocol configuration
+    protocol::MavlinkProtocol::Config mavlink;///< MAVLink protocol configuration
 
-    [[nodiscard]] static constexpr ProtocolRegistryConfig defaults() noexcept {
+    [[nodiscard]] static constexpr auto defaults() noexcept {
         return ProtocolRegistryConfig{
-            .mavlink = MavlinkProtocol::Config::defaults(),
+            .mavlink = protocol::MavlinkProtocol::Config::defaults(),
         };
     }
 };
 
-}// namespace internal
+}// namespace djc::internal
+
+namespace djc::protocol {
 
 /// @brief Storage for all available protocol implementations.
 struct ProtocolRegistry final :

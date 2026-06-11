@@ -39,7 +39,7 @@ struct Config {
     protocol::ProtocolRegistry::Mode init_protocol_mode;
     transport::Kind init_transport_kind;
     kf::memory::Array<char, 16> device_name;
-    kf::memory::Array<kf::Option<PeerFavoritesRegistry::Entry>, max_peer_favorites> peer_favorites;
+    kf::memory::Array<kf::TrivialOption<PeerFavoritesRegistry::Entry>, max_peer_favorites> peer_favorites;
 
     // periphery
     Periphery::Config periphery;

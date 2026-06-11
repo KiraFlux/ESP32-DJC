@@ -4,34 +4,36 @@
 #pragma once
 
 #include <kf/Logger.hpp>
-#include <kf/primitives.hpp>
+#include <kf/Slice.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
-#include <kf/Slice.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/ManualInput.hpp"
 #include "djc/protocol/Protocol.hpp"
 #include "djc/transport/TransportLink.hpp"
 
-namespace djc::protocol {
-
-namespace internal {
+namespace djc::internal {
 
 /// @brief Configuration for the ProtocolLink.
-struct ProtocolLinkConfig final : kf::mixin::NonCopyable {
+struct ProtocolLinkConfig final {
 
-    kf::math::Milliseconds poll_period;///< Interval between calls to the active protocol's `poll()` method.
+    kf::math::Timer::Config poll_timer;///< Interval between calls to the active protocol's `poll()` method.
 
-    [[nodiscard]] static constexpr ProtocolLinkConfig defaults() noexcept {
+    [[nodiscard]] static constexpr auto defaults() noexcept {
         return ProtocolLinkConfig{
-            .poll_period = static_cast<kf::math::Milliseconds>(1000 / 50),
+            .poll_timer = {
+                .period = static_cast<kf::math::Milliseconds>(1000 / 50),
+            },
         };
     }
 };
 
-}// namespace internal
+}// namespace djc::internal
+
+namespace djc::protocol {
 
 /// @brief Manages the active protocol and calls its `poll()` method at fixed intervals.
 /// @note
@@ -88,7 +90,7 @@ private:
     static constexpr auto logger{kf::Logger::create("ProtocolLink")};
 
     Protocol *_protocol{nullptr};
-    kf::math::Timer _poll_timer{this->config().poll_period};
+    kf::math::Timer _poll_timer{this->config().poll_timer};
     bool _poll_timer_reset_required{true};
 };
 

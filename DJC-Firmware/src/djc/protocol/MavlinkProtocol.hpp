@@ -5,35 +5,35 @@
 
 #include <MAVLink.h>
 
-#include <kf/primitives.hpp>
+#include <kf/Slice.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
-#include <kf/Slice.hpp>
 #include <kf/mixin/Callbacked.hpp>
 #include <kf/mixin/Configurable.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/ManualInput.hpp"
 #include "djc/protocol/Protocol.hpp"
 #include "djc/transport/TransportLink.hpp"
 
-namespace djc::protocol {
+namespace djc::internal {
 
-namespace internal {
-
-/// @brief Configuration for the MAVLink protocol.
-struct MavlinkProtocolConfig {
+/// @brief Configuration for the MAVLink protocol
+struct MavlinkProtocolConfig final {
 
     using IdType = kf::u8;
 
-    kf::math::Milliseconds heartbeat_period;///< Period between HEARTBEAT messages (ms).
-    IdType system_id_self;                  ///< MAVLink system ID of this controller.
-    IdType system_id_target;                ///< MAVLink system ID of the target drone (0 = broadcast).
+    kf::math::Timer::Config heartbeat_timer;///< Timer for  HEARTBEAT messages (ms)
+    IdType system_id_self;                  ///< MAVLink system ID of this controller
+    IdType system_id_target;                ///< MAVLink system ID of the target drone (0 = broadcast)
     IdType component_id_heartbeat;
     IdType component_id_manual_control;
 
-    static constexpr MavlinkProtocolConfig defaults() noexcept {
+    [[nodiscard]] static constexpr auto defaults() noexcept {
         return MavlinkProtocolConfig{
-            .heartbeat_period = 2'000,// ms
+            .heartbeat_timer = {
+                .period = 2'000,// ms
+            },
             .system_id_self = 0x7f,
             .system_id_target = 0x01,
             .component_id_heartbeat = MAV_COMP_ID_USER1,
@@ -42,7 +42,9 @@ struct MavlinkProtocolConfig {
     }
 };
 
-}// namespace internal
+}// namespace djc::internal
+
+namespace djc::protocol {
 
 /// @brief MAVLink protocol - sends MANUAL_CONTROL and HEARTBEAT packets, invokes callback on received MAVLink messages
 /// @note
@@ -98,7 +100,7 @@ struct MavlinkProtocol :
     }
 
 private:
-    kf::math::Timer _heartbear_timer{this->config().heartbeat_period};
+    kf::math::Timer _heartbear_timer{this->config().heartbeat_timer};
     bool _heartbeat_timer_reset_required{true};
 
     [[nodiscard]] bool sendHeartbeat(transport::TransportLink &transport_link) const noexcept {
