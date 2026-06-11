@@ -23,7 +23,7 @@ struct TextInput final : UI::Widget {
     }
 
     bool available() const noexcept {
-        return _text_source.empty();
+        return nullptr != _text_source.data();
     }
 
     void doRender(UI::Traits::RenderImpl &render) const noexcept override {
