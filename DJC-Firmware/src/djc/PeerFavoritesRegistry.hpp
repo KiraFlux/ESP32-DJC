@@ -54,7 +54,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
 
     /// @brief Obtain a const pointer to an entry by address.
     /// @param address Peer address to search for.
-    [[nodiscard]] kf::Option<const Entry &> get(const transport::PeerAddress &address) const noexcept {
+    [[nodiscard]] auto get(const transport::PeerAddress &address) const noexcept -> kf::Option<const Entry &> {
         if (const auto index = indexOf(address); index.isSome()) {
             if (const auto &option = _entries[index.unwrap()]; option.isSome()) {
                 return kf::someRef(option.unwrap());

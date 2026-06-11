@@ -104,7 +104,7 @@ struct TransportLink final :
 
     /// @brief Return the address of the active peer, if any.
     /// @return Reference to an empty option when no transport is set.
-    [[nodiscard]] kf::Option<const PeerAddress &> activePeerAddress() const noexcept {
+    [[nodiscard]] auto activePeerAddress() const noexcept -> kf::Option<const PeerAddress &> {
         return _transport.isNone() ? kf::none : _transport.unwrap().activePeerAddress();
     }
 

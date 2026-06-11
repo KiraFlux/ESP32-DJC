@@ -60,10 +60,14 @@ struct ProtocolRegistry final :
     }
 
     /// @brief Direct access to the Raw protocol instance.
-    [[nodiscard]] RawProtocol &raw() noexcept { return _raw_protocol; }
+    [[nodiscard]] RawProtocol &raw() noexcept {
+        return _raw_protocol;
+    }
 
     /// @brief Direct access to the MAVLink protocol instance.
-    [[nodiscard]] MavlinkProtocol &mavlink() noexcept { return _mavlink_protocol; }
+    [[nodiscard]] MavlinkProtocol &mavlink() noexcept {
+        return _mavlink_protocol;
+    }
 
 private:
     RawProtocol _raw_protocol{};

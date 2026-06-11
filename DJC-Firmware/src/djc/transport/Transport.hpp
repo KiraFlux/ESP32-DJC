@@ -62,7 +62,7 @@ public:
 
     /// @brief Get the address of the currently connected peer.
     /// @return Option containing the peer address if connected, empty Option otherwise.
-    [[nodiscard]] kf::Option<const PeerAddress &> activePeerAddress() const noexcept {
+    [[nodiscard]] auto activePeerAddress() const noexcept -> kf::Option<const PeerAddress &> {
         return _active_peer_address.isNone() ? kf::none : kf::someRef(_active_peer_address.unwrap());
     }
 
