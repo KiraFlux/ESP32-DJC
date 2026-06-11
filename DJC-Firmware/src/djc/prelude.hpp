@@ -7,20 +7,20 @@
 #include <kf/drivers/display/ST7735.hpp>
 #include <kf/drivers/sensors/Joystick.hpp>
 #include <kf/drivers/sensors/NormalizedAdcInput.hpp>
-#include <kf/gpio/arduino.hpp>
+#include <kf/gpio/ArduinoGPIO.hpp>
 
 #include "djc/input/LogicalLevelListener.hpp"
 
 namespace djc {
 
-using namespace kf::gpio::arduino;
+using GPIO = kf::gpio::ArduinoGPIO;
 
-using ButtonListener = djc::input::LogicalLevelListener<DigitalInput>;
+using ButtonListener = djc::input::LogicalLevelListener<GPIO::DigitalInput>;
 
-using AxisInput = kf::drivers::sensors::NormalizedAdcInput<AdcInput>;
+using AxisInput = kf::drivers::sensors::NormalizedAdcInput<GPIO::AdcInput>;
 using Joystick = kf::drivers::sensors::Joystick<AxisInput>;
 
 using Bus = kf::bus::spi::ArduinoSPI;
-using DisplayDriver = kf::drivers::display::ST7735<Bus::Node, DigitalOutput>;
+using DisplayDriver = kf::drivers::display::ST7735<Bus::Node, GPIO::DigitalOutput>;
 
 }// namespace djc

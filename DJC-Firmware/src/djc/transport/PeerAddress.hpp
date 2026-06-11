@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/network/EspNow.hpp>
 
 #include "djc/transport/Kind.hpp"
@@ -16,7 +16,7 @@ namespace djc::transport {
 /// The active kind is stored in a tag field; the union contains the actual address.
 struct PeerAddress {
 
-    using ReprString = kf::memory::ArrayString<32>;
+    using ReprString = kf::memory::StaticString<32>;
 
     /// @brief create an ESP‑NOW peer address from a MAC.
     /// @param mac 6‑byte MAC address (EspNow::Mac).

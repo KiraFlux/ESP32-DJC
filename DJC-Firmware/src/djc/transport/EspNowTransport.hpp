@@ -5,8 +5,8 @@
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
-#include <kf/memory/ArrayString.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/memory/StaticString.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/network/EspNow.hpp>
 
@@ -19,7 +19,7 @@ namespace djc::transport {
 /// @note Manages ESP‑NOW peer connections. Uses a broadcast peer for discovery and a dedicated active peer for communication.
 struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
 
-    [[nodiscard]] bool send(kf::memory::Slice<const kf::u8> buffer) noexcept override {
+    [[nodiscard]] bool send(kf::Slice<const kf::u8> buffer) noexcept override {
         if (_active_peer.hasValue()) {
             return _active_peer.value().writeBuffer(buffer).isOk();
         } else {
@@ -29,7 +29,7 @@ struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
 
 private:
     using EspNow = kf::network::EspNow;
-    using LogString = kf::memory::ArrayString<128>;
+    using LogString = kf::memory::StaticString<128>;
 
     static constexpr auto logger{kf::Logger::create("EspNowTransport")};
 
@@ -47,7 +47,7 @@ protected:
         _active_peer = addPeer(address.mac());
         if (not _active_peer.hasValue()) { return false; }
 
-        const auto receive_setup_result = _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer) {
+        const auto receive_setup_result = _active_peer.value().onReceive([this](kf::Slice<const kf::u8> buffer) {
             invokeReceive(buffer);
         });
 
@@ -133,7 +133,7 @@ private:
             return false;
         }
 
-        espnow.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::memory::Slice<const kf::u8> buffer){
+        espnow.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::Slice<const kf::u8> buffer){
             invokeReceiveForeign(PeerAddress::fromEspnowMac(mac), buffer);    
         });
 

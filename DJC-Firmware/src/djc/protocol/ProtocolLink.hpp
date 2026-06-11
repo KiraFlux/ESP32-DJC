@@ -4,10 +4,10 @@
 #pragma once
 
 #include <kf/Logger.hpp>
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
@@ -75,7 +75,7 @@ struct ProtocolLink :
 
     /// @brief Forward a received data buffer to the active protocol.
     /// @param buffer Raw data received from the transport.
-    void receive(kf::memory::Slice<const kf::u8> buffer) noexcept {
+    void receive(kf::Slice<const kf::u8> buffer) noexcept {
         if (nullptr == _protocol) {
             logger.error("receive: no protocol set");
             return;

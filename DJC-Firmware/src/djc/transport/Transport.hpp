@@ -5,8 +5,8 @@
 
 #include <kf/Function.hpp>
 #include <kf/Option.hpp>
-#include <kf/aliases.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/primitives.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
@@ -22,13 +22,13 @@ namespace djc::transport {
 struct Transport : kf::mixin::NonCopyable {
 
     /// @brief Callback invoked when data is received from a peer.
-    using ReceiveCallback = kf::Function<void(const PeerAddress &, kf::memory::Slice<const kf::u8>)>;
+    using ReceiveCallback = kf::Function<void(const PeerAddress &, kf::Slice<const kf::u8>)>;
 
     /// @brief Send raw data to the currently connected peer.
     /// @param buffer Raw payload.
     /// @return true if the data was sent successfully, false otherwise.
     /// @note Must only be called when connected.
-    [[nodiscard]] virtual bool send(kf::memory::Slice<const kf::u8> buffer) noexcept = 0;
+    [[nodiscard]] virtual bool send(kf::Slice<const kf::u8> buffer) noexcept = 0;
 
 protected:
     /// @brief Hardware‑specific connection procedure.
@@ -84,13 +84,13 @@ public:
     }
 
 protected:
-    void invokeReceive(kf::memory::Slice<const kf::u8> buffer) noexcept {
+    void invokeReceive(kf::Slice<const kf::u8> buffer) noexcept {
         if (_active_peer_address.hasValue() and _receive_callback) {
             _receive_callback(_active_peer_address.value(), buffer);
         }
     }
 
-    void invokeReceiveForeign(const PeerAddress &address, kf::memory::Slice<const kf::u8> buffer) noexcept {
+    void invokeReceiveForeign(const PeerAddress &address, kf::Slice<const kf::u8> buffer) noexcept {
         if (_broadcast_receive_callback) {
             _broadcast_receive_callback(address, buffer);
         }

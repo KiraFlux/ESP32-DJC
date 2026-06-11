@@ -4,7 +4,7 @@
 #pragma once
 
 #include <kf/algorithm.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/input/VirtualKeyboard.hpp"
@@ -16,9 +16,9 @@ struct TextInput final : UI::Widget {
 
     constexpr TextInput() noexcept : _text_source{} {}
 
-    explicit constexpr TextInput(kf::memory::Slice<char> source) noexcept : _text_source{source} {}
+    explicit constexpr TextInput(kf::Slice<char> source) noexcept : _text_source{source} {}
 
-    void source(kf::memory::Slice<char> new_source) noexcept { _text_source = new_source; }
+    void source(kf::Slice<char> new_source) noexcept { _text_source = new_source; }
 
     bool available() const noexcept { return nullptr != _text_source.data(); }
 
@@ -58,7 +58,7 @@ struct TextInput final : UI::Widget {
 private:
     inline static auto &virtual_keyboard{input::VirtualKeyboard::instance()};
 
-    kf::memory::Slice<char> _text_source;
+    kf::Slice<char> _text_source;
 
     [[nodiscard]] kf::memory::StringView string() const noexcept {
         if (available()) {

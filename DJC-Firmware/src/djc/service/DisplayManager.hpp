@@ -8,7 +8,7 @@
 #include <kf/gfx/Palette.hpp>
 #include <kf/image/DynamicImage.hpp>
 #include <kf/math/units.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
 
 #include "djc/input/VirtualKeyboard.hpp"
@@ -83,7 +83,7 @@ private:
 
         char c[2]{0, 0};
 
-        _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", virtual_keyboard.available(), virtual_keyboard.text().size()).data());
+        _canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", virtual_keyboard.available(), virtual_keyboard.text().size()).data());
         _canvas.text(0, _canvas.glyphHeight(), virtual_keyboard.text().data());
 
         _canvas.background(Palette::bright_black);

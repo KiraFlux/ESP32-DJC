@@ -9,7 +9,7 @@
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
@@ -82,32 +82,32 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
 
     ButtonListener left_button_listener{
         this->config().button,
-        DigitalInput{
+        GPIO::DigitalInput{
             GPIO_NUM_14,
-            DigitalInput::Pull::InternalUp,
+            GPIO::DigitalInput::Pull::InternalUp,
         },
     };
 
     Joystick left_joystick{
         this->config().left_joystick,
         this->config().axis_filter,
-        AdcInput{GPIO_NUM_32},
-        AdcInput{GPIO_NUM_33},
+        GPIO::AdcInput{GPIO_NUM_32},
+        GPIO::AdcInput{GPIO_NUM_33},
     };
 
     ButtonListener right_button_listener{
         this->config().button,
-        DigitalInput{
+        GPIO::DigitalInput{
             GPIO_NUM_4,
-            DigitalInput::Pull::InternalUp,
+            GPIO::DigitalInput::Pull::InternalUp,
         },
     };
 
     Joystick right_joystick{
         this->config().right_joystick,
         this->config().axis_filter,
-        AdcInput{GPIO_NUM_34},
-        AdcInput{GPIO_NUM_35},
+        GPIO::AdcInput{GPIO_NUM_34},
+        GPIO::AdcInput{GPIO_NUM_35},
     };
 
     Bus bus{
@@ -118,8 +118,8 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
     DisplayDriver display{
         this->config().display,
         bus.createNode(this->config().bus_node),
-        DigitalOutput{GPIO_NUM_22},// DC
-        DigitalOutput{GPIO_NUM_17},// RESET
+        GPIO::DigitalOutput{GPIO_NUM_22},// DC
+        GPIO::DigitalOutput{GPIO_NUM_17},// RESET
     };
 
     // Analog axis calibration

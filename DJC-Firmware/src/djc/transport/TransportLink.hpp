@@ -57,7 +57,7 @@ struct TransportLink final :
 
     /// @brief Forward a data buffer to the underlying transport.
     /// @return true if the transport reported success, false on error or if no transport is set.
-    [[nodiscard]] bool send(kf::memory::Slice<const kf::u8> buffer) noexcept {
+    [[nodiscard]] bool send(kf::Slice<const kf::u8> buffer) noexcept {
         if (nullptr == _transport) {
             logger.error("send failed: no transport set");
             return false;
@@ -77,7 +77,7 @@ struct TransportLink final :
 
         _receive_callback = std::move(callback);
 
-        _transport->onReceive([this](const PeerAddress &address, kf::memory::Slice<const kf::u8> buffer) {
+        _transport->onReceive([this](const PeerAddress &address, kf::Slice<const kf::u8> buffer) {
             if (_receive_callback) { _receive_callback(address, buffer); }
             _disconnect_timer_reset_required = true;
         });

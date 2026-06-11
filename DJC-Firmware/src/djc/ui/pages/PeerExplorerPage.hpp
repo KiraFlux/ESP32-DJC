@@ -6,8 +6,8 @@
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/memory/StaticString.hpp>
+#include <kf/Slice.hpp>
 
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/service/PeerScanningService.hpp"
@@ -88,7 +88,7 @@ private:
     PeerFavoritesRegistry &_peer_favorites_registry;
     kf::math::Timer _redraw_timer{static_cast<kf::math::Milliseconds>(500)};
 
-    kf::memory::ArrayString<64> _available_label_buffer{}, _connection_button_buffer{};
+    kf::memory::StaticString<64> _available_label_buffer{}, _connection_button_buffer{};
 
     UI::Button _primary_connection_status_button{{}};
     UI::Display<kf::memory::StringView> _available_label{_available_label_buffer.view()};
@@ -99,8 +99,8 @@ private:
     // child pages
     PeerDetailPage _peer_detail_page{*this, _transport_link, _peer_favorites_registry};
 
-    kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
-        return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
+    kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
+        return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
     }
 
     kf::Option<widgets::PeerDisplay::State> createPeerDisplayState(const kf::Option<service::PeerScanningService::Entry> &entry, kf::math::Milliseconds now) const noexcept {

@@ -98,7 +98,7 @@ static djc::service::DisplayManager<djc::DisplayDriver> display_manager{
     transport_link,
 };
 
-static auto &ui{djc::ui::UI::instance()};
+static djc::ui::UI ui{};
 
 // pages
 
@@ -159,7 +159,7 @@ void setup() {
 
     transport_link.transport(transport_registry.get(config_manager.config().init_transport_kind));
 
-    transport_link.onReceive([](const djc::transport::PeerAddress &, kf::memory::Slice<const kf::u8> buffer) {
+    transport_link.onReceive([](const djc::transport::PeerAddress &, kf::Slice<const kf::u8> buffer) {
         protocol_link.receive(buffer);
     });
 

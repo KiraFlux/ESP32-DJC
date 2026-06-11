@@ -4,8 +4,8 @@
 #pragma once
 
 #include <kf/Logger.hpp>
-#include <kf/memory/ArrayString.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/memory/StaticString.hpp>
+#include <kf/Slice.hpp>
 
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
@@ -43,9 +43,9 @@ struct RawProtocolPage : UI::Page {
     void onEntry() noexcept override {
         _protocol_link.protocol(_protocol_registry.raw());
 
-        _protocol_registry.raw().callback([](kf::memory::Slice<const kf::u8> buffer) {
+        _protocol_registry.raw().callback([](kf::Slice<const kf::u8> buffer) {
             logger.info(
-                kf::memory::ArrayString<64>::formatted(
+                kf::memory::StaticString<64>::formatted(
                     "Got %d bytes from primary peer",
                     buffer.size())
                     .view());

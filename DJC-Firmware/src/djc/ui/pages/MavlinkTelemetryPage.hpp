@@ -8,7 +8,7 @@
 #include <kf/Logger.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/MavlinkTelemetryRegistry.hpp"
@@ -97,7 +97,7 @@ private:
     kf::math::Milliseconds _last_imu{}, _last_attitude{}, _last_serial_control{};
 
     // widgets
-    kf::memory::ArrayString<64> _attitude_buffer{"..."}, _imu_buffer{"..."};
+    kf::memory::StaticString<64> _attitude_buffer{"..."}, _imu_buffer{"..."};
 
     UI::Display<kf::memory::StringView> _attitude_display{_attitude_buffer.view()}, _imu_display{_imu_buffer.view()};
 

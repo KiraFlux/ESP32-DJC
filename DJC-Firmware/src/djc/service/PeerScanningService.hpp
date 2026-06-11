@@ -4,11 +4,11 @@
 #pragma once
 
 #include <kf/Option.hpp>
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
 
@@ -66,7 +66,7 @@ struct PeerScanningService final :
     /// @return A contiguous view of the first `_active_count` elements of the internal array.
     /// @note The slice is valid only until the next call to `poll()`.
     ///       The entries are sorted in order of registration (oldest first).
-    [[nodiscard]] kf::memory::Slice<const kf::Option<Entry>> peers() const noexcept {
+    [[nodiscard]] kf::Slice<const kf::Option<Entry>> peers() const noexcept {
         return {_entries.data(), _active_count};
     }
 
@@ -84,7 +84,7 @@ private:
     void initImpl() noexcept {
         _update_poll_timer.start(0);// enable timer
 
-        _transport_link.onReceiveForeign([this](const transport::PeerAddress &address, kf::memory::Slice<const kf::u8> buffer) -> void {
+        _transport_link.onReceiveForeign([this](const transport::PeerAddress &address, kf::Slice<const kf::u8> buffer) -> void {
             // search for mathing entry
             for (auto &entry: _entries) {
                 if (entry.hasValue() and entry.value().address == address) {

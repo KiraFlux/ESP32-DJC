@@ -5,7 +5,7 @@
 
 #include <utility>
 
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/gpio/GPIO.hpp>
 #include <kf/math/units.hpp>
 #include <kf/mixin/Configurable.hpp>

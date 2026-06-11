@@ -5,7 +5,7 @@
 
 #include <kf/Option.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/transport/TransportLink.hpp"

@@ -4,7 +4,7 @@
 #pragma once
 
 #include <kf/Option.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/Callbacked.hpp>
 
@@ -37,7 +37,7 @@ struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::Pe
 
         if (_state.hasValue()) {
             render.value(
-                kf::memory::ArrayString<64>::formatted(
+                kf::memory::StaticString<64>::formatted(
                     "%c%s\x80",
                     static_cast<char>(_state.value().label_color),
                     _state.value().displayName())

@@ -5,10 +5,10 @@
 
 #include <MAVLink.h>
 
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/Callbacked.hpp>
 #include <kf/mixin/Configurable.hpp>
 
@@ -86,7 +86,7 @@ struct MavlinkProtocol :
         (void) sendManualControl(transport_link, input);
     }
 
-    void receive(kf::memory::Slice<const kf::u8> buffer) noexcept override {
+    void receive(kf::Slice<const kf::u8> buffer) noexcept override {
         mavlink_message_t message;
         mavlink_status_t status;
 

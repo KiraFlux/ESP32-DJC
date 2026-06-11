@@ -4,7 +4,7 @@
 #pragma once
 
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
 
 #include "djc/Config.hpp"
@@ -117,7 +117,7 @@ private:
 
     djc::ConfigManager &_config_manager;
     PeerFavoritesRegistry &_peer_favoriter_registry;
-    kf::memory::ArrayString<32> _label_favorites_buffer{};
+    kf::memory::StaticString<32> _label_favorites_buffer{};
     bool show_favorites{true};
 
     // widgets
@@ -166,8 +166,8 @@ private:
 
     PeerFavoritePage _peer_favorite_page{*this, _peer_favoriter_registry};
 
-    kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
-        return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);
+    kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
+        return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);
     }
 
     // impl

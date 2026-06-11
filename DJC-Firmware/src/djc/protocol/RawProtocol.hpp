@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/math/units.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/Callbacked.hpp>
 
 #include "djc/ManualInput.hpp"
@@ -18,13 +18,13 @@ namespace djc::protocol {
 /// @note
 /// The protocol simply sends the `ManualInput` struct verbatim.
 /// Incoming data is forwarded directly to the callback as is`.
-struct RawProtocol : Protocol, kf::mixin::Callbacked<kf::memory::Slice<const kf::u8>> {
+struct RawProtocol : Protocol, kf::mixin::Callbacked<kf::Slice<const kf::u8>> {
 
     void poll(kf::math::Milliseconds, const ManualInput &input, transport::TransportLink &transport_link) noexcept override {
         (void) transport_link.send({reinterpret_cast<const kf::u8 *>(&input), sizeof(ManualInput)});
     }
 
-    void receive(kf::memory::Slice<const kf::u8> buffer) noexcept override {
+    void receive(kf::Slice<const kf::u8> buffer) noexcept override {
         this->invoke(buffer);
     }
 };

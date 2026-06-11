@@ -4,9 +4,9 @@
 #pragma once
 
 #include <kf/algorithm.hpp>
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/Singleton.hpp>
@@ -116,7 +116,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {Key::Kind::Space, ' '},
     }};
 
-    static constexpr kf::memory::Array<kf::memory::Slice<const Key>, 5> rows{{
+    static constexpr kf::memory::Array<kf::Slice<const Key>, 5> rows{{
         {row_0.data(), row_0.size()},
         {row_1.data(), row_1.size()},
         {row_2.data(), row_2.size()},
@@ -150,7 +150,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         }
     }
 
-    void begin(kf::memory::Slice<char> text_source) noexcept {
+    void begin(kf::Slice<char> text_source) noexcept {
         _active = true;
 
         _text_source = text_source;
@@ -201,7 +201,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
     }
 
 private:
-    kf::memory::Slice<char> _text_source{};
+    kf::Slice<char> _text_source{};
     kf::isize _text_cursor{};
     kf::i8 _cursor_row{0}, _cursor_row_index{0};
     bool _active{false};

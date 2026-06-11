@@ -7,9 +7,9 @@
 
 #include <kf/Option.hpp>
 #include <kf/Range.hpp>
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/math/units.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
@@ -45,10 +45,10 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
         }
     };
 
-    explicit constexpr PeerFavoritesRegistry(kf::memory::Slice<kf::Option<Entry>> entries) noexcept : _entries{entries} {}
+    explicit constexpr PeerFavoritesRegistry(kf::Slice<kf::Option<Entry>> entries) noexcept : _entries{entries} {}
 
     /// @brief Return the entire slot array, including empty slots.
-    [[nodiscard]] kf::memory::Slice<const kf::Option<Entry>> all() const noexcept {
+    [[nodiscard]] kf::Slice<const kf::Option<Entry>> all() const noexcept {
         return {_entries.data(), _active_count};
     }
 
@@ -106,7 +106,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
     }
 
 private:
-    kf::memory::Slice<kf::Option<Entry>> _entries;
+    kf::Slice<kf::Option<Entry>> _entries;
     kf::usize _active_count{0};
 
     /// @brief Find the index of an entry by address.

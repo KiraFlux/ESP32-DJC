@@ -4,7 +4,7 @@
 #pragma once
 
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/PeerFavoritesRegistry.hpp"
@@ -61,14 +61,14 @@ struct PeerFavoritePage final : UI::Page {
         _trust_input.value(_temp_entry.value().trust);
         _confirm_button.label("Confirm");
 
-        widgets(kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(_layout.size() - (entry_option.hasValue() ? 0 : 1)));
+        widgets(kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(_layout.size() - (entry_option.hasValue() ? 0 : 1)));
     }
 
 private:
     PeerFavoritesRegistry &_peer_favorites_registry;
     kf::Option<PeerFavoritesRegistry::Entry> _temp_entry{};
 
-    kf::memory::ArrayString<64> _label_buffer{};
+    kf::memory::StaticString<64> _label_buffer{};
 
     using TrustInput = UI::Slider<PeerFavoritesRegistry::Entry::TrustType>;
 
