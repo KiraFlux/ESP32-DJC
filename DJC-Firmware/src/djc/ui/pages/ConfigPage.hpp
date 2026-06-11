@@ -177,9 +177,10 @@ private:
     // impl
     KF_IMPL_INITABLE(ConfigPage, void);
     void initImpl() noexcept {
-        // _default_protocol_mode_selector.value(storage.config().init_protocol_mode); // todo: Combobox::value(T)
-        // _default_transport_kind_selector.value(storage.config().init_transport_kind); // todo: Combobox::value(T)
-        _autoconnect_enabled_input.value(_config_manager.config().auto_connect_service.enabled);
+        const auto &config = _config_manager.config();
+        _default_protocol_mode_selector.value(config.init_protocol_mode);
+        _default_transport_kind_selector.value(config.init_transport_kind);
+        _autoconnect_enabled_input.value(config.auto_connect_service.enabled);
     }
 };
 
