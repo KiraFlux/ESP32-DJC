@@ -5,7 +5,6 @@
 
 #include <kf/memory/StaticString.hpp>
 #include <kf/mixin/StringRepresentable.hpp>
-#include <kf/network/EspNow.hpp>
 #include <kf/network/MacAddress.hpp>
 
 #include "djc/transport/Kind.hpp"
