@@ -6,6 +6,7 @@
 
 // lib
 #include <kf/Logger.hpp>
+#include <kf/Option.hpp>
 #include <kf/memory/StringView.hpp>
 
 // djc
@@ -230,6 +231,26 @@ void setup() {
     if (config_manager.modified()) { config_manager.save(); }
 }
 
+kf::Option<djc::transport::PeerAddress> getTargetPeer() noexcept {
+    const auto favorites = peer_favoriter_registry.all();
+    const auto peers = peer_scanner.peers();
+
+    if (favorites.size() * peers.size() == 0) { return {}; }
+
+    // peers.all() -> filter: favorites -> max: (.trust) -> .address
+
+    auto most_trusted_peer_index{0u};
+
+    for (auto index = 1u; index < peers.size(); index += 1) {
+        if (not peers[index].hasValue()) { continue; }
+
+        const auto &trusted = peer_favoriter_registry.get(peers[index].value().address);
+        if (not trusted.hasValue()) { continue; }
+    }   
+
+    return {};
+}
+
 void loop() {
     constexpr kf::math::Milliseconds loop_period{1000 / 50};// 50 Hz
     delay(loop_period);
@@ -240,26 +261,29 @@ void loop() {
     peer_scanner.poll(now);
 
     if (auto_connect_service.config().enabled and not auto_connect_service.target().hasValue()) {
-        const auto favorites = peer_favoriter_registry.all();
+        // const auto favorites = peer_favoriter_registry.all();
 
-        if (favorites.size() > 0) {
-            auto most_trusted_favorite_index = 0u;
+        // if (favorites.size() > 0) {
+        //     auto most_trusted_favorite_index = 0u;
 
-            for (auto index = 1u; index < favorites.size(); index += 1) {
-                if (favorites[index].hasValue() and favorites[index].value().trust > favorites[most_trusted_favorite_index].value().trust) {
-                    most_trusted_favorite_index = index;
-                }
-            }
+        //     for (auto index = 1u; index < favorites.size(); index += 1) {
+        //         if (favorites[index].hasValue() and favorites[index].value().trust > favorites[most_trusted_favorite_index].value().trust) {
+        //             most_trusted_favorite_index = index;
+        //         }
+        //     }
 
-            if (const auto &most_trusted = favorites[most_trusted_favorite_index]; most_trusted.hasValue()) {
-                for (const auto &peer: peer_scanner.peers()) {
-                    if (peer.hasValue() and peer.value().address == most_trusted.value().address) {
-                        auto_connect_service.target(most_trusted.value().address);
-                        break;
-                    }
-                }
-            }
-        }
+        //     if (const auto &most_trusted = favorites[most_trusted_favorite_index]; most_trusted.hasValue()) {
+        //         for (const auto &peer: peer_scanner.peers()) {c` `
+        //             if (peer.hasValue() and peer.value().address == most_trusted.value().address) {
+        //                 auto_connect_service.target(most_trusted.value().address);
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
+        // if (const auto target_peer = getTargetPeer(); target_peer.hasValue()) {
+            // auto_connect_service.target(target_peer.value());
+        // }
     }
     auto_connect_service.poll(now);
 
