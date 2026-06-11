@@ -7,6 +7,7 @@
 #include <kf/ui/UI.hpp>
 #include <kf/ui/UiTraits.hpp>
 #include <kf/ui/render/ColoredTextRender.hpp>
+#include <kf/ui/Color.hpp>
 
 #include "djc/ui/widgets/PeerDisplay.hpp"
 
@@ -24,6 +25,8 @@ namespace djc::ui {
 /// @brief KiraFlux-Toolkit UI expended specializalization for ESP32-DJC
 struct UI : internal::UiBase {
     using internal::UiBase::UiBase;
+
+    using Color = kf::ui::Color;
 
     using Widget = internal::UiBase::Widget;
 

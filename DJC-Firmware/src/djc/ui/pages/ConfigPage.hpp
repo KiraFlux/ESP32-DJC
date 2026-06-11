@@ -100,7 +100,7 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
                         .address = favorite.unwrap().address,
                         .name = kf::some(kf::memory::StringView{favorite.unwrap().name.data(), favorite.unwrap().name.size()}),
                     }));
-                    _peer_favorite_displays[i].foreground(kf::ui::Color::Primary);
+                    _peer_favorite_displays[i].foreground(UI::Color::Primary);
                 }
             }
         }

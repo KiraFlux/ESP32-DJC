@@ -14,9 +14,13 @@ namespace djc::ui::widgets {
 
 struct TextInput final : UI::Widget {
 
-    constexpr TextInput() noexcept : _text_source{} {}
+    TextInput() noexcept : _text_source{} {
+        initStyle();
+    }
 
-    explicit constexpr TextInput(kf::Slice<char> source) noexcept : _text_source{source} {}
+    explicit TextInput(kf::Slice<char> source) noexcept : _text_source{source} {
+        initStyle();
+    }
 
     void source(kf::Slice<char> new_source) noexcept {
         _text_source = new_source;
@@ -27,9 +31,7 @@ struct TextInput final : UI::Widget {
     }
 
     void doRender(UI::Traits::RenderImpl &render) const noexcept override {
-        render.value(kf::memory::StringView{"\xFC'"});
         render.value(string());
-        render.value(kf::memory::StringView{"'\x80"});
     }
 
     bool onClick() noexcept override {
@@ -60,6 +62,10 @@ struct TextInput final : UI::Widget {
     }
 
 private:
+    void initStyle() {
+        foreground(UI::Color::Info);
+    }
+
     inline static auto &virtual_keyboard{input::VirtualKeyboard::instance()};
 
     kf::Slice<char> _text_source;

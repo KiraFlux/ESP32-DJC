@@ -40,7 +40,7 @@ struct PeerFavoritePage final : UI::Page {
 
             update();
         });
-        _confirm_button.foreground(kf::ui::Color::Primary);
+        _confirm_button.foreground(UI::Color::Primary);
 
         _delete_button.callback([this]() -> void {
             if (_temp_entry.isNone()) { return; }
@@ -50,7 +50,7 @@ struct PeerFavoritePage final : UI::Page {
             _ui.bindPage(_root);
             update();
         });
-        _delete_button.background(kf::ui::Color::Error);
+        _delete_button.background(UI::Color::Error);
     }
 
     void bindPeer(const transport::PeerAddress &address) noexcept {

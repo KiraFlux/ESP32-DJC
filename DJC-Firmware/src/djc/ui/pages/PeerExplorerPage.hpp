@@ -63,12 +63,12 @@ struct PeerExplorerPage : UI::Page {
         _redraw_timer.start(now);
 
         if (_transport_link.activePeerAddress().isSome()) {
-            (void) _connection_button_buffer.format("\xFC%s\x80", _transport_link.activePeerAddress().unwrap().toString().data());
+            (void) _connection_button_buffer.format("%s", _transport_link.activePeerAddress().unwrap().toString().data());
             _primary_connection_status_button.label(_connection_button_buffer.view());
+            _primary_connection_status_button.background(UI::Color::Success);
         } else {
-            _primary_connection_status_button.label(
-                "\xF9"
-                "Disconnected\x80");
+            _primary_connection_status_button.label("Disconnected");
+            _primary_connection_status_button.foreground(UI::Color::Disabled);
         }
 
         const auto available_peers = _peer_scanner.peers();
@@ -84,8 +84,7 @@ struct PeerExplorerPage : UI::Page {
                 const auto extreme_age = _peer_scanner.config().entry_max_life_time * extreme_age_factor;
                 const auto age = now - entry.unwrap().last_seen;
                 
-                using C = kf::ui::Color;
-                _peer_displays[i].background((age < extreme_age) ? C::Success : C::Warning);
+                _peer_displays[i].foreground((age < extreme_age) ? UI::Color::Primary : UI::Color::Warning);
             }
 
         }
