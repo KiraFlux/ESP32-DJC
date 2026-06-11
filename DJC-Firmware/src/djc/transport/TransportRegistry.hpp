@@ -21,7 +21,9 @@ struct TransportRegistry {
     }
 
     /// @brief Direct access to the ESP‑NOW transport instance.
-    [[nodiscard]] EspNowTransport &espnow() noexcept { return _espnow_transport; }
+    [[nodiscard]] EspNowTransport &espnow() noexcept {
+        return _espnow_transport;
+    }
 
 private:
     EspNowTransport _espnow_transport{};

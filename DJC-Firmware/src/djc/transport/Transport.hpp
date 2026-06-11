@@ -5,9 +5,9 @@
 
 #include <kf/Function.hpp>
 #include <kf/Option.hpp>
-#include <kf/primitives.hpp>
 #include <kf/Slice.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
 
@@ -44,33 +44,41 @@ protected:
 public:
     /// @brief Register a callback for incoming data.
     /// @param callback Functor invoked on each received packet.
-    void onReceive(ReceiveCallback &&callback) noexcept { _receive_callback = std::move(callback); }
+    void onReceive(ReceiveCallback &&callback) noexcept {
+        _receive_callback = kf::some(std::move(callback));
+    }
 
     /// @brief Register a callback for incoming data from non-primary peer
     /// @param callback Functor invoked on each received packet.
-    void onReceiveForeign(ReceiveCallback &&callback) noexcept { _broadcast_receive_callback = std::move(callback); }
+    void onReceiveForeign(ReceiveCallback &&callback) noexcept {
+        _broadcast_receive_callback = kf::some(std::move(callback));
+    }
 
     /// @brief Check whether the transport is currently connected to a peer.
     /// @return true if a peer is active, false otherwise.
-    [[nodiscard]] bool connected() const noexcept { return _active_peer_address.hasValue(); }
+    [[nodiscard]] bool connected() const noexcept {
+        return _active_peer_address.isSome();
+    }
 
     /// @brief Get the address of the currently connected peer.
     /// @return Option containing the peer address if connected, empty Option otherwise.
-    [[nodiscard]] const kf::Option<PeerAddress> &activePeerAddress() const noexcept { return _active_peer_address; }
+    [[nodiscard]] kf::Option<const PeerAddress &> activePeerAddress() const noexcept {
+        return _active_peer_address.isNone() ? kf::none : kf::someRef(_active_peer_address.unwrap());
+    }
 
     /// @brief Connect to a remote peer.
     /// @param peer_address Address of the peer to connect to.
     /// @return true on success, false on failure.
     [[nodiscard]] bool connect(const PeerAddress &address) noexcept {
         if (connected()) {
-            if (_active_peer_address.value() == address) { return true; }// already on this peer
+            if (_active_peer_address.unwrap() == address) { return true; }// already on this peer
 
             disconnect();
         }
 
         if (not doConnect(address)) { return false; }
 
-        _active_peer_address = address;
+        _active_peer_address = kf::someTrivial(address);
 
         return true;
     }
@@ -79,27 +87,25 @@ public:
     /// @note Safe to call even if not connected.
     void disconnect() noexcept {
         doDisconnect();
-
-        _active_peer_address = {};
+        _active_peer_address.reset();
     }
 
 protected:
     void invokeReceive(kf::Slice<const kf::u8> buffer) noexcept {
-        if (_active_peer_address.hasValue() and _receive_callback) {
-            _receive_callback(_active_peer_address.value(), buffer);
+        if (_active_peer_address.isSome() and _receive_callback.isSome()) {
+            _receive_callback.unwrap()(_active_peer_address.unwrap(), buffer);
         }
     }
 
     void invokeReceiveForeign(const PeerAddress &address, kf::Slice<const kf::u8> buffer) noexcept {
-        if (_broadcast_receive_callback) {
-            _broadcast_receive_callback(address, buffer);
+        if (_broadcast_receive_callback.isSome()) {
+            _broadcast_receive_callback.unwrap()(address, buffer);
         }
     }
 
 private:
-    kf::Option<PeerAddress> _active_peer_address{};
-    ReceiveCallback _receive_callback{};
-    ReceiveCallback _broadcast_receive_callback{};
+    kf::Option<ReceiveCallback> _receive_callback{kf::none}, _broadcast_receive_callback{kf::none};
+    kf::TrivialOption<PeerAddress> _active_peer_address{kf::none};
 };
 
 }// namespace djc::transport
