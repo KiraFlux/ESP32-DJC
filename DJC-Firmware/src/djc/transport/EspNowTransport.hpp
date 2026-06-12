@@ -35,9 +35,6 @@ private:
 
     static constexpr auto logger{kf::Logger::create("EspNowTransport")};
 
-    /// @brief MAC address used for ESP‑NOW broadcast.
-    static constexpr kf::network::MacAddress broadcast_mac_address{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-
 protected:
     /// @brief Establish a connection to a peer.
     /// @param address The peer's address (must be of kind `EspNow`).
