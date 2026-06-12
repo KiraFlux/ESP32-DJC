@@ -24,13 +24,14 @@
 #include "djc/service/AutoConnectService.hpp"
 #include "djc/service/InputHandler.hpp"
 #include "djc/service/PeerScanningService.hpp"
+#include "djc/ui/UI.hpp"
 
 namespace djc {
 
 /// @brief Persistent configuration structure stored in NVS.
 struct Config {
     static constexpr auto
-        latest_version{9u},
+        latest_version{10u},
         max_peer_favorites{8u};
 
     kf::u16 version;
@@ -55,6 +56,7 @@ struct Config {
     service::InputHandler::Config input_handler;
     service::PeerScanningService::Config peer_scanner;
     service::AutoConnectService::Config auto_connect_service;
+    ui::UI::Traits::RenderImpl::Config render_system;
 
     [[nodiscard]] bool isLatestVersion() const noexcept {
         return version == latest_version;
@@ -79,6 +81,7 @@ struct Config {
             .input_handler = service::InputHandler::Config::defaults(),
             .peer_scanner = service::PeerScanningService::Config::defaults(),
             .auto_connect_service = service::AutoConnectService::Config::defaults(),
+            .render_system = ui::UI::Traits::RenderImpl::Config::defaults(),
         };
     }
 };

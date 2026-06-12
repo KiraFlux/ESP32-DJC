@@ -33,15 +33,15 @@
 #include "djc/service/InputHandler.hpp"
 #include "djc/service/PeerScanningService.hpp"
 
+// djc::ui
+#include "djc/ui/UI.hpp"
+
 // djc::ui::pages
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavlinkTelemetryPage.hpp"
 #include "djc/ui/pages/PeerExplorerPage.hpp"
 #include "djc/ui/pages/RawProtocolPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
-
-using UiRender = djc::ui::UI::Traits::RenderImpl;
-using UiEvent = djc::ui::UI::Traits::EventImpl;
 
 static constexpr auto logger{kf::Logger::create("main")};
 
@@ -102,12 +102,8 @@ static djc::service::DisplayManager<djc::DisplayDriver> display_manager{
     transport_link,
 };
 
-static UiRender::Config ui_render_config{
-    UiRender::Config::defaults(),
-};
-
-static UiRender ui_render{
-    ui_render_config,
+static djc::ui::UI::Traits::RenderImpl ui_render{
+    config_manager.config().render_system,
 };
 
 static djc::ui::UI ui{
@@ -172,6 +168,7 @@ void setup() {
     }
 
     display_manager.init();
+    auto &ui_render_config = config_manager.config().render_system;
     ui_render_config.text.row_max_length = display_manager.colsTotal();
     ui_render_config.text.rows_total = display_manager.rowsTotal();
     ui_render.callback([](auto str) -> void {
@@ -204,6 +201,8 @@ void setup() {
     });
 
     {
+        using UiEvent = djc::ui::UI::Traits::EventImpl;
+
         input_handler.onLeftButton([]() {
             if (virtual_keyboard.active()) {
                 virtual_keyboard.quit();
