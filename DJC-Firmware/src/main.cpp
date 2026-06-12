@@ -7,7 +7,6 @@
 
 // lib
 #include <kf/Logger.hpp>
-#include <kf/memory/StringView.hpp>
 
 // djc
 #include "djc/ConfigManager.hpp"
@@ -149,7 +148,7 @@ static djc::ui::pages::ConfigPage config_page{
 
 void setup() {
     Serial.begin(115200);
-    kf::Logger::writer = [](kf::memory::StringView str) { Serial.write(str.data(), str.size()); };
+    kf::Logger::writer = [](auto str) { Serial.write(str.data(), str.size()); };
 
     config_manager.load();
     peer_favoriter_registry.init();
@@ -183,11 +182,11 @@ void setup() {
 
     transport_link.transport(transport_registry.get(config_manager.config().init_transport_kind));
 
-    transport_link.onReceive([](const djc::transport::PeerAddress &, kf::Slice<const kf::u8> buffer) {
+    transport_link.onReceive([](const auto &, auto buffer) {
         protocol_link.receive(buffer);
     });
 
-    protocol_registry.mavlink().callback([](const mavlink_message_t &message) {
+    protocol_registry.mavlink().callback([](const auto &message) {
         mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(millis()), message);
     });
 
@@ -195,7 +194,7 @@ void setup() {
 
     peer_scanner.init();
 
-    auto_connect_service.callback([](const djc::transport::PeerAddress &address) -> void {
+    auto_connect_service.callback([](const auto &address) -> void {
         logger.info("Auto Connect");
         (void) transport_link.connect(address);
     });
@@ -220,7 +219,7 @@ void setup() {
             ui.addEvent(UiEvent::widgetClick());
         });
 
-        input_handler.onDirection([](djc::service::InputHandler::JoystickListener::Direction direction) {
+        input_handler.onDirection([](auto direction) {
             static constexpr UiEvent navigation_event_from_direction[4] = {
                 UiEvent::pageCursorMove(-1),// Up
                 UiEvent::pageCursorMove(+1),// Down
