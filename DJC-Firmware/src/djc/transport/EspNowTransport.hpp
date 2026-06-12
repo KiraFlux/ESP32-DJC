@@ -18,7 +18,7 @@
 namespace djc::transport {
 
 /// @brief ESP‑NOW transport implementation.
-/// @note Manages ESP‑NOW peer connections. Uses a broadcast peer for discovery and a dedicated active peer for communication.
+/// @note Manages ESP‑NOW peer connections. uses dedicated active peer for communication.
 struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
 
     [[nodiscard]] bool send(kf::Slice<const kf::u8> buffer) noexcept override {
@@ -72,36 +72,27 @@ protected:
     }
 
 private:
-    kf::Option<EspNow::Peer>
-        _broadcast_peer{},///< Broadcast peer for discovery.
-        _active_peer{};   ///< Currently connected peer
+    kf::Option<EspNow::Peer> _active_peer{};
 
     static auto addPeer(const kf::network::MacAddress &mac) noexcept -> kf::Option<EspNow::Peer> {
-        auto peer_result = EspNow::Peer::create(mac);
-        if (peer_result.isError()) {
-            logger.error(
-                LogString::formatted(
-                    "Failed to add peer [%s] :%s",
-                    mac.toString().data(),
-                    peer_result.error().toString().data())
-                    .view());
+        auto peer_result = EspNow::Peer::create(EspNow::Peer::Config{
+            .mac_address = mac,
+            .wifi_interface_sta = true,
+        });
+
+        if (peer_result.isOk()) {
+            logger.info(LogString::formatted("Peer '%s' added", mac.toString().data()).view());
+            return kf::some(std::move(peer_result.ok()));
+        } else {
+            logger.error(LogString::formatted("Failed to add peer [%s] :%s", mac.toString().data(), peer_result.error().toString().data()).view());
             return kf::none;
         }
-
-        logger.info(LogString::formatted("Peer '%s' added", mac.toString().data()).view());
-        return kf::some(std::move(peer_result.ok()));
     }
 
     static void delPeer(EspNow::Peer &peer) noexcept {
         const auto result = peer.del();
         if (result.isError()) {
-            logger.error(
-                LogString::formatted(
-                    "Failed to delete peer [%s] : %s",
-                    peer.mac().toString().data(),
-                    result.error().toString().data())
-                    .view());
-            return;
+            logger.error(LogString::formatted("Failed to delete peer [%s] : %s", peer.mac().toString().data(), result.error().toString().data()).view());
         }
     }
 
@@ -124,8 +115,6 @@ private:
                 invokeReceiveForeign(PeerAddress::fromEspnowMac(mac), buffer);
             }
         });
-
-        _broadcast_peer = addPeer(broadcast_mac_address);
 
         logger.debug("init: ok");
         return true;
