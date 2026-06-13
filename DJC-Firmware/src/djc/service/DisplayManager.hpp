@@ -125,7 +125,7 @@ private:
 
                 const auto &key = ui::VirtualKeyboard::keyAt(row, col);
 
-                canvas.glyph(x + glyph_offset_x, y, (key.kind == ui::VirtualKeyboard::Key::Kind::Common) ? key.value(_virtual_keyboard.shifted()) : '?');
+                canvas.glyph(x + glyph_offset_x, y, key.isCommon() ? key.value(_virtual_keyboard.shifted()) : '?');
             }
         }
     }

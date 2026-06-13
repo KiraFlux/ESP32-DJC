@@ -32,6 +32,10 @@ struct Key : kf::mixin::NonCopyable {
     constexpr char value(bool shifted = false) const noexcept {
         return shifted ? shift_value : normal_value;
     }
+
+    constexpr bool isCommon() const noexcept {
+        return kind == Kind::Common;
+    }
 };
 
 }// namespace djc::internal
