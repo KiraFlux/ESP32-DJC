@@ -3,12 +3,9 @@
 
 #pragma once
 
-#include <utility>
-
 #include <Arduino.h>// for delay
 
 #include <kf/Logger.hpp>
-#include <kf/Option.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
@@ -20,7 +17,7 @@ namespace djc {
 
 namespace internal {
 
-struct PeripheryConfig final : kf::mixin::NonCopyable {
+struct PeripheryConfig final {
     ButtonListener::Config button;
 
     AxisInput::FilterImpl::Config axis_filter;
@@ -75,7 +72,13 @@ private:
 }// namespace internal
 
 /// @brief ESP32-DJC Hardware Periphery
-struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, bool>, kf::mixin::Configurable<internal::PeripheryConfig> {
+struct Periphery final :
+
+    kf::mixin::NonCopyable,
+    kf::mixin::Initable<Periphery, bool>,
+    kf::mixin::Configurable<internal::PeripheryConfig>
+
+{
     using Config = internal::PeripheryConfig;
 
     using Configurable<Config>::Configurable;

@@ -12,11 +12,9 @@
 #include <kf/math/units.hpp>
 #include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
-#include <kf/primitives.hpp>
-
-#include "djc/ui/VirtualKeyboard.hpp"
 
 #include "djc/service/Service.hpp"
+#include "djc/ui/VirtualKeyboard.hpp"
 
 namespace djc::service {
 

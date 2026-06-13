@@ -4,8 +4,6 @@
 #pragma once
 
 #include <kf/math/units.hpp>
-#include <kf/mixin/NonCopyable.hpp>
-#include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/ManualInput.hpp"
 #include "djc/protocol/ProtocolLink.hpp"

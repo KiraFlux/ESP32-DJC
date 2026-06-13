@@ -8,8 +8,6 @@
 #include <kf/math/units.hpp>
 #include <kf/mixin/Callbacked.hpp>
 #include <kf/mixin/Configurable.hpp>
-#include <kf/mixin/NonCopyable.hpp>
-#include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/service/Service.hpp"
 #include "djc/transport/PeerAddress.hpp"

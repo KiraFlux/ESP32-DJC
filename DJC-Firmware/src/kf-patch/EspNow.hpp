@@ -12,7 +12,6 @@
 #include <esp_now.h>
 
 // lib
-#include "kf/Option.hpp"
 #include "kf/Result.hpp"
 #include "kf/Slice.hpp"
 #include "kf/io/Writable.hpp"
