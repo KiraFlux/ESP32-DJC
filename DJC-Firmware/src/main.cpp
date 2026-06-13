@@ -98,7 +98,6 @@ static djc::service::Control control{
 
 static djc::service::DisplayManager<djc::DisplayDriver> display_manager{
     periphery.display,
-    transport_link,
     virtual_keyboard,
 };
 
@@ -176,6 +175,16 @@ void setup() {
     }
 
     ui_render.callback([](auto str) -> void {
+        if (control.enabled()) {
+            display_manager.overlay(transport_link.connected() ? transport_link.activePeerAddress().unwrap().toString().view() : kf::memory::StringView{"Disconnected"});
+        } else {
+            if (const auto &p = ui.activePage(); p.isSome()) {
+                if (const auto &widget = p.unwrap().selectedWidget(); widget.isSome()) {
+                    display_manager.overlay(widget.unwrap().hint());
+                }
+            }
+        }
+
         display_manager.onRender(str);
     });
 
@@ -212,7 +221,6 @@ void setup() {
                 virtual_keyboard.quit();
             } else {
                 control.enabled(not control.enabled());
-                display_manager.showConnectionStatusOverlay(control.enabled());
             }
 
             ui.addEvent(UiEvent::update());

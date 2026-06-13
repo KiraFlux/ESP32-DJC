@@ -14,7 +14,6 @@
 #include <kf/mixin/Initable.hpp>
 #include <kf/primitives.hpp>
 
-#include "djc/transport/TransportLink.hpp"
 #include "djc/ui/VirtualKeyboard.hpp"
 
 #include "djc/service/Service.hpp"
@@ -35,15 +34,15 @@ template<typename I> struct DisplayManager final :
     using Canvas = typename kf::gfx::Canvas<Pixel>;
     using Palette = kf::gfx::Palette<Pixel>;
 
-    explicit DisplayManager(DisplayDriverImpl &display_driver, const transport::TransportLink &transport_link, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
-        _display_driver{display_driver}, _transport_link{transport_link}, _virtual_keyboard{virtual_keyboard} {}
+    explicit DisplayManager(DisplayDriverImpl &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
+        _display_driver{display_driver}, _virtual_keyboard{virtual_keyboard} {}
 
     [[nodiscard]] auto canvas() const noexcept -> const kf::Option<Canvas> & {
         return _canvas;
     }
 
-    void showConnectionStatusOverlay(bool show) noexcept {
-        _show_connection_status_overlay = show;
+    void overlay(kf::memory::StringView new_overlay) noexcept {
+        _overlay = new_overlay;
     }
 
     void onRender(kf::memory::StringView str) noexcept {
@@ -65,21 +64,17 @@ template<typename I> struct DisplayManager final :
 
 private:
     DisplayDriverImpl &_display_driver;
-    const transport::TransportLink &_transport_link;
     const ui::VirtualKeyboard &_virtual_keyboard;
     kf::Option<Canvas> _canvas{kf::none};
-    bool _show_connection_status_overlay{false};
+    kf::memory::StringView _overlay{};
 
     void renderUi(kf::memory::StringView str) noexcept {
         auto &canvas = _canvas.unwrap();
 
-        if (_show_connection_status_overlay) {
-            const auto y = static_cast<kf::math::Pixels>(canvas.maxY() - canvas.font().heightTotal());
-            const auto overlay = _transport_link.connected() ? _transport_link.activePeerAddress().unwrap().toString().data() : "Disconnected";
-
+        if (not _overlay.empty()) {
             canvas.background(Palette::bright_blue);
             canvas.foreground(Palette::black);
-            canvas.text(0, y, overlay);
+            canvas.text(0, static_cast<kf::math::Pixels>(canvas.maxY() - canvas.font().heightTotal()), _overlay);
         }
 
         canvas.background(Palette::black);
