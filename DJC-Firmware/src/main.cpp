@@ -251,7 +251,7 @@ void setup() {
         root_page.attach(raw_protocol_page);
         root_page.attach(config_page);
 
-        ui.bindPage(root_page);
+        ui.activePage(root_page);
         ui.addEvent(UiEvent::update());
     }
 

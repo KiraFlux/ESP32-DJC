@@ -7,8 +7,9 @@
 #include <kf/ui/Color.hpp>
 #include <kf/ui/Event.hpp>
 #include <kf/ui/Placement.hpp>
-#include <kf/ui/UI.hpp>
 #include <kf/ui/render/ColoredTextRender.hpp>
+
+#include "kf-patch/UI.hpp" // patched version
 
 #include "djc/ui/UiTraits.hpp"
 #include "djc/ui/VirtualKeyboard.hpp"

@@ -39,7 +39,7 @@ struct PeerDetailPage final : UI::Page {
             if (_peer_address.isNone()) { return; }
 
             if (_transport_link.connect(_peer_address.unwrap())) {
-                _ui.bindPage(_root);
+                _ui.activePage(_root);
             } else {
                 _connection_button.label("Failed to connect");
                 _connection_button.foreground(UI::Color::Normal);
@@ -51,7 +51,7 @@ struct PeerDetailPage final : UI::Page {
             if (_peer_address.isNone()) { return; }
             this->label("Back");
             _peer_favorite_page.bindPeer(_peer_address.unwrap());
-            _ui.bindPage(_peer_favorite_page);
+            _ui.activePage(_peer_favorite_page);
             update();
         });
     }

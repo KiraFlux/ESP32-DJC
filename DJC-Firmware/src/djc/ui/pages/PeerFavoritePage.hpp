@@ -47,7 +47,7 @@ struct PeerFavoritePage final : UI::Page {
 
             (void) _peer_favorites_registry.remove(_temp_entry.unwrap().address);
 
-            _ui.bindPage(_root);
+            _ui.activePage(_root);
             update();
         });
         _delete_button.background(UI::Color::Warning);

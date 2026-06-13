@@ -78,7 +78,7 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
             _peer_favorite_displays[i].callback([this](const transport::PeerAddress &address) -> void {
                 _peer_favorite_page.bindPeer(address);
-                _ui.bindPage(_peer_favorite_page);
+                _ui.activePage(_peer_favorite_page);
             });
         }
     }

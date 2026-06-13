@@ -40,7 +40,7 @@ struct PeerExplorerPage : UI::Page {
         for (auto i = 0u; i < _peer_displays.size(); i += 1) {
             _peer_displays[i].callback([this](const transport::PeerAddress &address) -> void {
                 _peer_detail_page.bindPeer(address);
-                _ui.bindPage(_peer_detail_page);
+                _ui.activePage(_peer_detail_page);
             });
 
             _layout[i + peer_display_start_index] = &_peer_displays[i];
