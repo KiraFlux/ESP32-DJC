@@ -20,8 +20,8 @@ using AxisInput = kf::drivers::sensors::NormalizedAdcInput<GPIO::AdcInput>;
 
 using Joystick = kf::drivers::sensors::Joystick<AxisInput>;
 
-using Bus = kf::bus::spi::ArduinoSPI;
+using SpiBus = kf::bus::spi::ArduinoSPI;
 
-using DisplayDriver = kf::drivers::display::ST7735<Bus::Node, GPIO::DigitalOutput>;
+using DisplayDriver = kf::drivers::display::ST7735<SpiBus::Node, GPIO::DigitalOutput>;
 
 }// namespace djc

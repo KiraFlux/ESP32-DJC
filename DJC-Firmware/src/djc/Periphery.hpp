@@ -26,8 +26,8 @@ struct PeripheryConfig final : kf::mixin::NonCopyable {
     AxisInput::FilterImpl::Config axis_filter;
     Joystick::Config left_joystick, right_joystick;
 
-    Bus::Config bus;
-    Bus::Node::Config bus_node;
+    SpiBus::Config bus;
+    SpiBus::Node::Config bus_node;
 
     DisplayDriver::Config display;
     kf::u16 joystick_axes_tune_samples;
@@ -50,9 +50,9 @@ struct PeripheryConfig final : kf::mixin::NonCopyable {
                 .y = axisDefaults(true),
             },
             // SPI default pins: MOSI=23, MISO=19, SCK=18
-            .bus = djc::Bus::Config::create(),
+            .bus = djc::SpiBus::Config::create(),
             // CS, SPI frequency
-            .bus_node = djc::Bus::Node::Config::create(GPIO_NUM_5, 27000000),
+            .bus_node = djc::SpiBus::Node::Config::create(GPIO_NUM_5, 27000000),
             .display = {
                 .init_orientation = kf::drivers::display::Orientation::ClockWise,
             },
@@ -110,7 +110,7 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
         GPIO::AdcInput{GPIO_NUM_35},
     };
 
-    Bus bus{
+    SpiBus bus{
         this->config().bus,
         SPI,
     };
@@ -154,7 +154,7 @@ private:
         right_button_listener.init();
 
         if (bus.init().isError()) {
-            logger.error("Bus initialization failed");
+            logger.error("SpiBus initialization failed");
         }
 
         if (not display.init()) {
