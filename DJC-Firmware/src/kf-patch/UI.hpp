@@ -149,7 +149,7 @@ public:
 
         /// @brief Get selected widget
         [[nodiscard]] constexpr auto selectedWidget() const noexcept -> Option<const Widget &> {
-            return _widgets.empty() ? none : someRef(_widgets[_cursor]);
+            return _widgets.empty() ? none : someRef<const Widget &>(*_widgets[_cursor]);
         }
 
         /// @brief Render page content to display.
