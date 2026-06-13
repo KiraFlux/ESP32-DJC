@@ -8,12 +8,11 @@
 #include <kf/memory/Array.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/NonCopyable.hpp>
-#include <kf/mixin/Singleton.hpp>
 #include <kf/primitives.hpp>
 
 namespace djc::internal {
 
-struct Key {
+struct Key : kf::mixin::NonCopyable {
 
     enum class Kind : kf::u8 {
         Common,
@@ -37,9 +36,9 @@ struct Key {
 
 }// namespace djc::internal
 
-namespace djc::input {
+namespace djc::ui {
 
-struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
+struct VirtualKeyboard final : kf::mixin::NonCopyable {
 
     enum class State : kf::u8 {
         Normal,
@@ -220,4 +219,4 @@ private:
     }
 };
 
-}// namespace djc::input
+}// namespace djc::ui

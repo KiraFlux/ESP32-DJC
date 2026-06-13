@@ -15,7 +15,6 @@
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/PeerDetailPage.hpp"
-#include "djc/ui/widgets/PeerDisplay.hpp"
 
 namespace djc::ui::pages {
 
@@ -85,10 +84,9 @@ struct PeerExplorerPage : UI::Page {
                 constexpr auto extreme_age_factor{0.75f};
                 const auto extreme_age = _peer_scanner.config().entry_max_life_time * extreme_age_factor;
                 const auto age = now - entry.unwrap().last_seen;
-                
+
                 _peer_displays[i].foreground((age < extreme_age) ? UI::Color::Primary : UI::Color::Warning);
             }
-
         }
 
         widgets(layout(available_peers.size()));

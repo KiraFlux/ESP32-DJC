@@ -6,20 +6,18 @@
 #include <kf/Slice.hpp>
 #include <kf/algorithm.hpp>
 #include <kf/memory/StringView.hpp>
+#include <kf/ui/widgets/Widget.hpp>
+#include <kf/ui/Color.hpp>
 
-#include "djc/input/VirtualKeyboard.hpp"
-#include "djc/ui/UI.hpp"
+#include "djc/ui/VirtualKeyboard.hpp"
 
 namespace djc::ui::widgets {
 
-struct TextInput final : UI::Widget {
+template<typename U> struct TextInput : kf::ui::widgets::Widget<U> {
 
-    TextInput() noexcept : _text_source{} {
-        initStyle();
-    }
-
-    explicit TextInput(kf::Slice<char> source) noexcept : _text_source{source} {
-        initStyle();
+    explicit TextInput(VirtualKeyboard &virtual_keyboard, kf::Slice<char> source) noexcept :
+        _virtual_keyboard{virtual_keyboard}, _text_source{source} {
+        this->foreground(kf::ui::Color::Info);
     }
 
     void source(kf::Slice<char> new_source) noexcept {
@@ -30,43 +28,39 @@ struct TextInput final : UI::Widget {
         return nullptr != _text_source.data();
     }
 
-    void doRender(UI::Traits::RenderImpl &render) const noexcept override {
+    void doRender(typename U::RenderImpl &render) const noexcept override {
         render.value(string());
     }
 
     bool onClick() noexcept override {
         if (not available()) { return false; }
 
-        if (virtual_keyboard.active()) {
-            virtual_keyboard.click();
+        if (_virtual_keyboard.active()) {
+            _virtual_keyboard.click();
         } else {
-            virtual_keyboard.begin(_text_source);
+            _virtual_keyboard.begin(_text_source);
         }
 
         return true;
     }
 
-    bool onEventValue(UI::Traits::EventImpl::Value event_value) noexcept {
-        if (not virtual_keyboard.active()) {
+    bool onEventValue(typename U::EventImpl::Value event_value) noexcept {
+        if (not _virtual_keyboard.active()) {
             return false;
         }
 
         switch (event_value) {
-            case 0: virtual_keyboard.moveCursorRow(-1); break;
-            case 1: virtual_keyboard.moveCursorRow(+1); break;
-            case 2: virtual_keyboard.moveCursorCol(-1); break;
-            case 3: virtual_keyboard.moveCursorCol(+1); break;
+            case 0: _virtual_keyboard.moveCursorRow(-1); break;
+            case 1: _virtual_keyboard.moveCursorRow(+1); break;
+            case 2: _virtual_keyboard.moveCursorCol(-1); break;
+            case 3: _virtual_keyboard.moveCursorCol(+1); break;
         }
 
         return true;
     }
 
 private:
-    void initStyle() {
-        foreground(UI::Color::Info);
-    }
-
-    inline static auto &virtual_keyboard{input::VirtualKeyboard::instance()};
+    VirtualKeyboard &_virtual_keyboard;
 
     kf::Slice<char> _text_source;
 

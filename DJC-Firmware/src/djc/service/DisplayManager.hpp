@@ -14,9 +14,8 @@
 #include <kf/mixin/Initable.hpp>
 #include <kf/primitives.hpp>
 
-#include "djc/input/VirtualKeyboard.hpp"
 #include "djc/transport/TransportLink.hpp"
-#include "djc/ui/UI.hpp"
+#include "djc/ui/VirtualKeyboard.hpp"
 
 #include "djc/service/Service.hpp"
 
@@ -33,8 +32,8 @@ template<typename I> struct DisplayManager final :
 
     using DisplayDriverImpl = I;
 
-    explicit DisplayManager(DisplayDriverImpl &display_driver, const transport::TransportLink &transport_link) noexcept :
-        _display_driver{display_driver}, _transport_link{transport_link} {}
+    explicit DisplayManager(DisplayDriverImpl &display_driver, const transport::TransportLink &transport_link, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
+        _display_driver{display_driver}, _transport_link{transport_link}, _virtual_keyboard{virtual_keyboard} {}
 
     [[nodiscard]] kf::usize rowsTotal() const noexcept {
         return _canvas.unwrap().heightInGlyphs() - 1;
@@ -56,7 +55,7 @@ template<typename I> struct DisplayManager final :
 
         _canvas.unwrap().fill();
 
-        if (virtual_keyboard.active()) {
+        if (_virtual_keyboard.active()) {
             renderVirtualKeyboard();
         } else {
             renderUi(str);
@@ -69,10 +68,9 @@ private:
     using P = typename DisplayDriverImpl::PixelImpl;
     using Palette = kf::gfx::Palette<P>;
 
-    inline static const auto &virtual_keyboard = input::VirtualKeyboard::instance();
-
     DisplayDriverImpl &_display_driver;
     const transport::TransportLink &_transport_link;
+    const ui::VirtualKeyboard &_virtual_keyboard;
     bool _show_connection_status_overlay{false};
 
     kf::Option<kf::gfx::Canvas<P>> _canvas{};
@@ -97,31 +95,31 @@ private:
     void renderVirtualKeyboard() noexcept {
         auto &canvas = _canvas.unwrap();
 
-        const auto longest_row = input::VirtualKeyboard::rows[0].size();
+        const auto longest_row = ui::VirtualKeyboard::rows[0].size();
         const auto key_width = canvas.width() / longest_row;
         const auto key_height = canvas.font().heightTotal();
-        const auto keyboard_offset_y = canvas.maxY() - key_height * virtual_keyboard.rowsTotal();
+        const auto keyboard_offset_y = canvas.maxY() - key_height * _virtual_keyboard.rowsTotal();
         const auto glyph_offset_x = (key_width - canvas.font().widthTotal()) / 2;
 
         char c[2]{0, 0};
 
-        canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", virtual_keyboard.available(), virtual_keyboard.text().size()).data());
-        canvas.text(0, canvas.font().heightTotal(), virtual_keyboard.text().data());
+        canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _virtual_keyboard.available(), _virtual_keyboard.text().size()).data());
+        canvas.text(0, canvas.font().heightTotal(), _virtual_keyboard.text().data());
 
         canvas.background(Palette::bright_black);
         canvas.foreground(Palette::bright_black);
         canvas.rect(0, keyboard_offset_y, canvas.maxX(), canvas.maxY(), true);
 
-        for (auto row = 0; row < virtual_keyboard.rowsTotal(); row += 1) {
+        for (auto row = 0; row < _virtual_keyboard.rowsTotal(); row += 1) {
             const auto y = keyboard_offset_y + row * key_height;
-            const auto cols = input::VirtualKeyboard::rows[row].size();
+            const auto cols = ui::VirtualKeyboard::rows[row].size();
 
             const auto x_offset = ((longest_row - cols) * key_width) / 2;
 
             for (auto col = 0; col < cols; col += 1) {
                 const auto x = col * key_width + x_offset;
 
-                if (row == virtual_keyboard.cursorRow() and col == virtual_keyboard.cursorCol()) {
+                if (row == _virtual_keyboard.cursorRow() and col == _virtual_keyboard.cursorCol()) {
                     canvas.foreground(Palette::blue);
                     canvas.rect(x, y, x + key_width, y + key_height - 1, true);
 
@@ -132,9 +130,9 @@ private:
                     canvas.foreground(Palette::black);
                 }
 
-                const auto &key = input::VirtualKeyboard::keyAt(row, col);
-                if (key.kind == input::VirtualKeyboard::Key::Kind::Common) {
-                    c[0] = key.value(virtual_keyboard.shifted());
+                const auto &key = ui::VirtualKeyboard::keyAt(row, col);
+                if (key.kind == ui::VirtualKeyboard::Key::Kind::Common) {
+                    c[0] = key.value(_virtual_keyboard.shifted());
                 } else {
                     c[0] = '?';
                 }

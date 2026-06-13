@@ -4,15 +4,13 @@
 #pragma once
 
 #include <kf/Logger.hpp>
-#include <kf/memory/StaticString.hpp>
 #include <kf/Slice.hpp>
+#include <kf/memory/StaticString.hpp>
 
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
-#include "djc/protocol/RawProtocol.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
-#include "djc/ui/widgets/TextInput.hpp"
 
 namespace djc::ui::pages {
 
@@ -24,6 +22,7 @@ struct RawProtocolPage : UI::Page {
         protocol::ProtocolLink &protocol_link,
         transport::TransportLink &transport_link) noexcept :
         Page{ui, "Raw Protocol"}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link}, _transport_link{transport_link},
+        _message_input{ui.createTextInput({_message.data(), _message.size()})},
         _layout{{
             &root.link(),
             &_message_input,
@@ -67,7 +66,7 @@ private:
 
     // widgets
 
-    widgets::TextInput _message_input{{_message.data(), _message.size()}};
+    UI::TextInput _message_input;
     UI::Button _send_button{"Send"};
 
     kf::memory::Array<UI::Widget *, 3> _layout;

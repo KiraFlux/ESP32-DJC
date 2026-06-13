@@ -14,8 +14,6 @@
 #include "djc/transport/Kind.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/PeerFavoritePage.hpp"
-#include "djc/ui/widgets/PeerDisplay.hpp"
-#include "djc/ui/widgets/TextInput.hpp"
 
 namespace djc::ui::pages {
 
@@ -143,7 +141,7 @@ private:
         .items = {_control_mode_options.data(), _control_mode_options.size()},
     };
 
-    widgets::TextInput _device_name_input{};
+    UI::TextInput _device_name_input{_ui.createTextInput()};
 
     UI::Button
         _save_config_button{"Save"},

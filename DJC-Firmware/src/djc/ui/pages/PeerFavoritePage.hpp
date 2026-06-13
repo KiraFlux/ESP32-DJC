@@ -10,7 +10,6 @@
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
-#include "djc/ui/widgets/TextInput.hpp"
 
 namespace djc::ui::pages {
 
@@ -87,7 +86,7 @@ private:
     };
 
     TrustInput _trust_input{_trust_input_config};
-    widgets::TextInput _description_input{};
+    UI::TextInput _description_input{_ui.createTextInput()};
 
     UI::Labeled _labeled_trust_input{"Trust", _trust_input};
     UI::Labeled _labeled_description_input{"Name", _description_input};

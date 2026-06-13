@@ -14,7 +14,6 @@
 #include "djc/MavlinkTelemetryRegistry.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/Periphery.hpp"
-#include "djc/input/VirtualKeyboard.hpp"
 #include "djc/prelude.hpp"
 
 // djc::transport
@@ -34,6 +33,7 @@
 
 // djc::ui
 #include "djc/ui/UI.hpp"
+#include "djc/ui/VirtualKeyboard.hpp"
 
 // djc::ui::pages
 #include "djc/ui/pages/ConfigPage.hpp"
@@ -45,8 +45,6 @@
 static constexpr auto logger{kf::Logger::create("main")};
 
 static djc::ConfigManager config_manager{};
-
-static auto &virtual_keyboard{djc::input::VirtualKeyboard::instance()};
 
 static djc::Periphery periphery{
     config_manager.config().periphery,
@@ -71,6 +69,8 @@ static djc::MavlinkTelemetryRegistry mavlink_telemetry_registry{};
 static djc::PeerFavoritesRegistry peer_favoriter_registry{
     {config_manager.config().peer_favorites.data(), config_manager.config().peer_favorites.size()},
 };
+
+static djc::ui::VirtualKeyboard virtual_keyboard{};
 
 // services
 
@@ -99,6 +99,7 @@ static djc::service::Control control{
 static djc::service::DisplayManager<djc::DisplayDriver> display_manager{
     periphery.display,
     transport_link,
+    virtual_keyboard,
 };
 
 static djc::ui::UI::Traits::RenderImpl ui_render{
@@ -107,6 +108,7 @@ static djc::ui::UI::Traits::RenderImpl ui_render{
 
 static djc::ui::UI ui{
     ui_render,
+    virtual_keyboard,
 };
 
 // pages
