@@ -6,6 +6,7 @@
 #include <kf/Slice.hpp>
 #include <kf/ui/Color.hpp>
 #include <kf/ui/Event.hpp>
+#include <kf/ui/Placement.hpp>
 #include <kf/ui/UI.hpp>
 #include <kf/ui/render/ColoredTextRender.hpp>
 
@@ -16,9 +17,9 @@
 
 namespace djc::internal {
 
-using UiBase = kf::ui::UI<ui::UiTraits<
-    kf::ui::render::ColoredTextRender<256>,// Render Engine: Buffered Colored Text UI render engine
-    kf::ui::Event<6>                       // Event: 6-bit Event value encoding
+using UiBase = ::kf::ui::UI<::djc::ui::UiTraits<
+    ::kf::ui::render::ColoredTextRender<256>,// Render Engine: Buffered Colored Text UI render engine
+    ::kf::ui::Event<6>                       // Event: 6-bit Event value encoding
     >>;
 
 }
@@ -26,19 +27,27 @@ using UiBase = kf::ui::UI<ui::UiTraits<
 namespace djc::ui {
 
 /// @brief ESP32-DJC extended UI specializalization
+/// @note djc::pages must use fields from this service (`UI::Color`, `UI::Widget`, etc.)
 struct UI : internal::UiBase {
 
     explicit constexpr UI(Traits::RenderImpl &render_system, VirtualKeyboard &virtual_keyboard) noexcept :
         internal::UiBase{render_system}, _virtual_keyboard{virtual_keyboard} {}
 
+    /// @brief UI Semantic Color
     using Color = kf::ui::Color;
 
+    /// @brief UI Widget value Placement
+    using Placement = kf::ui::Placement;
+
+    /// @brief UI Widget Base
     using Widget = internal::UiBase::Widget;
 
+    /// @brief Transport Peer display Widget
     struct PeerDisplay : widgets::PeerDisplay<Traits> {
         using widgets::PeerDisplay<Traits>::PeerDisplay;
     };
 
+    /// @brief Text input area via Virtual Keyboard
     struct TextInput : widgets::TextInput<Traits> {
         using widgets::TextInput<Traits>::TextInput;
     };
