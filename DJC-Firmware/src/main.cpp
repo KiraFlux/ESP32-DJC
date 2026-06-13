@@ -175,12 +175,15 @@ void setup() {
     }
 
     ui_render.callback([](auto str) -> void {
+        using Palette = decltype(display_manager)::Palette;
+        
         if (control.enabled()) {
-            display_manager.overlay(transport_link.connected() ? transport_link.activePeerAddress().unwrap().toString().view() : kf::memory::StringView{"Disconnected"});
+            const auto status = transport_link.connected() ? transport_link.activePeerAddress().unwrap().toString().view() : kf::memory::StringView{"Disconnected"};
+            display_manager.overlay(status, Palette::bright_yellow);
         } else {
             if (const auto &p = ui.activePage(); p.isSome()) {
                 if (const auto &widget = p.unwrap().selectedWidget(); widget.isSome()) {
-                    display_manager.overlay(widget.unwrap().hint());
+                    display_manager.overlay(widget.unwrap().hint(), Palette::white);
                 }
             }
         }

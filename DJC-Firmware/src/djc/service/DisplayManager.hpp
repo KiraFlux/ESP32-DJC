@@ -31,6 +31,7 @@ template<typename I> struct DisplayManager final :
 
     using DisplayDriverImpl = I;
     using Pixel = typename DisplayDriverImpl::PixelImpl;
+    using Color = typename Pixel::ColorType;
     using Canvas = typename kf::gfx::Canvas<Pixel>;
     using Palette = kf::gfx::Palette<Pixel>;
 
@@ -41,8 +42,9 @@ template<typename I> struct DisplayManager final :
         return _canvas;
     }
 
-    void overlay(kf::memory::StringView new_overlay) noexcept {
+    void overlay(kf::memory::StringView new_overlay, Color color) noexcept {
         _overlay = new_overlay;
+        _overlay_color = color;
     }
 
     void onRender(kf::memory::StringView str) noexcept {
@@ -67,12 +69,13 @@ private:
     const ui::VirtualKeyboard &_virtual_keyboard;
     kf::Option<Canvas> _canvas{kf::none};
     kf::memory::StringView _overlay{};
+    Color _overlay_color{};
 
     void renderUi(kf::memory::StringView str) noexcept {
         auto &canvas = _canvas.unwrap();
 
         if (not _overlay.empty()) {
-            canvas.background(Palette::bright_blue);
+            canvas.background(_overlay_color);
             canvas.foreground(Palette::black);
             canvas.text(0, static_cast<kf::math::Pixels>(canvas.maxY() - canvas.font().heightTotal()), _overlay);
         }
