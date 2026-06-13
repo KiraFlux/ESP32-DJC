@@ -77,7 +77,9 @@ private:
         if (not _overlay.empty()) {
             canvas.background(_overlay_color);
             canvas.foreground(Palette::black);
-            canvas.text(0, static_cast<kf::math::Pixels>(canvas.maxY() - canvas.font().heightTotal()), _overlay);
+            const auto rows = 1 + (_overlay.size() / canvas.widthInGlyphs());
+            const auto y = static_cast<kf::math::Pixels>(canvas.maxY() - rows * canvas.font().heightTotal());
+            canvas.text(0, y, _overlay);
         }
 
         canvas.background(Palette::black);
