@@ -95,6 +95,11 @@ template<typename U> struct UI :
         _active_page = someRef(page);
     }
 
+    /// @brief Get readobly access to active page
+    auto activePage() const noexcept -> kf::Option<Page &> {
+        return _active_page;
+    }
+
     /// @brief Add event to processing queue
     /// @note If the queue is non‑empty and the last event is Update, adding another Update event is a no‑op.
     void addEvent(typename Traits::EventImpl event) {
