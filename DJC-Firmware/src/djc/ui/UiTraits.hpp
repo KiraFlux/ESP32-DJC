@@ -12,6 +12,7 @@ struct UiTraitsTag {};
 /// @brief ESP32-DJC extended UI Traits specializalization
 /// @tparam R Render implementation
 /// @tparam R Event implementation
+/// @note Any Widget from `djc::widgets` should be noted that `<U>` implements `djc::ui::UiTraits`
 template<typename R, typename E> struct UiTraits :
 
     UiTraitsTag,
