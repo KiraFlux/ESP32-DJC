@@ -31,16 +31,15 @@ template<typename I> struct DisplayManager final :
     KF_CHECK_IMPL(I, ::kf::drivers::display::DisplayDriverTag);
 
     using DisplayDriverImpl = I;
+    using Pixel = typename DisplayDriverImpl::PixelImpl;
+    using Canvas = typename kf::gfx::Canvas<Pixel>;
+    using Palette = kf::gfx::Palette<Pixel>;
 
     explicit DisplayManager(DisplayDriverImpl &display_driver, const transport::TransportLink &transport_link, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
         _display_driver{display_driver}, _transport_link{transport_link}, _virtual_keyboard{virtual_keyboard} {}
 
-    [[nodiscard]] kf::usize rowsTotal() const noexcept {
-        return _canvas.unwrap().heightInGlyphs() - 1;
-    }
-
-    [[nodiscard]] kf::usize colsTotal() const noexcept {
-        return _canvas.unwrap().widthInGlyphs();
+    [[nodiscard]] auto canvas() const noexcept -> const kf::Option<Canvas> & {
+        return _canvas;
     }
 
     void showConnectionStatusOverlay(bool show) noexcept {
@@ -65,15 +64,11 @@ template<typename I> struct DisplayManager final :
     }
 
 private:
-    using P = typename DisplayDriverImpl::PixelImpl;
-    using Palette = kf::gfx::Palette<P>;
-
     DisplayDriverImpl &_display_driver;
     const transport::TransportLink &_transport_link;
     const ui::VirtualKeyboard &_virtual_keyboard;
+    kf::Option<Canvas> _canvas{kf::none};
     bool _show_connection_status_overlay{false};
-
-    kf::Option<kf::gfx::Canvas<P>> _canvas{};
 
     void renderUi(kf::memory::StringView str) noexcept {
         auto &canvas = _canvas.unwrap();
@@ -100,8 +95,6 @@ private:
         const auto key_height = canvas.font().heightTotal();
         const auto keyboard_offset_y = canvas.maxY() - key_height * _virtual_keyboard.rowsTotal();
         const auto glyph_offset_x = (key_width - canvas.font().widthTotal()) / 2;
-
-        char c[2]{0, 0};
 
         canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _virtual_keyboard.available(), _virtual_keyboard.text().size()).data());
         canvas.text(0, canvas.font().heightTotal(), _virtual_keyboard.text().data());
@@ -131,13 +124,8 @@ private:
                 }
 
                 const auto &key = ui::VirtualKeyboard::keyAt(row, col);
-                if (key.kind == ui::VirtualKeyboard::Key::Kind::Common) {
-                    c[0] = key.value(_virtual_keyboard.shifted());
-                } else {
-                    c[0] = '?';
-                }
 
-                canvas.text(x + glyph_offset_x, y, c);
+                canvas.glyph(x + glyph_offset_x, y, (key.kind == ui::VirtualKeyboard::Key::Kind::Common) ? key.value(_virtual_keyboard.shifted()) : '?');
             }
         }
     }
@@ -147,9 +135,9 @@ private:
 
     KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {
-        kf::gfx::Canvas<P> canvas{
-            kf::image::DynamicImage<P>{_display_driver.image()},
-            typename kf::gfx::Canvas<P>::State{
+        Canvas canvas{
+            kf::image::DynamicImage<Pixel>{_display_driver.image()},
+            typename Canvas::State{
                 .active_font = kf::someRef(kf::gfx::fonts::gyver_5x7_en),
                 .auto_next_line = true,
             },
