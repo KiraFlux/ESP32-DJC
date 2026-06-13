@@ -22,7 +22,7 @@ namespace djc::ui::pages {
 /// @brief MAVLink telemetry page
 struct MavlinkTelemetryPage : UI::Page {
     explicit MavlinkTelemetryPage(
-        UI& ui,
+        UI &ui,
         UI::Page &root,
         protocol::ProtocolRegistry &protocol_registry,
         protocol::ProtocolLink &protocol_link,
@@ -38,6 +38,9 @@ struct MavlinkTelemetryPage : UI::Page {
             &_attitude_display,
         }} {
         widgets({_layout.data(), _layout.size()});
+
+        _imu_display.hint("IMU accel vertor");
+        _attitude_display.hint("attitude quaternion");
     }
 
     void onEntry() noexcept override {

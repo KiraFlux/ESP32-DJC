@@ -36,13 +36,17 @@ struct PeerExplorerPage : UI::Page {
             &_primary_connection_status_button,
             &_available_label,
         }} {
+        _available_label.hint("Available peer will show below");
+
         for (auto i = 0u; i < _peer_displays.size(); i += 1) {
-            _peer_displays[i].callback([this](const transport::PeerAddress &address) -> void {
+            auto &display = _peer_displays[i];
+            _layout[i + peer_display_start_index] = &display;
+
+            display.callback([this](const transport::PeerAddress &address) -> void {
                 _peer_detail_page.bindPeer(address);
                 _ui.activePage(_peer_detail_page);
             });
-
-            _layout[i + peer_display_start_index] = &_peer_displays[i];
+            display.hint("Click for details");
         }
 
         _primary_connection_status_button.callback([this]() {
@@ -65,10 +69,12 @@ struct PeerExplorerPage : UI::Page {
             _primary_connection_status_button.label(_connection_button_buffer.view());
             _primary_connection_status_button.foreground(UI::Color::Normal);
             _primary_connection_status_button.background(UI::Color::Success);
+            _primary_connection_status_button.hint("Click to disconnect");
         } else {
             _primary_connection_status_button.label("Disconnected");
             _primary_connection_status_button.foreground(UI::Color::Disabled);
             _primary_connection_status_button.background(UI::Color::Normal);
+            _primary_connection_status_button.hint("Primary peer not set");
         }
 
         const auto available_peers = _peer_scanner.peers();

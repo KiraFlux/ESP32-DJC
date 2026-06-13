@@ -30,6 +30,9 @@ struct PeerFavoritePage final : UI::Page {
         }}
 
     {
+        _labeled_trust_input.hint("Set priority for auto connect");
+        _labeled_description_input.hint("Will shown as human-readable alias");
+
         _confirm_button.callback([this]() -> void {
             if (_temp_entry.isNone()) { return; }
             _temp_entry.unwrap().trust = _trust_input.value();
@@ -41,6 +44,7 @@ struct PeerFavoritePage final : UI::Page {
 
             update();
         });
+        _confirm_button.hint("Write to registry");
 
         _delete_button.callback([this]() -> void {
             if (_temp_entry.isNone()) { return; }
@@ -50,6 +54,7 @@ struct PeerFavoritePage final : UI::Page {
             _ui.activePage(_root);
             update();
         });
+        _delete_button.hint("Remove from registry");
         _delete_button.background(UI::Color::Warning);
     }
 

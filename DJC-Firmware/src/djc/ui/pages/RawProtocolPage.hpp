@@ -30,6 +30,8 @@ struct RawProtocolPage : UI::Page {
         }} {
         widgets({_layout.data(), _layout.size()});
 
+        _message_input.hint("Edit message");
+
         _send_button.callback([this]() {
             kf::memory::StringView s{_message.data(), _message.size()};
             s = s.sub(0, s.find('\0').unwrapOr(s.size()));
@@ -38,6 +40,7 @@ struct RawProtocolPage : UI::Page {
 
             (void) _transport_link.send({reinterpret_cast<const kf::u8 *>(s.data()), s.size()});
         });
+        _send_button.hint("Send raw buffer as is");
     }
 
     void onEntry() noexcept override {

@@ -54,6 +54,7 @@ struct PeerDetailPage final : UI::Page {
             _ui.activePage(_peer_favorite_page);
             update();
         });
+        _peer_favorite_button.hint("Open peer favorites edit");
     }
 
     void bindPeer(const transport::PeerAddress &address) noexcept {

@@ -31,55 +31,69 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         _device_name_input{ui.createTextInput()},
         _layout{{
             &root.link(),
+            &_save_config_button,
+            &_load_config_button,
+            &_reset_config_button,
             &_device_name_input,
             &_labeled_autoconnect_enabled_input,
             &_labeled_default_transport_kind_selector,
             &_labeled_default_protocol_mode_selector,
-            &_save_config_button,
-            &_load_config_button,
-            &_reset_config_button,
             &_favorite_peers_fold_toggle_button,
         }} {
         widgets(layout(0));
 
         _device_name_input.source({_config_manager.config().device_name.data(), _config_manager.config().device_name.size()});
+        _device_name_input.hint("Device name");
 
         _save_config_button.callback([this]() { _config_manager.save(); });
         _save_config_button.foreground(UI::Color::Primary);
+        _save_config_button.hint("Write config from RAM into NVS");
 
         _load_config_button.callback([this]() {
             _config_manager.load();
             this->init();
         });
         _load_config_button.foreground(UI::Color::Secondary);
+        _load_config_button.hint("Load config from NVS into RAM");
 
         _reset_config_button.callback([this]() {
             _config_manager.reset();
             this->init();
         });
         _reset_config_button.foreground(UI::Color::Warning);
+        _reset_config_button.hint("Set RAM config as detaults");
 
         _favorite_peers_fold_toggle_button.callback([this]() {
             show_favorites = not show_favorites;
             this->onEntry();
             update();
         });
+        _favorite_peers_fold_toggle_button.hint("Toggle folding");
+
+        _default_transport_kind_selector.callback([this](transport::Kind kind) {
+            _config_manager.config().init_transport_kind = kind;
+        });
+        _labeled_default_transport_kind_selector.hint("Define transport select after init");
 
         _default_protocol_mode_selector.callback([this](Mode mode) {
             _config_manager.config().init_protocol_mode = mode;
         });
+        _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
 
         _autoconnect_enabled_input.callback([this](bool value) {
             _config_manager.config().auto_connect_service.enabled = value;
         });
+        _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
-            _layout[layout_regular_widgets + i] = &_peer_favorite_displays[i];
+            auto &display =_peer_favorite_displays[i];
+            _layout[layout_regular_widgets + i] = &display;
 
-            _peer_favorite_displays[i].callback([this](const transport::PeerAddress &address) -> void {
+            display.callback([this](const transport::PeerAddress &address) -> void {
                 _peer_favorite_page.bindPeer(address);
                 _ui.activePage(_peer_favorite_page);
             });
+            display.hint("Open peer config");
         }
     }
 
@@ -149,7 +163,7 @@ private:
     UI::Button
         _save_config_button{"Save"},
         _load_config_button{"Load"},
-        _reset_config_button{"Reset (RAM cache)"},
+        _reset_config_button{"Reset"},
         _favorite_peers_fold_toggle_button{{}};
 
     TransportKindSelector _default_transport_kind_selector{_transport_kind_config};
