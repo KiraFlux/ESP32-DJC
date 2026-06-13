@@ -29,7 +29,9 @@ template<typename U> struct TextInput : kf::ui::widgets::Widget<U> {
     }
 
     void doRender(typename U::RenderImpl &render) const noexcept override {
+        render.value(kf::memory::StringView{"\""});
         render.value(string());
+        render.value(kf::memory::StringView{"\""});
     }
 
     bool onClick() noexcept override {
