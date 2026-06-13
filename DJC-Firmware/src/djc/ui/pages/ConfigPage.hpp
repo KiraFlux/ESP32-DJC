@@ -45,16 +45,19 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         _device_name_input.source({_config_manager.config().device_name.data(), _config_manager.config().device_name.size()});
 
         _save_config_button.callback([this]() { _config_manager.save(); });
+        _save_config_button.foreground(UI::Color::Primary);
 
         _load_config_button.callback([this]() {
             _config_manager.load();
             this->init();
         });
+        _load_config_button.foreground(UI::Color::Secondary);
 
         _reset_config_button.callback([this]() {
             _config_manager.reset();
             this->init();
         });
+        _reset_config_button.foreground(UI::Color::Warning);
 
         _favorite_peers_fold_toggle_button.callback([this]() {
             show_favorites = not show_favorites;
@@ -85,10 +88,11 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
         (void) _label_favorites_buffer.format(
             "[%c] Peer Favorites (%d/%d)",
-            ((show_favorites) ? 'V' : '>'),
+            (show_favorites ? 'V' : '>'),
             all_favorites.size(),
             Config::max_peer_favorites);
         _favorite_peers_fold_toggle_button.label(_label_favorites_buffer.view());
+        _favorite_peers_fold_toggle_button.background(show_favorites ? UI::Color::Secondary : UI::Color::Primary);
 
         if (show_favorites) {
             for (auto i = 0u; i < all_favorites.size(); i += 1) {

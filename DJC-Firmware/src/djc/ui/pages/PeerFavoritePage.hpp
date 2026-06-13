@@ -34,12 +34,13 @@ struct PeerFavoritePage final : UI::Page {
             if (_temp_entry.isNone()) { return; }
             _temp_entry.unwrap().trust = _trust_input.value();
 
-            const auto result = _peer_favorites_registry.put(_temp_entry.unwrap());
-            _confirm_button.label(result ? "Writed" : "Write failed");
+            const bool write_ok = _peer_favorites_registry.put(_temp_entry.unwrap());
+            _confirm_button.label(write_ok ? "Writed" : "Write failed");
+            _confirm_button.background(write_ok ? UI::Color::Success : UI::Color::Error);
+            _confirm_button.foreground(UI::Color::Normal);
 
             update();
         });
-        _confirm_button.foreground(UI::Color::Primary);
 
         _delete_button.callback([this]() -> void {
             if (_temp_entry.isNone()) { return; }
@@ -49,7 +50,7 @@ struct PeerFavoritePage final : UI::Page {
             _ui.bindPage(_root);
             update();
         });
-        _delete_button.background(UI::Color::Error);
+        _delete_button.background(UI::Color::Warning);
     }
 
     void bindPeer(const transport::PeerAddress &address) noexcept {
@@ -63,6 +64,8 @@ struct PeerFavoritePage final : UI::Page {
         _description_input.source({_temp_entry.unwrap().name.data(), _temp_entry.unwrap().name.size()});
         _trust_input.value(_temp_entry.unwrap().trust);
         _confirm_button.label("Confirm");
+        _confirm_button.foreground(UI::Color::Primary);
+        _confirm_button.background(UI::Color::Normal);
 
         widgets(kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(_layout.size() - (entry_option.isSome() ? 0 : 1)));
     }
@@ -81,7 +84,7 @@ private:
         .value_range = PeerFavoritesRegistry::Entry::trust_range,
         .default_value = PeerFavoritesRegistry::Entry::trust_range.start,
         .step = static_cast<PeerFavoritesRegistry::Entry::TrustType>(1),
-        .placement = kf::ui::Placement::Outside,
+        .placement = UI::Placement::Outside,
         .init_show_value = true,
     };
 
