@@ -27,7 +27,6 @@ struct PeerExplorerPage : UI::Page {
         service::PeerScanningService &peer_scanner,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{ui, "Peer Explorer"},
-        _ui{ui},
         _transport_link{transport_link},
         _peer_scanner{peer_scanner},
         _peer_favorites_registry{peer_favorites_registry},
@@ -96,7 +95,6 @@ struct PeerExplorerPage : UI::Page {
 private:
     static constexpr auto peer_display_start_index{3u};
 
-    UI &_ui;
     transport::TransportLink &_transport_link;
     service::PeerScanningService &_peer_scanner;
     PeerFavoritesRegistry &_peer_favorites_registry;

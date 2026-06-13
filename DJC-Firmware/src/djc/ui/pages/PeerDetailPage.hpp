@@ -22,7 +22,6 @@ struct PeerDetailPage final : UI::Page {
         transport::TransportLink &transport_link,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{ui, {}},
-        _ui{ui},
         _root{root},
         _transport_link{transport_link},
         _peer_favorites_registry{peer_favorites_registry},
@@ -30,7 +29,8 @@ struct PeerDetailPage final : UI::Page {
             &root.link(),
             &_connection_button,
             &_peer_favorite_button,
-        }}
+        }},
+        _peer_favorite_page{ui, *this, peer_favorites_registry}
 
     {
         widgets({_layout.data(), _layout.size()});
@@ -75,7 +75,6 @@ struct PeerDetailPage final : UI::Page {
 private:
     // state
 
-    UI &_ui;
     UI::Page &_root;
     transport::TransportLink &_transport_link;
     kf::TrivialOption<transport::PeerAddress> _peer_address{};
@@ -90,7 +89,7 @@ private:
 
     // child pages
 
-    PeerFavoritePage _peer_favorite_page{_ui, *this, _peer_favorites_registry};
+    PeerFavoritePage _peer_favorite_page;
 };
 
 }// namespace djc::ui::pages

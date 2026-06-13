@@ -25,10 +25,10 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         djc::ConfigManager &config_manager,
         PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
         Page{ui, "Config"},
-        _ui{ui},
         _config_manager{config_manager},
         _peer_favorite_page{ui, *this, _peer_favoriter_registry},
         _peer_favoriter_registry{peer_favoriter_registry},
+        _device_name_input{ui.createTextInput()},
         _layout{{
             &root.link(),
             &_device_name_input,
@@ -120,7 +120,6 @@ private:
 
     // state
 
-    UI &_ui;
     djc::ConfigManager &_config_manager;
     PeerFavoritesRegistry &_peer_favoriter_registry;
     kf::memory::StaticString<32> _label_favorites_buffer{};
@@ -145,7 +144,7 @@ private:
         .items = {_control_mode_options.data(), _control_mode_options.size()},
     };
 
-    UI::TextInput _device_name_input{_ui.createTextInput()};
+    UI::TextInput _device_name_input;
 
     UI::Button
         _save_config_button{"Save"},

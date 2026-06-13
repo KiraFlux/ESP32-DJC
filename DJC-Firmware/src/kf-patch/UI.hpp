@@ -220,9 +220,10 @@ public:
             _ui.addEvent(Traits::EventImpl::update());
         }
 
+        UI &_ui;
+
     private:
         PageSetter _to_this{*this};///< Navigation widget to this page
-        UI &_ui;
         Slice<Widget *> _widgets{};///< Widgets on this page
         isize _cursor{0};          ///< Current widget cursor position (focused widget index)
 

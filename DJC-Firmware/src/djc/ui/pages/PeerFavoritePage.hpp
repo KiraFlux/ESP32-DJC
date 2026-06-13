@@ -17,9 +17,9 @@ struct PeerFavoritePage final : UI::Page {
 
     explicit PeerFavoritePage(UI &ui, UI::Page &root, PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{ui, {}},
-        _ui{ui},
         _root{root},
         _peer_favorites_registry{peer_favorites_registry},
+        _description_input{ui.createTextInput()},
         _layout{{
             // address and transport shows in title
             &_labeled_trust_input,
@@ -71,7 +71,6 @@ struct PeerFavoritePage final : UI::Page {
     }
 
 private:
-    UI &_ui;
     UI::Page &_root;
     PeerFavoritesRegistry &_peer_favorites_registry;
     kf::TrivialOption<PeerFavoritesRegistry::Entry> _temp_entry{};
@@ -89,7 +88,7 @@ private:
     };
 
     TrustInput _trust_input{_trust_input_config};
-    UI::TextInput _description_input{_ui.createTextInput()};
+    UI::TextInput _description_input;
 
     UI::Labeled _labeled_trust_input{"Trust", _trust_input};
     UI::Labeled _labeled_description_input{"Name", _description_input};
