@@ -160,7 +160,7 @@ private:
             logger.error("SpiBus initialization failed");
         }
 
-        if (not display.init()) {
+        if (display.init().isError()) {
             logger.error("Display driver initialization failed");
         }
 
