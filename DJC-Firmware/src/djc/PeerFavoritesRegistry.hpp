@@ -20,7 +20,7 @@ namespace djc {
 /// The registry does not own the memory, only manipulates it.
 ///
 /// @note All methods are safe to call from different UI callbacks as long as the underlying storage is exclusively owned by the registry.
-struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable<PeerFavoritesRegistry, void> {
+struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable<PeerFavoritesRegistry, void> { // TODO: remove initable
 
     /// @brief A single favorite‑peer record.
     struct Entry final {
@@ -47,6 +47,11 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
     /// @brief Set entries source
     void entries(kf::Slice<kf::TrivialOption<Entry>> new_entries) noexcept {
         _entries = new_entries;
+
+        _active_count = 0;
+        for (const auto &entry: _entries) {
+            _active_count += static_cast<kf::usize>(entry.isSome());
+        }
     }
 
     /// @brief Return the entire slot array, including empty slots.
@@ -124,14 +129,9 @@ private:
         return kf::none;
     }
 
-    // impl
+    // TODO: remove initable
     KF_IMPL_INITABLE(PeerFavoritesRegistry, void);
-    void initImpl() noexcept {
-        _active_count = 0;
-        for (const auto &entry: _entries) {
-            _active_count += static_cast<kf::usize>(entry.isSome());
-        }
-    }
+    void initImpl() noexcept {}
 };
 
 }// namespace djc
