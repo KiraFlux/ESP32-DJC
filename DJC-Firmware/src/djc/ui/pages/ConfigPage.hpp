@@ -46,21 +46,18 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         _device_name_input.hint("Device name");
 
         _save_config_button.callback([this]() { _config_manager.save(); });
-        _save_config_button.foreground(UI::Color::Primary);
         _save_config_button.hint("Write config from RAM into NVS");
 
         _load_config_button.callback([this]() {
             _config_manager.load();
             this->init();
         });
-        _load_config_button.foreground(UI::Color::Secondary);
         _load_config_button.hint("Load config from NVS into RAM");
 
         _reset_config_button.callback([this]() {
             _config_manager.reset();
             this->init();
         });
-        _reset_config_button.foreground(UI::Color::Warning);
         _reset_config_button.hint("Set RAM config as detaults");
 
         _favorite_peers_fold_toggle_button.callback([this]() {
@@ -86,7 +83,7 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
-            auto &display =_peer_favorite_displays[i];
+            auto &display = _peer_favorite_displays[i];
             _layout[layout_regular_widgets + i] = &display;
 
             display.callback([this](const transport::PeerAddress &address) -> void {
@@ -142,7 +139,13 @@ private:
     // widgets
 
     kf::memory::Array<TransportKindSelector::Config::Item, 1> _transport_kind_options{{
-        {"EspNow", transport::Kind::EspNow},
+        {
+            "EspNow",
+            transport::Kind::EspNow,
+            UI::Style{
+                .foreground_color = UI::Color::Highlight,
+            },
+        },
     }};
 
     TransportKindSelector::Config _transport_kind_config{
@@ -150,8 +153,17 @@ private:
     };
 
     kf::memory::Array<ProtocolModeSelector::Config::Item, 2> _control_mode_options{{
-        {"Mavlink", Mode::Mavlink},
-        {"Raw", Mode::Raw},
+        {
+            "Mavlink",
+            Mode::Mavlink,
+            UI::Style{
+                .foreground_color = UI::Color::Highlight,
+            },
+        },
+        {
+            "Raw",
+            Mode::Raw,
+        },
     }};
 
     ProtocolModeSelector::Config _control_mode_config{
@@ -161,9 +173,21 @@ private:
     UI::TextInput _device_name_input;
 
     UI::Button
-        _save_config_button{"Save"},
-        _load_config_button{"Load"},
-        _reset_config_button{"Reset"},
+        _save_config_button{
+            "Save",
+            UI::Style{
+                .foreground_color = UI::Color::Primary,
+            },
+        },
+        _load_config_button{
+            "Load",
+        },
+        _reset_config_button{
+            "Reset",
+            UI::Style{
+                .foreground_color = UI::Color::Danger,
+            },
+        },
         _favorite_peers_fold_toggle_button{{}};
 
     TransportKindSelector _default_transport_kind_selector{_transport_kind_config};

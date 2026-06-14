@@ -42,8 +42,9 @@ struct PeerDetailPage final : UI::Page {
                 _ui.activePage(_root);
             } else {
                 _connection_button.label("Failed to connect");
-                _connection_button.foreground(UI::Color::Normal);
-                _connection_button.background(UI::Color::Error);
+                _connection_button.style(UI::Style{
+                    .background_color = UI::Color::Error,
+                });
             }
         });
 
@@ -63,8 +64,10 @@ struct PeerDetailPage final : UI::Page {
 
     void onEntry() noexcept override {
         _connection_button.label("Connect");
-        _connection_button.foreground(UI::Color::Primary);
-        _connection_button.background(UI::Color::Normal);
+        _connection_button.style(UI::Style{
+            .foreground_color = UI::Color::Primary,
+        });
+
         if (_peer_address.isSome()) {
             _label_buffer = _peer_address.unwrap().toString();
             this->label(_label_buffer.view());

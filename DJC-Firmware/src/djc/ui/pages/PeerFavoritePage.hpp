@@ -39,8 +39,10 @@ struct PeerFavoritePage final : UI::Page {
 
             const bool write_ok = _peer_favorites_registry.put(_temp_entry.unwrap());
             _confirm_button.label(write_ok ? "Writed" : "Write failed");
-            _confirm_button.background(write_ok ? UI::Color::Success : UI::Color::Error);
-            _confirm_button.foreground(UI::Color::Normal);
+            _confirm_button.style(UI::Style{
+                .foreground_color = UI::Color::Normal,
+                .background_color = (write_ok ? UI::Color::Success : UI::Color::Error),
+            });
 
             update();
         });
@@ -55,7 +57,7 @@ struct PeerFavoritePage final : UI::Page {
             update();
         });
         _delete_button.hint("Remove from registry");
-        _delete_button.background(UI::Color::Warning);
+        _delete_button.background(UI::Color::Danger);
     }
 
     void bindPeer(const transport::PeerAddress &address) noexcept {
@@ -69,8 +71,7 @@ struct PeerFavoritePage final : UI::Page {
         _description_input.source({_temp_entry.unwrap().name.data(), _temp_entry.unwrap().name.size()});
         _trust_input.value(_temp_entry.unwrap().trust);
         _confirm_button.label("Confirm");
-        _confirm_button.foreground(UI::Color::Primary);
-        _confirm_button.background(UI::Color::Normal);
+        _confirm_button.style({UI::Color::Primary, UI::Color::Normal});
 
         widgets(kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(_layout.size() - (entry_option.isSome() ? 0 : 1)));
     }
