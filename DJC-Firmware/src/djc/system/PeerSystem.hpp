@@ -19,16 +19,13 @@ namespace djc::system {
 
 /// @brief System managing peer favorites, scanning and auto-connection.
 /// @note Owns PeerFavoritesRegistry, PeerScanningService, AutoConnectService.
-///       Depends on Config (settings) and TransportLink (for scanning and connection).
-///       On each poll, scans visible peers and triggers auto-connection to the most trusted visible favorite.
+/// @note Depends on Config (readolny) and TransportLink (for scanning and connection).
+/// @note On each poll, scans visible peers and triggers auto-connection to the most trusted visible favorite.
+/// @note Peer favorites registry entries source should set extenally
 struct PeerSystem : System<PeerSystem>, kf::mixin::Configurable<Config> {
 
-    explicit PeerSystem(Config &config, transport::TransportLink &transport_link) noexcept :
-        kf::mixin::Configurable<Config>{config},
-        _transport_link{transport_link},
-        _peer_favorites_registry{{config.peer_favorites.data(), config.peer_favorites.size()}},
-        _peer_scanning_service{config.peer_scanner, transport_link},
-        _auto_connect_service{config.auto_connect_service, transport_link} {}
+    explicit PeerSystem(const Config &config, transport::TransportLink &transport_link) noexcept :
+        kf::mixin::Configurable<Config>{config}, _transport_link{transport_link} {}
 
     /// @brief Get mutable access to peer favorites registry component
     PeerFavoritesRegistry &favoritesRegistry() noexcept {
@@ -64,9 +61,9 @@ private:
     static constexpr auto logger{kf::Logger::create("PeerSystem")};
 
     transport::TransportLink &_transport_link;
-    PeerFavoritesRegistry _peer_favorites_registry;
-    service::PeerScanningService _peer_scanning_service;
-    service::AutoConnectService _auto_connect_service;
+    PeerFavoritesRegistry _peer_favorites_registry{};
+    service::PeerScanningService _peer_scanning_service{this->config().peer_scanner, _transport_link};
+    service::AutoConnectService _auto_connect_service{this->config().auto_connect_service, _transport_link};
 
     KF_IMPL_INITABLE(PeerSystem, bool);
     bool initImpl() noexcept {
