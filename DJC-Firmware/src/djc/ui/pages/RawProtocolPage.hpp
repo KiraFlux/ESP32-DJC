@@ -4,25 +4,25 @@
 #pragma once
 
 #include <kf/Logger.hpp>
-#include <kf/memory/ArrayString.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
+#include <kf/memory/StaticString.hpp>
 
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
-#include "djc/protocol/RawProtocol.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
-#include "djc/ui/widgets/TextInput.hpp"
 
 namespace djc::ui::pages {
 
 struct RawProtocolPage : UI::Page {
     explicit RawProtocolPage(
+        UI &ui,
         UI::Page &root,
         protocol::ProtocolRegistry &protocol_registry,
         protocol::ProtocolLink &protocol_link,
         transport::TransportLink &transport_link) noexcept :
-        Page{"Raw Protocol"}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link}, _transport_link{transport_link},
+        Page{ui, "Raw Protocol"}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link}, _transport_link{transport_link},
+        _message_input{ui.createTextInput({_message.data(), _message.size()})},
         _layout{{
             &root.link(),
             &_message_input,
@@ -30,22 +30,25 @@ struct RawProtocolPage : UI::Page {
         }} {
         widgets({_layout.data(), _layout.size()});
 
+        _message_input.hint("Edit message");
+
         _send_button.callback([this]() {
             kf::memory::StringView s{_message.data(), _message.size()};
-            s = s.sub(0, s.find('\0').valueOr(s.size()));
+            s = s.sub(0, s.find('\0').unwrapOr(s.size()));
 
             logger.debug(s);
 
             (void) _transport_link.send({reinterpret_cast<const kf::u8 *>(s.data()), s.size()});
         });
+        _send_button.hint("Send raw buffer as is");
     }
 
     void onEntry() noexcept override {
         _protocol_link.protocol(_protocol_registry.raw());
 
-        _protocol_registry.raw().callback([](kf::memory::Slice<const kf::u8> buffer) {
+        _protocol_registry.raw().callback([](kf::Slice<const kf::u8> buffer) {
             logger.info(
-                kf::memory::ArrayString<64>::formatted(
+                kf::memory::StaticString<64>::formatted(
                     "Got %d bytes from primary peer",
                     buffer.size())
                     .view());
@@ -53,7 +56,7 @@ struct RawProtocolPage : UI::Page {
     }
 
     void onExit() noexcept override {
-        _protocol_registry.raw().callback(protocol::RawProtocol::CallbackType{});
+        _protocol_registry.raw().callback(kf::none);
     }
 
 private:
@@ -66,7 +69,7 @@ private:
 
     // widgets
 
-    widgets::TextInput _message_input{{_message.data(), _message.size()}};
+    UI::TextInput _message_input;
     UI::Button _send_button{"Send"};
 
     kf::memory::Array<UI::Widget *, 3> _layout;

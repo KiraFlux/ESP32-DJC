@@ -3,15 +3,12 @@
 
 #pragma once
 
-#include <utility>
-
 #include <kf/Option.hpp>
 #include <kf/Range.hpp>
-#include <kf/aliases.hpp>
-#include <kf/math/units.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
 
@@ -45,41 +42,41 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
         }
     };
 
-    explicit constexpr PeerFavoritesRegistry(kf::memory::Slice<kf::Option<Entry>> entries) noexcept : _entries{entries} {}
+    explicit constexpr PeerFavoritesRegistry(kf::Slice<kf::TrivialOption<Entry>> entries) noexcept : _entries{entries} {}
 
     /// @brief Return the entire slot array, including empty slots.
-    [[nodiscard]] kf::memory::Slice<const kf::Option<Entry>> all() const noexcept {
+    [[nodiscard]] kf::Slice<const kf::TrivialOption<Entry>> all() const noexcept {
         return {_entries.data(), _active_count};
     }
 
     /// @brief Obtain a const pointer to an entry by address.
     /// @param address Peer address to search for.
-    [[nodiscard]] const kf::Option<Entry> &get(const transport::PeerAddress &address) const noexcept {
-        static constexpr kf::Option<Entry> none{};
-
-        if (const auto index = indexOf(address); index.hasValue()) {
-            if (const auto &option = _entries[index.value()]; option.hasValue()) { return option; }
+    [[nodiscard]] auto get(const transport::PeerAddress &address) const noexcept -> kf::Option<const Entry &> {
+        if (const auto index = indexOf(address); index.isSome()) {
+            if (const auto &option = _entries[index.unwrap()]; option.isSome()) {
+                return kf::someRef(option.unwrap());
+            }
         }
 
-        return none;
+        return kf::none;
     }
 
     /// @brief Check exists to an entry by address
     [[nodiscard]] bool exists(const transport::PeerAddress &address) const noexcept {
-        return indexOf(address).hasValue();
+        return indexOf(address).isSome();
     }
 
     /// @brief Update already existed or Add a new entry
     /// @return true, or false if the list is full.
     [[nodiscard]] bool put(const Entry &entry_to_add) noexcept {
-        if (auto index = indexOf(entry_to_add.address); index.hasValue()) {
-            _entries[index.value()].value(entry_to_add);
+        if (auto index = indexOf(entry_to_add.address); index.isSome()) {
+            _entries[index.unwrap()] = kf::someTrivial(entry_to_add);
             return true;
         }
 
         const bool can_add = (_active_count < _entries.size());
         if (can_add) {
-            _entries[_active_count].value(entry_to_add);
+            _entries[_active_count] = kf::someTrivial(entry_to_add);
             _active_count += 1;
         }
 
@@ -93,10 +90,10 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
         const auto index = indexOf(address);
         const auto last_index = _active_count - 1u;
 
-        if (not index.hasValue()) { return false; }
+        if (index.isNone()) { return false; }
 
-        if (index.value() != last_index) {
-            _entries[index.value()] = std::move(_entries[last_index]);
+        if (index.unwrap() != last_index) {
+            _entries[index.unwrap()] = _entries[last_index];
         }
 
         _entries[last_index] = {};
@@ -106,7 +103,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
     }
 
 private:
-    kf::memory::Slice<kf::Option<Entry>> _entries;
+    kf::Slice<kf::TrivialOption<Entry>> _entries;
     kf::usize _active_count{0};
 
     /// @brief Find the index of an entry by address.
@@ -115,11 +112,11 @@ private:
     [[nodiscard]] kf::Option<kf::usize> indexOf(const transport::PeerAddress &address) const noexcept {
         for (auto index = 0u; index < _entries.size(); index += 1) {
             const auto &item = _entries[index];
-            if (item.hasValue() and item.value().address == address) {
-                return {index};
+            if (item.isSome() and item.unwrap().address == address) {
+                return kf::some(index);
             }
         }
-        return {};
+        return kf::none;
     }
 
     // impl
@@ -127,7 +124,7 @@ private:
     void initImpl() noexcept {
         _active_count = 0;
         for (const auto &entry: _entries) {
-            _active_count += static_cast<kf::usize>(entry.hasValue());
+            _active_count += static_cast<kf::usize>(entry.isSome());
         }
     }
 };

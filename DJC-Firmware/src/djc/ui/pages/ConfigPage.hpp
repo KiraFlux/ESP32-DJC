@@ -4,7 +4,7 @@
 #pragma once
 
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
 
 #include "djc/Config.hpp"
@@ -14,68 +14,83 @@
 #include "djc/transport/Kind.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/PeerFavoritePage.hpp"
-#include "djc/ui/widgets/PeerDisplay.hpp"
-#include "djc/ui/widgets/TextInput.hpp"
 
 namespace djc::ui::pages {
 
 struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
     explicit ConfigPage(
+        UI &ui,
         UI::Page &root,
         djc::ConfigManager &config_manager,
         PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
-        Page{"Config"},
+        Page{ui, "Config"},
         _config_manager{config_manager},
+        _peer_favorite_page{ui, *this, _peer_favoriter_registry},
         _peer_favoriter_registry{peer_favoriter_registry},
+        _device_name_input{ui.createTextInput()},
         _layout{{
             &root.link(),
+            &_save_config_button,
+            &_load_config_button,
+            &_reset_config_button,
             &_device_name_input,
             &_labeled_autoconnect_enabled_input,
             &_labeled_default_transport_kind_selector,
             &_labeled_default_protocol_mode_selector,
-            &_save_config_button,
-            &_load_config_button,
-            &_reset_config_button,
             &_favorite_peers_fold_toggle_button,
         }} {
         widgets(layout(0));
 
         _device_name_input.source({_config_manager.config().device_name.data(), _config_manager.config().device_name.size()});
+        _device_name_input.hint("Device name");
 
         _save_config_button.callback([this]() { _config_manager.save(); });
+        _save_config_button.hint("Write config from RAM into NVS");
 
         _load_config_button.callback([this]() {
             _config_manager.load();
             this->init();
         });
+        _load_config_button.hint("Load config from NVS into RAM");
 
         _reset_config_button.callback([this]() {
             _config_manager.reset();
             this->init();
         });
+        _reset_config_button.hint("Set RAM config as detaults");
 
         _favorite_peers_fold_toggle_button.callback([this]() {
             show_favorites = not show_favorites;
             this->onEntry();
-            UI::instance().addEvent(UI::Event::update());
+            update();
         });
+        _favorite_peers_fold_toggle_button.hint("Toggle folding");
+
+        _default_transport_kind_selector.callback([this](transport::Kind kind) {
+            _config_manager.config().init_transport_kind = kind;
+        });
+        _labeled_default_transport_kind_selector.hint("Define transport select after init");
 
         _default_protocol_mode_selector.callback([this](Mode mode) {
             _config_manager.config().init_protocol_mode = mode;
         });
+        _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
 
         _autoconnect_enabled_input.callback([this](bool value) {
             _config_manager.config().auto_connect_service.enabled = value;
         });
+        _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
-            _layout[layout_regular_widgets + i] = &_peer_favorite_displays[i];
+            auto &display = _peer_favorite_displays[i];
+            _layout[layout_regular_widgets + i] = &display;
 
-            _peer_favorite_displays[i].callback([this](const transport::PeerAddress &address) -> void {
+            display.callback([this](const transport::PeerAddress &address) -> void {
                 _peer_favorite_page.bindPeer(address);
-                UI::instance().bindPage(_peer_favorite_page);
+                _ui.activePage(_peer_favorite_page);
             });
+            display.hint("Open peer config");
         }
     }
 
@@ -84,20 +99,21 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
 
         (void) _label_favorites_buffer.format(
             "[%c] Peer Favorites (%d/%d)",
-            ((show_favorites) ? 'V' : '>'),
+            (show_favorites ? 'V' : '>'),
             all_favorites.size(),
             Config::max_peer_favorites);
         _favorite_peers_fold_toggle_button.label(_label_favorites_buffer.view());
+        _favorite_peers_fold_toggle_button.background(show_favorites ? UI::Color::Secondary : UI::Color::Primary);
 
         if (show_favorites) {
             for (auto i = 0u; i < all_favorites.size(); i += 1) {
                 const auto &favorite = all_favorites[i];
-                if (favorite.hasValue()) {
-                    _peer_favorite_displays[i].state({widgets::PeerDisplay::State{
-                        .address = favorite.value().address,
-                        .name = {{favorite.value().name.data(), favorite.value().name.size()}},
-                        .label_color = widgets::PeerDisplay::Color::Normal,
-                    }});
+                if (favorite.isSome()) {
+                    _peer_favorite_displays[i].state(kf::some(UI::PeerDisplay::State{
+                        .address = favorite.unwrap().address,
+                        .name = kf::some(kf::memory::StringView{favorite.unwrap().name.data(), favorite.unwrap().name.size()}),
+                    }));
+                    _peer_favorite_displays[i].foreground(UI::Color::Primary);
                 }
             }
         }
@@ -117,34 +133,61 @@ private:
 
     djc::ConfigManager &_config_manager;
     PeerFavoritesRegistry &_peer_favoriter_registry;
-    kf::memory::ArrayString<32> _label_favorites_buffer{};
+    kf::memory::StaticString<32> _label_favorites_buffer{};
     bool show_favorites{true};
 
     // widgets
 
-    kf::memory::Array<TransportKindSelector::Item, 1> _transport_kind_options{{
-        {"EspNow", transport::Kind::EspNow},
+    kf::memory::Array<TransportKindSelector::Config::Item, 1> _transport_kind_options{{
+        {
+            "EspNow",
+            transport::Kind::EspNow,
+            UI::Style{
+                .foreground_color = UI::Color::Highlight,
+            },
+        },
     }};
 
     TransportKindSelector::Config _transport_kind_config{
         .items = {_transport_kind_options.data(), _transport_kind_options.size()},
     };
 
-    kf::memory::Array<ProtocolModeSelector::Item, 2> _control_mode_options{{
-        {"Mavlink", Mode::Mavlink},
-        {"Raw", Mode::Raw},
+    kf::memory::Array<ProtocolModeSelector::Config::Item, 2> _control_mode_options{{
+        {
+            "Mavlink",
+            Mode::Mavlink,
+            UI::Style{
+                .foreground_color = UI::Color::Highlight,
+            },
+        },
+        {
+            "Raw",
+            Mode::Raw,
+        },
     }};
 
     ProtocolModeSelector::Config _control_mode_config{
         .items = {_control_mode_options.data(), _control_mode_options.size()},
     };
 
-    widgets::TextInput _device_name_input{};
+    UI::TextInput _device_name_input;
 
     UI::Button
-        _save_config_button{"Save"},
-        _load_config_button{"Load"},
-        _reset_config_button{"Reset (RAM cache)"},
+        _save_config_button{
+            "Save",
+            UI::Style{
+                .foreground_color = UI::Color::Primary,
+            },
+        },
+        _load_config_button{
+            "Load",
+        },
+        _reset_config_button{
+            "Reset",
+            UI::Style{
+                .foreground_color = UI::Color::Danger,
+            },
+        },
         _favorite_peers_fold_toggle_button{{}};
 
     TransportKindSelector _default_transport_kind_selector{_transport_kind_config};
@@ -153,7 +196,7 @@ private:
     ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};
     UI::Labeled _labeled_default_protocol_mode_selector{"Init Protocol", _default_protocol_mode_selector};
 
-    kf::memory::Array<widgets::PeerDisplay, Config::max_peer_favorites> _peer_favorite_displays{};
+    kf::memory::Array<UI::PeerDisplay, Config::max_peer_favorites> _peer_favorite_displays{};
 
     UI::CheckBox _autoconnect_enabled_input{false};
     UI::Labeled _labeled_autoconnect_enabled_input{"Autoconnect", _autoconnect_enabled_input};
@@ -164,18 +207,19 @@ private:
 
     // child pages
 
-    PeerFavoritePage _peer_favorite_page{*this, _peer_favoriter_registry};
+    PeerFavoritePage _peer_favorite_page;
 
-    kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
-        return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);
+    kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
+        return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);
     }
 
     // impl
     KF_IMPL_INITABLE(ConfigPage, void);
     void initImpl() noexcept {
-        // _default_protocol_mode_selector.value(storage.config().init_protocol_mode); // todo: Combobox::value(T)
-        // _default_transport_kind_selector.value(storage.config().init_transport_kind); // todo: Combobox::value(T)
-        _autoconnect_enabled_input.value(_config_manager.config().auto_connect_service.enabled);
+        const auto &config = _config_manager.config();
+        _default_protocol_mode_selector.value(config.init_protocol_mode);
+        _default_transport_kind_selector.value(config.init_transport_kind);
+        _autoconnect_enabled_input.value(config.auto_connect_service.enabled);
     }
 };
 

@@ -6,6 +6,8 @@
 #include <utility>
 
 #include <kf/Function.hpp>
+#include <kf/NoneType.hpp>
+#include <kf/Option.hpp>
 #include <kf/input/JoystickListener.hpp>
 #include <kf/math/units.hpp>
 
@@ -20,15 +22,19 @@ struct InputHandler final : Service<InputHandler> {
     using ClickCallback = kf::Function<void()>;
     using DirectionCallback = kf::Function<void(JoystickListener::Direction)>;
 
-    struct Config final : kf::mixin::NonCopyable {
+    struct Config final {
         JoystickListener::Config joystick_listener;
 
         static constexpr Config defaults() noexcept {
             return Config{
                 .joystick_listener = JoystickListener::Config{
+                    .repeat_timer = {
+                        .period = 100,// ms
+                    },
+                    .delay_timer = {
+                        .period = 400,// ms
+                    },
                     .threshold = 0.6f,
-                    .repeat_timeout = 100,// ms
-                    .delay = 400,         // ms
                 },
             };
         }
@@ -43,37 +49,52 @@ struct InputHandler final : Service<InputHandler> {
         _left_button_listener{left_button_listener},
         _right_button_listener{right_button_listener} {}
 
-    void onRightButton(ClickCallback &&callback) noexcept { _right_click_callback = std::move(callback); }
+    template<typename F> void onRightButton(F &&callback) noexcept {
+        _right_click_callback = kf::some(ClickCallback{std::forward<F>(callback)});
+    }
 
-    void onLeftButton(ClickCallback &&callback) noexcept { _left_click_callback = std::move(callback); }
+    void onRightButton(kf::NoneType) {
+        _right_click_callback.reset();
+    }
 
-    void onDirection(DirectionCallback &&callback) noexcept { _direction_callback = std::move(callback); }
+    template<typename F> void onLeftButton(F &&callback) noexcept {
+        _left_click_callback = kf::some(ClickCallback{std::forward<F>(callback)});
+    }
+
+    void onLeftButton(kf::NoneType) {
+        _left_click_callback.reset();
+    }
+
+    template<typename F> void onDirection(F &&callback) noexcept {
+        _direction_callback = kf::some(DirectionCallback{std::forward<F>(callback)});
+    }
+
+    void onDirection(kf::NoneType) noexcept {
+        _direction_callback.reset();
+    }
 
 private:
     JoystickListener _joystick_listener;
-    DirectionCallback _direction_callback{};
+    ButtonListener &_left_button_listener, &_right_button_listener;
 
-    ButtonListener &_left_button_listener;
-    ClickCallback _left_click_callback{};
-
-    ButtonListener &_right_button_listener;
-    ClickCallback _right_click_callback{};
+    kf::Option<DirectionCallback> _direction_callback{kf::none};
+    kf::Option<ClickCallback> _left_click_callback{kf::none}, _right_click_callback{kf::none};
 
     KF_IMPL_TIMED_POLLABLE(InputHandler);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         _left_button_listener.poll(now);
-        if (_left_click_callback and _left_button_listener.clicked()) {
-            _left_click_callback();
+        if (_left_click_callback.isSome() and _left_button_listener.clicked()) {
+            _left_click_callback.unwrap()();
         }
 
         _right_button_listener.poll(now);
-        if (_right_click_callback and _right_button_listener.clicked()) {
-            _right_click_callback();
+        if (_right_click_callback.isSome() and _right_button_listener.clicked()) {
+            _right_click_callback.unwrap()();
         }
 
         _joystick_listener.poll(now);
-        if (_direction_callback and (_joystick_listener.direction() != JoystickListener::Direction::Home) and _joystick_listener.changed()) {
-            _direction_callback(_joystick_listener.direction());
+        if (_direction_callback.isSome() and (_joystick_listener.direction() != JoystickListener::Direction::Home) and _joystick_listener.changed()) {
+            _direction_callback.unwrap()(_joystick_listener.direction());
         }
     }
 };

@@ -5,9 +5,10 @@
 
 #include <kf/Logger.hpp>
 #include <kf/Option.hpp>
-#include <kf/memory/ArrayString.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
+#include <kf/network/MacAddress.hpp>
 #include <kf/network/EspNow.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
@@ -16,12 +17,12 @@
 namespace djc::transport {
 
 /// @brief ESP‑NOW transport implementation.
-/// @note Manages ESP‑NOW peer connections. Uses a broadcast peer for discovery and a dedicated active peer for communication.
+/// @note Manages ESP‑NOW peer connections. uses dedicated active peer for communication.
 struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
 
-    [[nodiscard]] bool send(kf::memory::Slice<const kf::u8> buffer) noexcept override {
-        if (_active_peer.hasValue()) {
-            return _active_peer.value().writeBuffer(buffer).isOk();
+    [[nodiscard]] bool send(kf::Slice<const kf::u8> buffer) noexcept override {
+        if (_active_peer.isSome()) {
+            return _active_peer.unwrap().writeBuffer(buffer).isOk();
         } else {
             return false;
         }
@@ -29,12 +30,9 @@ struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
 
 private:
     using EspNow = kf::network::EspNow;
-    using LogString = kf::memory::ArrayString<128>;
+    using LogString = kf::memory::StaticString<128>;
 
     static constexpr auto logger{kf::Logger::create("EspNowTransport")};
-
-    /// @brief MAC address used for ESP‑NOW broadcast.
-    static constexpr EspNow::Mac broadcast_mac_address{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 protected:
     /// @brief Establish a connection to a peer.
@@ -45,20 +43,7 @@ protected:
         if (address.kind() != Kind::EspNow) { return false; }
 
         _active_peer = addPeer(address.mac());
-        if (not _active_peer.hasValue()) { return false; }
-
-        const auto receive_setup_result = _active_peer.value().onReceive([this](kf::memory::Slice<const kf::u8> buffer) {
-            invokeReceive(buffer);
-        });
-
-        if (receive_setup_result.isError()) {
-            logger.error(
-                LogString::formatted(
-                    "Receive callback attachment failed: %s",
-                    EspNow::stringFromError(receive_setup_result.error()))
-                    .view());
-            return false;
-        }
+        if (_active_peer.isNone()) { return false; }
 
         logger.info("Connected: OK");
         return true;
@@ -72,56 +57,42 @@ protected:
             return;
         }
 
-        auto &peer = _active_peer.value();
+        auto &peer = _active_peer.unwrap();
         if (not peer.exist()) {
             logger.error("Disconnect failed: Peer not exit");
             return;
         }
 
-        delPeer(peer);
-
-        _active_peer = {};
+        _active_peer.reset();
         logger.info("Disconnected: OK");
     }
 
 private:
-    kf::Option<EspNow::Peer>
-        _broadcast_peer{},///< Broadcast peer for discovery.
-        _active_peer{};   ///< Currently connected peer
+    kf::Option<EspNow::Peer> _active_peer{};
 
-    static kf::Option<EspNow::Peer> addPeer(const EspNow::Mac &mac) noexcept {
-        auto peer_result = EspNow::Peer::add(mac);
-        if (peer_result.isError()) {
-            logger.error(
-                LogString::formatted(
-                    "Failed to add peer [%s] :%s",
-                    EspNow::stringFromMac(mac).data(),
-                    EspNow::stringFromError(peer_result.error()))
-                    .view());
-            return {};
+    static auto addPeer(const kf::network::MacAddress &mac) noexcept -> kf::Option<EspNow::Peer> {
+        auto peer_result = EspNow::Peer::create(EspNow::Peer::Config{
+            .mac_address = mac,
+            .wifi_interface_sta = true,
+        });
+
+        if (peer_result.isOk()) {
+            logger.info(LogString::formatted("Peer '%s' added", mac.toString().data()).view());
+            return kf::some(std::move(peer_result.ok()));
+        } else {
+            logger.error(LogString::formatted("Failed to add peer [%s] :%s", mac.toString().data(), peer_result.error().toString().data()).view());
+            return kf::none;
         }
-
-        logger.info(LogString::formatted("Peer '%s' added", EspNow::stringFromMac(mac).data()).view());
-        return {std::move(peer_result.value())};
     }
 
     static void delPeer(EspNow::Peer &peer) noexcept {
         const auto result = peer.del();
         if (result.isError()) {
-            logger.error(
-                LogString::formatted(
-                    "Failed to delete peer [%s] : %s",
-                    EspNow::stringFromMac(peer.mac()).data(),
-                    EspNow::stringFromError(result.error()))
-                    .view());
-            return;
+            logger.error(LogString::formatted("Failed to delete peer [%s] : %s", peer.mac().toString().data(), result.error().toString().data()).view());
         }
     }
 
-    // impl
-    using This = EspNowTransport;
-
-    KF_IMPL_INITABLE(This, bool);
+    KF_IMPL_INITABLE(EspNowTransport, bool);
     bool initImpl() noexcept {
         logger.info("init");
 
@@ -129,15 +100,17 @@ private:
 
         const auto result = espnow.init();
         if (result.isError()) {
-            logger.error(LogString::formatted("Failed to initialize ESP-NOW: %s", EspNow::stringFromError(result.error())));
+            logger.error(LogString::formatted("Failed to initialize ESP-NOW: %s", result.error().toString().data()));
             return false;
         }
 
-        espnow.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::memory::Slice<const kf::u8> buffer){
-            invokeReceiveForeign(PeerAddress::fromEspnowMac(mac), buffer);    
+        espnow.callback([this](const kf::network::MacAddress &mac, kf::Slice<const kf::u8> buffer) {
+            if (_active_peer.isSome() and _active_peer.unwrap().mac() == mac) {
+                invokeReceive(buffer);
+            } else {
+                invokeReceiveForeign(PeerAddress::fromEspnowMac(mac), buffer);
+            }
         });
-
-        _broadcast_peer = addPeer(broadcast_mac_address);
 
         logger.debug("init: ok");
         return true;

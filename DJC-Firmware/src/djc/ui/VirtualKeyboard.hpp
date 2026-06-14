@@ -3,19 +3,16 @@
 
 #pragma once
 
+#include <kf/Slice.hpp>
 #include <kf/algorithm.hpp>
-#include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/Slice.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/NonCopyable.hpp>
-#include <kf/mixin/Singleton.hpp>
+#include <kf/primitives.hpp>
 
-namespace djc::input {
+namespace djc::internal {
 
-namespace internal {
-
-struct Key {
+struct Key : kf::mixin::NonCopyable {
 
     enum class Kind : kf::u8 {
         Common,
@@ -35,11 +32,17 @@ struct Key {
     constexpr char value(bool shifted = false) const noexcept {
         return shifted ? shift_value : normal_value;
     }
+
+    constexpr bool isCommon() const noexcept {
+        return kind == Kind::Common;
+    }
 };
 
-}// namespace internal
+}// namespace djc::internal
 
-struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
+namespace djc::ui {
+
+struct VirtualKeyboard final : kf::mixin::NonCopyable {
 
     enum class State : kf::u8 {
         Normal,
@@ -116,7 +119,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {Key::Kind::Space, ' '},
     }};
 
-    static constexpr kf::memory::Array<kf::memory::Slice<const Key>, 5> rows{{
+    static constexpr kf::memory::Array<kf::Slice<const Key>, 5> rows{{
         {row_0.data(), row_0.size()},
         {row_1.data(), row_1.size()},
         {row_2.data(), row_2.size()},
@@ -150,11 +153,11 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         }
     }
 
-    void begin(kf::memory::Slice<char> text_source) noexcept {
+    void begin(kf::Slice<char> text_source) noexcept {
         _active = true;
 
         _text_source = text_source;
-        _text_cursor = text().find('\0').value();
+        _text_cursor = text().find('\0').unwrapOr(0);
     }
 
     void quit() noexcept {
@@ -201,7 +204,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
     }
 
 private:
-    kf::memory::Slice<char> _text_source{};
+    kf::Slice<char> _text_source{};
     kf::isize _text_cursor{};
     kf::i8 _cursor_row{0}, _cursor_row_index{0};
     bool _active{false};
@@ -220,4 +223,4 @@ private:
     }
 };
 
-}// namespace djc::input
+}// namespace djc::ui

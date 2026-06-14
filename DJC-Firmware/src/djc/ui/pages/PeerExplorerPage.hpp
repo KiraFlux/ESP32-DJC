@@ -3,11 +3,11 @@
 
 #pragma once
 
+#include <kf/Slice.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/memory/StaticString.hpp>
 
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/service/PeerScanningService.hpp"
@@ -15,33 +15,38 @@
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/PeerDetailPage.hpp"
-#include "djc/ui/widgets/PeerDisplay.hpp"
 
 namespace djc::ui::pages {
 
 struct PeerExplorerPage : UI::Page {
 
     explicit PeerExplorerPage(
+        UI &ui,
         UI::Page &root,
         transport::TransportLink &transport_link,
         service::PeerScanningService &peer_scanner,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
-        Page{"Peer Explorer"},
+        Page{ui, "Peer Explorer"},
         _transport_link{transport_link},
         _peer_scanner{peer_scanner},
         _peer_favorites_registry{peer_favorites_registry},
+        _peer_detail_page{ui, *this, _transport_link, _peer_favorites_registry},
         _layout{{
             &root.link(),
             &_primary_connection_status_button,
             &_available_label,
         }} {
-        for (auto i = 0u; i < _peer_displays.size(); i += 1) {
-            _peer_displays[i].callback([this](const transport::PeerAddress &address) -> void {
-                _peer_detail_page.bindPeer(address);
-                UI::instance().bindPage(_peer_detail_page);
-            });
+        _available_label.hint("Available peer will show below");
 
-            _layout[i + peer_display_start_index] = &_peer_displays[i];
+        for (auto i = 0u; i < _peer_displays.size(); i += 1) {
+            auto &display = _peer_displays[i];
+            _layout[i + peer_display_start_index] = &display;
+
+            display.callback([this](const transport::PeerAddress &address) -> void {
+                _peer_detail_page.bindPeer(address);
+                _ui.activePage(_peer_detail_page);
+            });
+            display.hint("Click for details");
         }
 
         _primary_connection_status_button.callback([this]() {
@@ -55,17 +60,19 @@ struct PeerExplorerPage : UI::Page {
         _redraw_timer.start(0);// enable timer
     }
 
-    void onUpdate(kf::math::Milliseconds now) noexcept override {
+    void onPoll(kf::math::Milliseconds now) noexcept override {
         if (not _redraw_timer.expired(now)) { return; }
         _redraw_timer.start(now);
 
-        if (_transport_link.activePeerAddress().hasValue()) {
-            (void) _connection_button_buffer.format("\xFC%s\x80", _transport_link.activePeerAddress().value().toString().data());
+        if (_transport_link.activePeerAddress().isSome()) {
+            (void) _connection_button_buffer.format("%s", _transport_link.activePeerAddress().unwrap().toString().data());
             _primary_connection_status_button.label(_connection_button_buffer.view());
+            _primary_connection_status_button.style({UI::Color::Normal, UI::Color::Success});
+            _primary_connection_status_button.hint("Click to disconnect");
         } else {
-            _primary_connection_status_button.label(
-                "\xF9"
-                "Disconnected\x80");
+            _primary_connection_status_button.label("Disconnected");
+            _primary_connection_status_button.style({UI::Color::Disabled, UI::Color::Normal});
+            _primary_connection_status_button.hint("Primary peer not set");
         }
 
         const auto available_peers = _peer_scanner.peers();
@@ -73,11 +80,20 @@ struct PeerExplorerPage : UI::Page {
         _available_label.value(_available_label_buffer.view());
 
         for (auto i = 0u; i < available_peers.size(); i += 1) {
-            _peer_displays[i].state(createPeerDisplayState(available_peers[i], now));
+            const auto &entry = available_peers[i];
+            _peer_displays[i].state(createPeerDisplayState(entry, now));
+
+            if (entry.isSome()) {
+                constexpr auto extreme_age_factor{0.75f};
+                const auto extreme_age = _peer_scanner.config().entry_max_life_time * extreme_age_factor;
+                const auto age = now - entry.unwrap().last_seen;
+
+                _peer_displays[i].foreground((age < extreme_age) ? UI::Color::Primary : UI::Color::Warning);
+            }
         }
 
         widgets(layout(available_peers.size()));
-        UI::instance().addEvent(UI::Event::update());
+        update();
     }
 
 private:
@@ -86,46 +102,45 @@ private:
     transport::TransportLink &_transport_link;
     service::PeerScanningService &_peer_scanner;
     PeerFavoritesRegistry &_peer_favorites_registry;
-    kf::math::Timer _redraw_timer{static_cast<kf::math::Milliseconds>(500)};
+    kf::math::Timer::Config _redraw_timer_config{
+        .period = 500,
+    };
+    kf::math::Timer _redraw_timer{_redraw_timer_config};
 
-    kf::memory::ArrayString<64> _available_label_buffer{}, _connection_button_buffer{};
+    kf::memory::StaticString<64> _available_label_buffer{}, _connection_button_buffer{};
 
     UI::Button _primary_connection_status_button{{}};
     UI::Display<kf::memory::StringView> _available_label{_available_label_buffer.view()};
-    kf::memory::Array<widgets::PeerDisplay, service::PeerScanningService::max_entries> _peer_displays{};
+    kf::memory::Array<UI::PeerDisplay, service::PeerScanningService::max_entries> _peer_displays{};
 
     kf::memory::Array<UI::Widget *, (peer_display_start_index + service::PeerScanningService::max_entries)> _layout;
 
     // child pages
-    PeerDetailPage _peer_detail_page{*this, _transport_link, _peer_favorites_registry};
+    PeerDetailPage _peer_detail_page;
 
-    kf::memory::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
-        return kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
+    kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
+        return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
     }
 
-    kf::Option<widgets::PeerDisplay::State> createPeerDisplayState(const kf::Option<service::PeerScanningService::Entry> &entry, kf::math::Milliseconds now) const noexcept {
-        using P = widgets::PeerDisplay;
-        constexpr auto extreme_age_factor{0.75f};
+    kf::Option<UI::PeerDisplay::State> createPeerDisplayState(const kf::TrivialOption<service::PeerScanningService::Entry> &entry, kf::math::Milliseconds now) const noexcept {
+        using P = UI::PeerDisplay;
 
-        const auto map_record = [](const kf::Option<PeerFavoritesRegistry::Entry> &record) -> kf::Option<kf::memory::StringView> {
-            if (record.hasValue()) {
-                const auto &name = record.value().name;
-                return {{name.data(), name.size()}};
+        const auto map_record = [](kf::Option<const PeerFavoritesRegistry::Entry &> record) -> kf::Option<kf::memory::StringView> {
+            if (record.isSome()) {
+                const auto &name = record.unwrap().name;
+                return kf::some(kf::memory::StringView{name.data(), name.size()});
             } else {
-                return {};
+                return kf::none;
             }
         };
 
-        if (entry.hasValue()) {
-            const auto age = now - entry.value().last_seen;
-            const auto extreme_age = _peer_scanner.config().entry_max_life_time * extreme_age_factor;
-            return {P::State{
-                .address = entry.value().address,
-                .name = map_record(_peer_favorites_registry.get(entry.value().address)),
-                .label_color = (age < extreme_age) ? P::Color::Normal : P::Color::Warn,
-            }};
+        if (entry.isSome()) {
+            return kf::some(P::State{
+                .address = entry.unwrap().address,
+                .name = map_record(_peer_favorites_registry.get(entry.unwrap().address)),
+            });
         } else {
-            return {};
+            return kf::none;
         }
     }
 };

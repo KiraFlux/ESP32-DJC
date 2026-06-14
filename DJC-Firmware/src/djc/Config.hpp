@@ -5,8 +5,8 @@
 
 // lib
 #include <kf/Option.hpp>
-#include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/Periphery.hpp"
@@ -24,13 +24,14 @@
 #include "djc/service/AutoConnectService.hpp"
 #include "djc/service/InputHandler.hpp"
 #include "djc/service/PeerScanningService.hpp"
+#include "djc/ui/UI.hpp"
 
 namespace djc {
 
 /// @brief Persistent configuration structure stored in NVS.
 struct Config {
     static constexpr auto
-        latest_version{9u},
+        latest_version{10u},
         max_peer_favorites{8u};
 
     kf::u16 version;
@@ -39,7 +40,7 @@ struct Config {
     protocol::ProtocolRegistry::Mode init_protocol_mode;
     transport::Kind init_transport_kind;
     kf::memory::Array<char, 16> device_name;
-    kf::memory::Array<kf::Option<PeerFavoritesRegistry::Entry>, max_peer_favorites> peer_favorites;
+    kf::memory::Array<kf::TrivialOption<PeerFavoritesRegistry::Entry>, max_peer_favorites> peer_favorites;
 
     // periphery
     Periphery::Config periphery;
@@ -55,8 +56,11 @@ struct Config {
     service::InputHandler::Config input_handler;
     service::PeerScanningService::Config peer_scanner;
     service::AutoConnectService::Config auto_connect_service;
+    ui::UI::Traits::RenderImpl::Config render_system;
 
-    [[nodiscard]] bool isLatestVersion() const noexcept { return version == latest_version; }
+    [[nodiscard]] bool isLatestVersion() const noexcept {
+        return version == latest_version;
+    }
 
     static constexpr Config defaults() noexcept {
         return Config{
@@ -77,6 +81,7 @@ struct Config {
             .input_handler = service::InputHandler::Config::defaults(),
             .peer_scanner = service::PeerScanningService::Config::defaults(),
             .auto_connect_service = service::AutoConnectService::Config::defaults(),
+            .render_system = ui::UI::Traits::RenderImpl::Config::defaults(),
         };
     }
 };

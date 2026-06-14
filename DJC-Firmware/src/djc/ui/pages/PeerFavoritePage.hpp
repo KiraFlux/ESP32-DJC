@@ -4,21 +4,22 @@
 #pragma once
 
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
-#include "djc/ui/widgets/TextInput.hpp"
 
 namespace djc::ui::pages {
 
 struct PeerFavoritePage final : UI::Page {
 
-    explicit PeerFavoritePage(UI::Page &root, PeerFavoritesRegistry &peer_favorites_registry) noexcept :
-        Page{{}},
+    explicit PeerFavoritePage(UI &ui, UI::Page &root, PeerFavoritesRegistry &peer_favorites_registry) noexcept :
+        Page{ui, {}},
+        _root{root},
         _peer_favorites_registry{peer_favorites_registry},
+        _description_input{ui.createTextInput()},
         _layout{{
             // address and transport shows in title
             &_labeled_trust_input,
@@ -29,46 +30,58 @@ struct PeerFavoritePage final : UI::Page {
         }}
 
     {
+        _labeled_trust_input.hint("Set priority for auto connect");
+        _labeled_description_input.hint("Will shown as human-readable alias");
+
         _confirm_button.callback([this]() -> void {
-            if (not _temp_entry.hasValue()) { return; }
-            _temp_entry.value().trust = _trust_input.value();
+            if (_temp_entry.isNone()) { return; }
+            _temp_entry.unwrap().trust = _trust_input.value();
 
-            const auto result = _peer_favorites_registry.put(_temp_entry.value());
-            _confirm_button.label(result ? "Writed" : "Write failed");
+            const bool write_ok = _peer_favorites_registry.put(_temp_entry.unwrap());
+            _confirm_button.label(write_ok ? "Writed" : "Write failed");
+            _confirm_button.style(UI::Style{
+                .foreground_color = UI::Color::Normal,
+                .background_color = (write_ok ? UI::Color::Success : UI::Color::Error),
+            });
 
-            UI::instance().addEvent(UI::Event::update());
+            update();
         });
+        _confirm_button.hint("Write to registry");
 
-        _delete_button.callback([this, &root]() -> void {
-            if (not _temp_entry.hasValue()) { return; }
+        _delete_button.callback([this]() -> void {
+            if (_temp_entry.isNone()) { return; }
 
-            (void) _peer_favorites_registry.remove(_temp_entry.value().address);
+            (void) _peer_favorites_registry.remove(_temp_entry.unwrap().address);
 
-            UI::instance().bindPage(root);
-            UI::instance().addEvent(UI::Event::update());
+            _ui.activePage(_root);
+            update();
         });
+        _delete_button.hint("Remove from registry");
+        _delete_button.background(UI::Color::Danger);
     }
 
     void bindPeer(const transport::PeerAddress &address) noexcept {
         const auto &entry_option = _peer_favorites_registry.get(address);
 
-        _temp_entry.value(entry_option.valueOr(PeerFavoritesRegistry::Entry::create(address)));
+        _temp_entry = kf::someTrivial(entry_option.unwrapOr(PeerFavoritesRegistry::Entry::create(address)));
 
-        (void) _label_buffer.format("%s Peer favorite\n%s", (entry_option.hasValue() ? "Edit" : "Add"), address.toString().data());
+        (void) _label_buffer.format("%s Peer favorite\n%s", (entry_option.isSome() ? "Edit" : "Add"), address.toString().data());
         this->label(_label_buffer.view());
 
-        _description_input.source({_temp_entry.value().name.data(), _temp_entry.value().name.size()});
-        _trust_input.value(_temp_entry.value().trust);
+        _description_input.source({_temp_entry.unwrap().name.data(), _temp_entry.unwrap().name.size()});
+        _trust_input.value(_temp_entry.unwrap().trust);
         _confirm_button.label("Confirm");
+        _confirm_button.style({UI::Color::Primary, UI::Color::Normal});
 
-        widgets(kf::memory::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(_layout.size() - (entry_option.hasValue() ? 0 : 1)));
+        widgets(kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(_layout.size() - (entry_option.isSome() ? 0 : 1)));
     }
 
 private:
+    UI::Page &_root;
     PeerFavoritesRegistry &_peer_favorites_registry;
-    kf::Option<PeerFavoritesRegistry::Entry> _temp_entry{};
+    kf::TrivialOption<PeerFavoritesRegistry::Entry> _temp_entry{};
 
-    kf::memory::ArrayString<64> _label_buffer{};
+    kf::memory::StaticString<64> _label_buffer{};
 
     using TrustInput = UI::Slider<PeerFavoritesRegistry::Entry::TrustType>;
 
@@ -81,12 +94,11 @@ private:
     };
 
     TrustInput _trust_input{_trust_input_config};
-    widgets::TextInput _description_input{};
+    UI::TextInput _description_input;
 
     UI::Labeled _labeled_trust_input{"Trust", _trust_input};
     UI::Labeled _labeled_description_input{"Name", _description_input};
-    UI::Button _confirm_button{{}}, _delete_button{"\xF9"
-                                                   "Delete\x80"};
+    UI::Button _confirm_button{{}}, _delete_button{"Delete"};
     kf::memory::Array<UI::Widget *, 5> _layout;
 };
 

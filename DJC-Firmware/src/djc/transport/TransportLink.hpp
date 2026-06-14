@@ -13,22 +13,24 @@
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/Transport.hpp"
 
-namespace djc::transport {
-
-namespace internal {
+namespace djc::internal {
 
 /// @brief Configuration parameters for the Transport Link.
 struct TransportLinkConfig final : kf::mixin::NonCopyable {
-    kf::math::Milliseconds disconnect_timeout;
+    kf::math::Timer::Config disconnect_timer;
 
     [[nodiscard]] static constexpr TransportLinkConfig defaults() noexcept {
         return TransportLinkConfig{
-            .disconnect_timeout = 15'000,
+            .disconnect_timer = {
+                .period = 15'000,
+            },
         };
     }
 };
 
-}// namespace internal
+}// namespace djc::internal
+
+namespace djc::transport {
 
 /// @brief Connection manager for a single transport.
 /// @note Separates connection lifecycle and inactivity timeout from higher‑level logic.
@@ -48,97 +50,95 @@ struct TransportLink final :
     /// @note Ensures that changing the transport does not leave a stale connection open,
     ///       which would silently keep receiving data on the old transport.
     void transport(Transport &new_transport) noexcept {
-        if (nullptr != _transport and _transport->connected()) {
-            _transport->disconnect();
+        if (_transport.isSome() and _transport.unwrap().connected()) {
+            _transport.unwrap().disconnect();
         }
 
-        _transport = &new_transport;
+        _transport = kf::someRef(new_transport);
     }
 
     /// @brief Forward a data buffer to the underlying transport.
     /// @return true if the transport reported success, false on error or if no transport is set.
-    [[nodiscard]] bool send(kf::memory::Slice<const kf::u8> buffer) noexcept {
-        if (nullptr == _transport) {
+    [[nodiscard]] bool send(kf::Slice<const kf::u8> buffer) noexcept {
+        if (_transport.isNone()) {
             logger.error("send failed: no transport set");
             return false;
         }
 
-        return _transport->send(buffer);
+        return _transport.unwrap().send(buffer);
     }
 
     /// @brief Register a callback for incoming data.
     /// @note The callback is invoked for every received packet.
     ///       This method overwrites the transport‑level receive handler so that each incoming packet also resets the inactivity timer.
     void onReceive(Transport::ReceiveCallback &&callback) noexcept {
-        if (nullptr == _transport) {
+        if (_transport.isNone()) {
             logger.error("onReceive failed: no transport set");
             return;
         }
 
-        _receive_callback = std::move(callback);
+        _receive_callback = kf::some(std::move(callback));
 
-        _transport->onReceive([this](const PeerAddress &address, kf::memory::Slice<const kf::u8> buffer) {
-            if (_receive_callback) { _receive_callback(address, buffer); }
+        _transport.unwrap().onReceive([this](const PeerAddress &address, kf::Slice<const kf::u8> buffer) {
+            if (_receive_callback.isSome()) {
+                _receive_callback.unwrap()(address, buffer);
+            }
             _disconnect_timer_reset_required = true;
         });
     }
 
     /// @brief Register a callback for incoming data from other peers (non-primary)
     void onReceiveForeign(Transport::ReceiveCallback &&callback) noexcept {
-        if (nullptr == _transport) {
+        if (_transport.isNone()) {
             logger.error("onReceiveForeign failed: no transport set");
             return;
         }
 
-        _transport->onReceiveForeign(std::move(callback));
+        _transport.unwrap().onReceiveForeign(std::move(callback));
     }
 
     /// @brief Check whether the transport is currently connected.
-    [[nodiscard]] bool connected() const noexcept { return nullptr != _transport and _transport->connected(); }
+    [[nodiscard]] bool connected() const noexcept {
+        return _transport.isSome() and _transport.unwrap().connected();
+    }
 
     /// @brief Return the address of the active peer, if any.
     /// @return Reference to an empty option when no transport is set.
-    [[nodiscard]] const kf::Option<PeerAddress> &activePeerAddress() const noexcept {
-        return (nullptr == _transport) ? null_option : _transport->activePeerAddress();
+    [[nodiscard]] auto activePeerAddress() const noexcept -> kf::Option<const PeerAddress &> {
+        return _transport.isNone() ? kf::none : _transport.unwrap().activePeerAddress();
     }
 
     /// @brief Initiate a connection to a peer.
     [[nodiscard]] bool connect(const PeerAddress &address) noexcept {
-        if (nullptr == _transport) {
+        if (_transport.isNone()) {
             logger.error("connect failed: no transport set");
             return false;
         }
 
         _disconnect_timer_reset_required = true;
 
-        return _transport->connect(address);
+        return _transport.unwrap().connect(address);
     }
 
     /// @brief Disconnect from the current peer.
     void disconnect() noexcept {
-        if (nullptr == _transport) {
+        if (_transport.isNone()) {
             logger.error("disconnect failed: no transport set");
             return;
         }
 
-        _transport->disconnect();
+        _transport.unwrap().disconnect();
     }
 
 private:
-    /// @brief Empty address returned when no transport is active.
-    static constexpr kf::Option<PeerAddress> null_option{};
-
     static constexpr auto logger{kf::Logger::create("TransportLink")};
 
-    Transport *_transport{nullptr};                                      ///< Currently active transport (may be nullptr).
-    Transport::ReceiveCallback _receive_callback{};                      ///< User‑supplied callback for incoming data.
-    kf::math::Timer _disconnect_timer{this->config().disconnect_timeout};///< Inactivity timer.
-    volatile bool _disconnect_timer_reset_required{false};               ///< Flag: reset timer on next poll.
+    kf::Option<Transport &> _transport{kf::none};                      ///< Currently active transport (optional)
+    kf::Option<Transport::ReceiveCallback> _receive_callback{kf::none};///< User‑supplied callback for incoming data.
+    kf::math::Timer _disconnect_timer{this->config().disconnect_timer};///< Inactivity timer.
+    volatile bool _disconnect_timer_reset_required{false};             ///< Flag: reset timer on next poll.
 
-    // impl
-    using This = TransportLink;
-
-    KF_IMPL_TIMED_POLLABLE(This);
+    KF_IMPL_TIMED_POLLABLE(TransportLink);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         if (not connected()) { return; }
 

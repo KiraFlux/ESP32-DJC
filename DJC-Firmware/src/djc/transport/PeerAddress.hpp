@@ -3,10 +3,17 @@
 
 #pragma once
 
-#include <kf/memory/ArrayString.hpp>
-#include <kf/network/EspNow.hpp>
+#include <kf/memory/StaticString.hpp>
+#include <kf/mixin/StringRepresentable.hpp>
+#include <kf/network/MacAddress.hpp>
 
 #include "djc/transport/Kind.hpp"
+
+namespace djc::internal {
+
+using PeerAddressStringType = kf::memory::StaticString<32>;
+
+}
 
 namespace djc::transport {
 
@@ -14,13 +21,13 @@ namespace djc::transport {
 ///
 /// Holds either a MAC address (ESP‑NOW).
 /// The active kind is stored in a tag field; the union contains the actual address.
-struct PeerAddress {
+struct PeerAddress : kf::mixin::StringRepresentable<PeerAddress, internal::PeerAddressStringType> {
 
-    using ReprString = kf::memory::ArrayString<32>;
+    using StringType = internal::PeerAddressStringType;
 
     /// @brief create an ESP‑NOW peer address from a MAC.
     /// @param mac 6‑byte MAC address (EspNow::Mac).
-    static constexpr PeerAddress fromEspnowMac(const kf::network::EspNow::Mac &mac) noexcept {
+    static constexpr PeerAddress fromEspnowMac(const kf::network::MacAddress &mac) noexcept {
         PeerAddress ret{};
         ret._kind = Kind::EspNow,
         ret._mac = mac;
@@ -28,11 +35,15 @@ struct PeerAddress {
     }
 
     /// @brief Return the kind of transport this address belongs to.
-    [[nodiscard]] Kind kind() const noexcept { return _kind; }
+    [[nodiscard]] Kind kind() const noexcept {
+        return _kind;
+    }
 
     /// @brief Return the stored MAC address.
     /// @note available if kind() == Kind::EspNow.
-    [[nodiscard]] kf::network::EspNow::Mac mac() const noexcept { return _mac; }
+    [[nodiscard]] kf::network::MacAddress mac() const noexcept {
+        return _mac;
+    }
 
     /// @brief Equality comparison.
     /// @note Two addresses are equal if they have the same kind and the same underlying value.
@@ -49,25 +60,27 @@ struct PeerAddress {
     }
 
     /// @brief Inequality comparison (delegates to operator==).
-    [[nodiscard]] bool operator!=(const PeerAddress &other) const noexcept { return not this->operator==(other); }
-
-    /// @brief Get String Representation
-    [[nodiscard]] ReprString toString() const noexcept {
-        switch (_kind) {
-            case Kind::EspNow:
-                return ReprString::formatted("%s@EspNow", kf::network::EspNow::stringFromMac(_mac).data());
-
-            default:
-                return {};
-        }
+    [[nodiscard]] bool operator!=(const PeerAddress &other) const noexcept {
+        return not this->operator==(other);
     }
 
 private:
     Kind _kind;
 
     union {
-        kf::network::EspNow::Mac _mac;
+        kf::network::MacAddress _mac;
     };
+    
+    KF_IMPL_STRING_REPRESENTABLE(PeerAddress, StringType);
+    auto toStringImpl() const noexcept {
+        switch (_kind) {
+            case Kind::EspNow:
+                return StringType::formatted("%s@EspNow", _mac.toString().data());
+
+            default:
+                return StringType{};
+        }
+    }
 };
 
 }// namespace djc::transport

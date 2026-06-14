@@ -4,58 +4,54 @@
 #pragma once
 
 #include <kf/Option.hpp>
-#include <kf/memory/ArrayString.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/Callbacked.hpp>
+#include <kf/ui/Block.hpp>
+#include <kf/ui/Style.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
-#include "djc/ui/UI.hpp"
 
 namespace djc::ui::widgets {
 
-struct PeerDisplay final : UI::Widget, kf::mixin::Callbacked<const transport::PeerAddress &> {
+template<typename U> struct PeerDisplay :
 
-    enum class Color : char {
-        Normal = '\xFC',
-        Warn = '\xF9',
-    };
+    U::Widget,
+    kf::mixin::Callbacked<const transport::PeerAddress &>
 
+{
     struct State final {
         transport::PeerAddress address;
         kf::Option<kf::memory::StringView> name;
-        Color label_color;
 
         kf::memory::StringView displayName() const noexcept {
-            return name.hasValue() ? name.value().data() : address.toString().data();
+            return name.isSome() ? name.unwrap().data() : address.toString().data();
         }
     };
 
-    void state(const kf::Option<State> &new_state) noexcept { _state = new_state; }
+    explicit constexpr PeerDisplay(kf::Option<State> state = kf::none, kf::ui::Style style = kf::ui::Style::defaults()) noexcept :
+        U::Widget{style}, _state{state} {}
 
-    void doRender(UI::RenderImpl &render) const noexcept override {
-        render.beginAltBlock();
+    void state(const kf::Option<State> &new_state) noexcept {
+        _state = new_state;
+    }
 
-        if (_state.hasValue()) {
-            render.value(
-                kf::memory::ArrayString<64>::formatted(
-                    "%c%s\x80",
-                    static_cast<char>(_state.value().label_color),
-                    _state.value().displayName())
-                    .view());
+    void doRender(typename U::RenderImpl &render) const noexcept override {
+        render.beginBlock(kf::ui::Block::Alternative);
+        if (_state.isSome()) {
+            render.value(_state.unwrap().displayName());
         }
-
-        render.endAltBlock();
+        render.endBlock(kf::ui::Block::Alternative);
     }
 
     bool onClick() noexcept override {
-        if (_state.hasValue()) {
-            this->invoke(_state.value().address);
+        if (_state.isSome()) {
+            this->invoke(_state.unwrap().address);
         }
-        return _state.hasValue();
+        return _state.isSome();
     }
 
 private:
-    kf::Option<State> _state{};
+    kf::Option<State> _state;
 };
 
 }// namespace djc::ui::widgets

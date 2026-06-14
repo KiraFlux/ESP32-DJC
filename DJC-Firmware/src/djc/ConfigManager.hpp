@@ -13,13 +13,21 @@ namespace djc {
 
 struct ConfigManager final : kf::mixin::NonCopyable {
 
-    [[nodiscard]] constexpr const Config &config() const noexcept { return _storage.config; }
+    [[nodiscard]] constexpr const Config &config() const noexcept {
+        return _storage.config;
+    }
 
-    [[nodiscard]] Config &config() noexcept { return _storage.config; }
+    [[nodiscard]] Config &config() noexcept {
+        return _storage.config;
+    }
 
-    [[nodiscard]] bool modified() const noexcept { return _modified; }
+    [[nodiscard]] bool modified() const noexcept {
+        return _modified;
+    }
 
-    void modified(bool is_modified) noexcept { _modified = is_modified; }
+    void modified(bool is_modified) noexcept {
+        _modified = is_modified;
+    }
 
     void save() noexcept {
         logger.info("Saving config to NVS");

@@ -8,7 +8,7 @@
 #include <kf/Logger.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/memory/StringView.hpp>
 
 #include "djc/MavlinkTelemetryRegistry.hpp"
@@ -22,11 +22,12 @@ namespace djc::ui::pages {
 /// @brief MAVLink telemetry page
 struct MavlinkTelemetryPage : UI::Page {
     explicit MavlinkTelemetryPage(
+        UI &ui,
         UI::Page &root,
         protocol::ProtocolRegistry &protocol_registry,
         protocol::ProtocolLink &protocol_link,
         MavlinkTelemetryRegistry &mavlink_telemetry_registry) noexcept :
-        Page{"Mavlink: Telemetry"},
+        Page{ui, "Mavlink: Telemetry"},
         _protocol_registry{protocol_registry},
         _protocol_link{protocol_link},
         _mavlink_telemetry_registry{mavlink_telemetry_registry},
@@ -37,6 +38,9 @@ struct MavlinkTelemetryPage : UI::Page {
             &_attitude_display,
         }} {
         widgets({_layout.data(), _layout.size()});
+
+        _imu_display.hint("IMU accel vertor");
+        _attitude_display.hint("attitude quaternion");
     }
 
     void onEntry() noexcept override {
@@ -44,7 +48,7 @@ struct MavlinkTelemetryPage : UI::Page {
         _last_imu = _last_attitude = _last_serial_control = 0;
     }
 
-    void onUpdate(kf::math::Milliseconds now) noexcept override {
+    void onPoll(kf::math::Milliseconds now) noexcept override {
         bool need_update{false};
 
         if (_mavlink_telemetry_registry.scaled_imu.updatedSince(_last_imu)) {
@@ -84,7 +88,7 @@ struct MavlinkTelemetryPage : UI::Page {
         }
 
         if (need_update) {
-            UI::instance().addEvent(UI::Event::update());
+            update();
         }
     }
 
@@ -97,7 +101,7 @@ private:
     kf::math::Milliseconds _last_imu{}, _last_attitude{}, _last_serial_control{};
 
     // widgets
-    kf::memory::ArrayString<64> _attitude_buffer{"..."}, _imu_buffer{"..."};
+    kf::memory::StaticString<64> _attitude_buffer{"..."}, _imu_buffer{"..."};
 
     UI::Display<kf::memory::StringView> _attitude_display{_attitude_buffer.view()}, _imu_display{_imu_buffer.view()};
 

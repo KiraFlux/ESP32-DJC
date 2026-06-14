@@ -3,19 +3,18 @@
 
 #pragma once
 
+#include <kf/Option.hpp>
 #include <kf/drivers/display/DisplayDriver.hpp>
 #include <kf/gfx/Canvas.hpp>
 #include <kf/gfx/Palette.hpp>
+#include <kf/gfx/fonts/gyver_5x7.hpp>
 #include <kf/image/DynamicImage.hpp>
 #include <kf/math/units.hpp>
-#include <kf/memory/ArrayString.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
 
-#include "djc/input/VirtualKeyboard.hpp"
-#include "djc/transport/TransportLink.hpp"
-#include "djc/ui/UI.hpp"
-
 #include "djc/service/Service.hpp"
+#include "djc/ui/VirtualKeyboard.hpp"
 
 namespace djc::service {
 
@@ -29,95 +28,102 @@ template<typename I> struct DisplayManager final :
     KF_CHECK_IMPL(I, ::kf::drivers::display::DisplayDriverTag);
 
     using DisplayDriverImpl = I;
+    using Pixel = typename DisplayDriverImpl::PixelImpl;
+    using Color = typename Pixel::ColorType;
+    using Canvas = typename kf::gfx::Canvas<Pixel>;
+    using Palette = kf::gfx::Palette<Pixel>;
 
-    explicit DisplayManager(DisplayDriverImpl &display_driver, const transport::TransportLink &transport_link) noexcept :
-        _display_driver{display_driver}, _transport_link{transport_link} {}
+    explicit DisplayManager(DisplayDriverImpl &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
+        _display_driver{display_driver}, _virtual_keyboard{virtual_keyboard} {}
 
-    void showConnectionStatusOverlay(bool show) noexcept { _show_connection_status_overlay = show; }
+    [[nodiscard]] auto canvas() const noexcept -> const kf::Option<Canvas> & {
+        return _canvas;
+    }
 
-private:
-    using Palette = kf::gfx::Palette<typename DisplayDriverImpl::PixelImpl>;
-
-    inline static const auto &virtual_keyboard = input::VirtualKeyboard::instance();
-
-    DisplayDriverImpl &_display_driver;
-    const transport::TransportLink &_transport_link;
-    bool _show_connection_status_overlay{false};
-
-    kf::gfx::Canvas<typename DisplayDriverImpl::PixelImpl> _canvas{};
+    void overlay(kf::memory::StringView new_overlay, Color color) noexcept {
+        _overlay = new_overlay;
+        _overlay_color = color;
+    }
 
     void onRender(kf::memory::StringView str) noexcept {
-        _canvas.background(Palette::black);
-        _canvas.foreground(Palette::white);
+        if (_canvas.isNone()) { return; }
 
-        _canvas.fill();
+        _canvas.unwrap().background(Palette::black);
+        _canvas.unwrap().foreground(Palette::white);
 
-        if (virtual_keyboard.active()) {
+        _canvas.unwrap().fill();
+
+        if (_virtual_keyboard.active()) {
             renderVirtualKeyboard();
         } else {
             renderUi(str);
         }
+
+        (void) _display_driver.send();
     }
 
-    void renderUi(kf::memory::StringView str) noexcept {
-        if (_show_connection_status_overlay) {
-            const auto y = static_cast<kf::math::Pixels>(_canvas.maxY() - _canvas.glyphHeight());
-            const auto overlay = _transport_link.connected() ? _transport_link.activePeerAddress().value().toString().data() : "Disconnected";
+private:
+    DisplayDriverImpl &_display_driver;
+    const ui::VirtualKeyboard &_virtual_keyboard;
+    kf::Option<Canvas> _canvas{kf::none};
+    kf::memory::StringView _overlay{};
+    Color _overlay_color{};
 
-            _canvas.background(Palette::bright_blue);
-            _canvas.foreground(Palette::black);
-            _canvas.text(0, y, overlay);
+    void renderUi(kf::memory::StringView str) noexcept {
+        auto &canvas = _canvas.unwrap();
+
+        if (not _overlay.empty()) {
+            canvas.background(_overlay_color);
+            canvas.foreground(Palette::black);
+            const auto rows = 1 + (_overlay.size() / canvas.widthInGlyphs());
+            const auto y = static_cast<kf::math::Pixels>(canvas.maxY() - rows * canvas.font().heightTotal());
+            canvas.text(0, y, _overlay);
         }
 
-        _canvas.background(Palette::black);
-        _canvas.foreground(Palette::white);
-        _canvas.text(0, 0, str.data());
+        canvas.background(Palette::black);
+        canvas.foreground(Palette::white);
+        canvas.text(0, 0, str.data());
     }
 
     void renderVirtualKeyboard() noexcept {
-        const auto longest_row = input::VirtualKeyboard::rows[0].size();
-        const auto key_width = _canvas.width() / longest_row;
-        const auto key_height = _canvas.glyphHeight();
-        const auto keyboard_offset_y = _canvas.maxY() - key_height * virtual_keyboard.rowsTotal();
-        const auto glyph_offset_x = (key_width - _canvas.glyphWidth()) / 2;
+        auto &canvas = _canvas.unwrap();
 
-        char c[2]{0, 0};
+        const auto longest_row = ui::VirtualKeyboard::rows[0].size();
+        const auto key_width = canvas.width() / longest_row;
+        const auto key_height = canvas.font().heightTotal();
+        const auto keyboard_offset_y = canvas.maxY() - key_height * _virtual_keyboard.rowsTotal();
+        const auto glyph_offset_x = (key_width - canvas.font().widthTotal()) / 2;
 
-        _canvas.text(0, 0, kf::memory::ArrayString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", virtual_keyboard.available(), virtual_keyboard.text().size()).data());
-        _canvas.text(0, _canvas.glyphHeight(), virtual_keyboard.text().data());
+        canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _virtual_keyboard.available(), _virtual_keyboard.text().size()).data());
+        canvas.text(0, canvas.font().heightTotal(), _virtual_keyboard.text().data());
 
-        _canvas.background(Palette::bright_black);
-        _canvas.foreground(Palette::bright_black);
-        _canvas.rect(0, keyboard_offset_y, _canvas.maxX(), _canvas.maxY(), true);
+        canvas.background(Palette::dark_gray);
+        canvas.foreground(Palette::dark_gray);
+        canvas.rect(0, keyboard_offset_y, canvas.maxX(), canvas.maxY(), true);
 
-        for (auto row = 0; row < virtual_keyboard.rowsTotal(); row += 1) {
+        for (auto row = 0; row < _virtual_keyboard.rowsTotal(); row += 1) {
             const auto y = keyboard_offset_y + row * key_height;
-            const auto cols = input::VirtualKeyboard::rows[row].size();
+            const auto cols = ui::VirtualKeyboard::rows[row].size();
 
             const auto x_offset = ((longest_row - cols) * key_width) / 2;
 
             for (auto col = 0; col < cols; col += 1) {
                 const auto x = col * key_width + x_offset;
 
-                if (row == virtual_keyboard.cursorRow() and col == virtual_keyboard.cursorCol()) {
-                    _canvas.foreground(Palette::blue);
-                    _canvas.rect(x, y, x + key_width, y + key_height - 1, true);
+                if (row == _virtual_keyboard.cursorRow() and col == _virtual_keyboard.cursorCol()) {
+                    canvas.foreground(Palette::dark_blue);
+                    canvas.rect(x, y, x + key_width, y + key_height - 1, true);
 
-                    _canvas.background(Palette::blue);
-                    _canvas.foreground(Palette::bright_white);
+                    canvas.background(Palette::dark_blue);
+                    canvas.foreground(Palette::white);
                 } else {
-                    _canvas.background(Palette::bright_black);
-                    _canvas.foreground(Palette::black);
+                    canvas.background(Palette::dark_gray);
+                    canvas.foreground(Palette::black);
                 }
 
-                const auto &key = input::VirtualKeyboard::keyAt(row, col);
-                if (key.kind == input::VirtualKeyboard::Key::Kind::Common) {
-                    c[0] = key.value(virtual_keyboard.shifted());
-                } else {
-                    c[0] = '?';
-                }
+                const auto &key = ui::VirtualKeyboard::keyAt(row, col);
 
-                _canvas.text(x + glyph_offset_x, y, c);
+                canvas.glyph(x + glyph_offset_x, y, key.isCommon() ? key.value(_virtual_keyboard.shifted()) : '?');
             }
         }
     }
@@ -127,19 +133,14 @@ private:
 
     KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {
-        _canvas = kf::gfx::Canvas<typename DisplayDriverImpl::PixelImpl>{
-            kf::image::DynamicImage<typename DisplayDriverImpl::PixelImpl>{_display_driver.image()},
-            kf::gfx::fonts::gyver_5x7_en,
+        Canvas canvas{
+            kf::image::DynamicImage<Pixel>{_display_driver.image()},
+            typename Canvas::State{
+                .active_font = kf::someRef(kf::gfx::fonts::gyver_5x7_en),
+                .auto_next_line = true,
+            },
         };
-        _canvas.autoNextLine(true);
-
-        auto &config = ui::UI::instance().renderConfig();
-        config.callback([this](kf::memory::StringView str) {
-            onRender(str);
-            (void) _display_driver.send();
-        });
-        config.row_max_length = _canvas.widthInGlyphs();
-        config.rows_total = _canvas.heightInGlyphs() - 1;
+        _canvas = kf::some(std::move(canvas));
     }
 
     KF_IMPL_TIMED_POLLABLE(This);

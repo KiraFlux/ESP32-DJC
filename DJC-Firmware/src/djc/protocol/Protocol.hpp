@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <kf/aliases.hpp>
+#include <kf/primitives.hpp>
 #include <kf/math/units.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 
 #include "djc/ManualInput.hpp"
@@ -26,7 +26,7 @@ struct Protocol : kf::mixin::NonCopyable {
     /// @note
     /// The implementation must parse the data according to its protocol and notify the appropriate callback
     /// This method is called from the transport callback; it must be fast and never block.
-    virtual void receive(kf::memory::Slice<const kf::u8> buffer) noexcept = 0;
+    virtual void receive(kf::Slice<const kf::u8> buffer) noexcept = 0;
 };
 
 }// namespace djc::protocol
