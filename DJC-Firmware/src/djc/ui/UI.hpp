@@ -7,6 +7,7 @@
 #include <kf/ui/Color.hpp>
 #include <kf/ui/Event.hpp>
 #include <kf/ui/Placement.hpp>
+#include <kf/ui/Style.hpp>
 #include <kf/ui/UI.hpp>
 #include <kf/ui/render/ColoredTextRender.hpp>
 #include <kf/ui/widgets/Widget.hpp>
@@ -38,6 +39,9 @@ struct UI : internal::UiBase {
 
     /// @brief UI Semantic Color
     using Color = kf::ui::Color;
+
+    /// @brief UI Widget Style
+    using Style = kf::ui::Style;
 
     /// @brief UI Widget value Placement
     using Placement = kf::ui::Placement;
