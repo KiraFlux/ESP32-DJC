@@ -11,6 +11,17 @@ namespace djc::system {
 /// @brief System owning the config service, handling deferred NVS operations
 /// @note Wraps ConfigService, requests load on init, and polls it periodically
 struct ConfigSystem : System<ConfigSystem> {
+
+    /// @brief Get mutable access to config service component
+    service::ConfigService &configService() noexcept {
+        return _config_service;
+    }
+
+    /// @brief Get readonly access to config service component
+    constexpr const service::ConfigService &configService() const noexcept {
+        return _config_service;
+    }
+
 private:
     service::ConfigService _config_service{};
 
