@@ -3,9 +3,6 @@
 
 #pragma once
 
-#include <kf/Logger.hpp>
-#include <kf/mixin/Configurable.hpp>
-
 #include "djc/service/DisplayManager.hpp"
 #include "djc/system/System.hpp"
 #include "djc/ui/VirtualKeyboard.hpp"
@@ -16,18 +13,8 @@ namespace djc::system {
 template<typename I> struct GraphicsSystem : System<GraphicsSystem<I>> {
     using DisplayManagerImpl = service::DisplayManager<I>;
 
-    explicit GraphicsSystem(I &display_driver) noexcept :
-        _display_manager{_display_driver, _virtual_keyboard} {}
-
-    /// @brief Get mutable access to virtual keyboard component.
-    ui::VirtualKeyboard &virtualKeyboard() noexcept {
-        return _virtual_keyboard;
-    }
-
-    /// @brief Get readonly access to virtual keyboard component.
-    constexpr const ui::VirtualKeyboard &virtualKeyboard() const noexcept {
-        return _virtual_keyboard;
-    }
+    explicit GraphicsSystem(I &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
+        _display_manager{_display_driver, virtual_keyboard} {}
 
     /// @brief Get mutable access to display manager service.
     DisplayManagerImpl &displayManager() noexcept {
@@ -40,9 +27,6 @@ template<typename I> struct GraphicsSystem : System<GraphicsSystem<I>> {
     }
 
 private:
-    static constexpr auto logger = kf::Logger::create("GraphicsSystem");
-
-    ui::VirtualKeyboard _virtual_keyboard{};
     DisplayManagerImpl _display_manager;
 
     using This = GraphicsSystem<I>;
