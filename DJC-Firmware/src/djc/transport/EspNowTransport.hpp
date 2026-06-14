@@ -9,8 +9,7 @@
 #include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/network/MacAddress.hpp>
-
-#include "kf-patch/EspNow.hpp"// patched version
+#include <kf/network/EspNow.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/Transport.hpp"
