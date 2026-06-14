@@ -97,8 +97,8 @@ private:
         canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _virtual_keyboard.available(), _virtual_keyboard.text().size()).data());
         canvas.text(0, canvas.font().heightTotal(), _virtual_keyboard.text().data());
 
-        canvas.background(Palette::bright_black);
-        canvas.foreground(Palette::bright_black);
+        canvas.background(Palette::dark_gray);
+        canvas.foreground(Palette::dark_gray);
         canvas.rect(0, keyboard_offset_y, canvas.maxX(), canvas.maxY(), true);
 
         for (auto row = 0; row < _virtual_keyboard.rowsTotal(); row += 1) {
@@ -111,13 +111,13 @@ private:
                 const auto x = col * key_width + x_offset;
 
                 if (row == _virtual_keyboard.cursorRow() and col == _virtual_keyboard.cursorCol()) {
-                    canvas.foreground(Palette::blue);
+                    canvas.foreground(Palette::dark_blue);
                     canvas.rect(x, y, x + key_width, y + key_height - 1, true);
 
-                    canvas.background(Palette::blue);
-                    canvas.foreground(Palette::bright_white);
+                    canvas.background(Palette::dark_blue);
+                    canvas.foreground(Palette::white);
                 } else {
-                    canvas.background(Palette::bright_black);
+                    canvas.background(Palette::dark_gray);
                     canvas.foreground(Palette::black);
                 }
 

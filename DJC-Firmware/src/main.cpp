@@ -179,11 +179,11 @@ void setup() {
         
         if (control.enabled()) {
             const auto status = transport_link.connected() ? transport_link.activePeerAddress().unwrap().toString().view() : kf::memory::StringView{"Disconnected"};
-            display_manager.overlay(status, Palette::bright_yellow);
+            display_manager.overlay(status, Palette::light_yellow);
         } else {
             if (const auto &p = ui.activePage(); p.isSome()) {
                 if (const auto &widget = p.unwrap().selectedWidget(); widget.isSome()) {
-                    display_manager.overlay(widget.unwrap().hint(), Palette::white);
+                    display_manager.overlay(widget.unwrap().hint(), Palette::light_gray);
                 }
             }
         }
