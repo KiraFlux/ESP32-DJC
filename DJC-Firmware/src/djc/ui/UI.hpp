@@ -9,6 +9,7 @@
 #include <kf/ui/Placement.hpp>
 #include <kf/ui/UI.hpp>
 #include <kf/ui/render/ColoredTextRender.hpp>
+#include <kf/ui/widgets/Widget.hpp>
 
 #include "djc/ui/UiTraits.hpp"
 #include "djc/ui/VirtualKeyboard.hpp"
@@ -17,12 +18,14 @@
 
 namespace djc::internal {
 
-using UiBase = ::kf::ui::UI<::djc::ui::UiTraits<
+using WidgetBase = ::kf::ui::widgets::Widget<
     ::kf::ui::render::ColoredTextRender<256>,// Render Engine: Buffered Colored Text UI render engine
     ::kf::ui::Event<6>                       // Event: 6-bit Event value encoding
-    >>;
+    >;
 
-}
+using UiBase = ::kf::ui::UI<::djc::ui::UiTraits<WidgetBase>>;
+
+}// namespace djc::internal
 
 namespace djc::ui {
 
