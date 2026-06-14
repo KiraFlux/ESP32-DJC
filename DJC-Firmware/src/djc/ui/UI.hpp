@@ -20,7 +20,7 @@
 namespace djc::internal {
 
 using WidgetBase = ::kf::ui::widgets::Widget<
-    ::kf::ui::render::ColoredTextRender<256>,// Render Engine: Buffered Colored Text UI render engine
+    ::kf::ui::render::ColoredTextRender<512>,// Render Engine: Buffered Colored Text UI render engine
     ::kf::ui::Event<6>                       // Event: 6-bit Event value encoding
     >;
 
