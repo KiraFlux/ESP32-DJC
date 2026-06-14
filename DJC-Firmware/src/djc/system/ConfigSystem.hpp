@@ -12,13 +12,13 @@ namespace djc::system {
 /// @note Wraps ConfigService, requests load on init, and polls it periodically
 struct ConfigSystem : System<ConfigSystem> {
 
-    /// @brief Get mutable access to config service component
-    service::ConfigService &configService() noexcept {
+    /// @brief Get mutable access to config service
+    service::ConfigService &service() noexcept {
         return _config_service;
     }
 
-    /// @brief Get readonly access to config service component
-    constexpr const service::ConfigService &configService() const noexcept {
+    /// @brief Get readonly access to config service
+    constexpr const service::ConfigService &service() const noexcept {
         return _config_service;
     }
 
