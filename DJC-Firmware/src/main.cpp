@@ -171,7 +171,7 @@ void setup() {
     if (const auto &canvas = display_manager.canvas(); canvas.isSome()) {
         auto &ui_render_config = config_manager.config().render_system;
         ui_render_config.text.row_max_length = canvas.unwrap().widthInGlyphs();
-        ui_render_config.text.rows_total = canvas.unwrap().heightInGlyphs() - 2; // two rows for overlay
+        ui_render_config.text.rows_total = canvas.unwrap().heightInGlyphs() - 1;
     }
 
     ui_render.callback([](auto str) -> void {
