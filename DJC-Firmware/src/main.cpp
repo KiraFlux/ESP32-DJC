@@ -176,7 +176,7 @@ void setup() {
 
     ui_render.callback([](auto str) -> void {
         using Palette = decltype(display_manager)::Palette;
-        
+
         if (control.enabled()) {
             const auto status = transport_link.connected() ? transport_link.activePeerAddress().unwrap().toString().view() : kf::memory::StringView{"Disconnected"};
             display_manager.overlay(status, Palette::light_yellow);
@@ -267,26 +267,6 @@ void setup() {
     }
 
     if (config_manager.modified()) { config_manager.save(); }
-}
-
-kf::Option<djc::transport::PeerAddress> getTargetPeer() noexcept {
-    const auto favorites = peer_favoriter_registry.all();
-    const auto peers = peer_scanner.peers();
-
-    if (favorites.size() * peers.size() == 0) { return {}; }
-
-    // peers.all() -> filter: favorites -> max: (.trust) -> .address
-
-    auto most_trusted_peer_index{0u};
-
-    for (auto index = 1u; index < peers.size(); index += 1) {
-        if (not peers[index].hasValue()) { continue; }
-
-        const auto &trusted = peer_favoriter_registry.get(peers[index].value().address);
-        if (not trusted.hasValue()) { continue; }
-    }   
-
-    return {};
 }
 
 void loop() {
