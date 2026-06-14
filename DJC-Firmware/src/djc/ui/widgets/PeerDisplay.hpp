@@ -6,7 +6,8 @@
 #include <kf/Option.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/Callbacked.hpp>
-#include <kf/ui/widgets/Widget.hpp>
+#include <kf/ui/Block.hpp>
+#include <kf/ui/Style.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
 
@@ -14,7 +15,7 @@ namespace djc::ui::widgets {
 
 template<typename U> struct PeerDisplay :
 
-    kf::ui::widgets::Widget<U>,
+    U::Widget,
     kf::mixin::Callbacked<const transport::PeerAddress &>
 
 {
@@ -27,16 +28,19 @@ template<typename U> struct PeerDisplay :
         }
     };
 
+    explicit constexpr PeerDisplay(kf::Option<State> state = kf::none, kf::ui::Style style = kf::ui::Style::defaults()) noexcept :
+        U::Widget{style}, _state{state} {}
+
     void state(const kf::Option<State> &new_state) noexcept {
         _state = new_state;
     }
 
     void doRender(typename U::RenderImpl &render) const noexcept override {
-        render.beginAltBlock();
+        render.beginBlock(kf::ui::Block::Alternative);
         if (_state.isSome()) {
             render.value(_state.unwrap().displayName());
         }
-        render.endAltBlock();
+        render.endBlock(kf::ui::Block::Alternative);
     }
 
     bool onClick() noexcept override {
@@ -47,7 +51,7 @@ template<typename U> struct PeerDisplay :
     }
 
 private:
-    kf::Option<State> _state{};
+    kf::Option<State> _state;
 };
 
 }// namespace djc::ui::widgets
