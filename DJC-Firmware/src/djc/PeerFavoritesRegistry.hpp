@@ -42,7 +42,12 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
         }
     };
 
-    explicit constexpr PeerFavoritesRegistry(kf::Slice<kf::TrivialOption<Entry>> entries) noexcept : _entries{entries} {}
+    explicit constexpr PeerFavoritesRegistry(kf::Slice<kf::TrivialOption<Entry>> entries = {}) noexcept : _entries{entries} {}
+
+    /// @brief Set entries source
+    void entries(kf::Slice<kf::TrivialOption<Entry>> new_entries) noexcept {
+        _entries = new_entries;
+    }
 
     /// @brief Return the entire slot array, including empty slots.
     [[nodiscard]] kf::Slice<const kf::TrivialOption<Entry>> all() const noexcept {
