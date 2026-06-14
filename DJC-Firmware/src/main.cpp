@@ -42,6 +42,8 @@
 #include "djc/ui/pages/RawProtocolPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
 
+using UiEvent = djc::ui::UI::Traits::EventImpl;
+
 static constexpr auto logger{kf::Logger::create("main")};
 
 static djc::ConfigManager config_manager{};
@@ -147,32 +149,75 @@ static djc::ui::pages::ConfigPage config_page{
     peer_favoriter_registry,
 };
 
-void setup() {
-    Serial.begin(115200);
-    kf::Logger::writer = [](auto str) { Serial.write(str.data(), str.size()); };
+static void setupTransport() noexcept {
+    WiFi.mode(WIFI_MODE_STA);
 
-    config_manager.load();
-    peer_favoriter_registry.init();
+    if (not transport_registry.espnow().init()) {
+        logger.error("failed to initialize espnow transport");
+    }
+
+    transport_link.transport(transport_registry.get(config_manager.config().init_transport_kind));
+
+    transport_link.onReceive([](const auto &, auto buffer) {
+        protocol_link.receive(buffer);
+    });
+}
+
+static void setupProtocol() noexcept {
+    protocol_registry.mavlink().callback([](const auto &message) {
+        mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(millis()), message);
+    });
+
+    protocol_link.protocol(protocol_registry.get(config_manager.config().init_protocol_mode));
+}
+
+static void setupInput() noexcept {
+    static constexpr UiEvent navigation_event_from_direction[4] = {
+        UiEvent::pageCursorMove(-1),// Up
+        UiEvent::pageCursorMove(+1),// Down
+        UiEvent::widgetValue(-1),   // Left
+        UiEvent::widgetValue(+1),   // Right
+    };
+
+    static constexpr UiEvent virtual_keyboard_event_from_direction[4] = {
+        UiEvent::widgetValue(0),// Up
+        UiEvent::widgetValue(1),// Down
+        UiEvent::widgetValue(2),// Left
+        UiEvent::widgetValue(3),// Right
+    };
+
+    input_handler.onLeftButton([]() {
+        if (virtual_keyboard.active()) {
+            virtual_keyboard.quit();
+        } else {
+            control.enabled(not control.enabled());
+        }
+
+        ui.addEvent(UiEvent::update());
+    });
+
+    input_handler.onRightButton([]() {
+        if (control.enabled()) { return; }
+
+        ui.addEvent(UiEvent::widgetClick());
+    });
+
+    input_handler.onDirection([](auto direction) {
+        if (control.enabled()) { return; }
+
+        const auto table = virtual_keyboard.active() ? virtual_keyboard_event_from_direction : navigation_event_from_direction;
+        ui.addEvent(table[static_cast<kf::u8>(direction)]);
+    });
+}
+
+static void setupUI() noexcept {
     config_page.init();
 
-    if (not periphery.init()) {
-        logger.error("Periphery init failed. Resseting periphery config to defaults");
-        config_manager.config().periphery = djc::Periphery::Config::defaults();
-        config_manager.modified(true);
-    }
-
-    if (not config_manager.config().periphery.joystick_axes_tuned) {
-        logger.debug("Tunning axes..");
-        periphery.tune(config_manager.config().periphery);
-        config_manager.modified(true);
-    }
-
-    display_manager.init();
-    if (const auto &canvas = display_manager.canvas(); canvas.isSome()) {
-        auto &ui_render_config = config_manager.config().render_system;
-        ui_render_config.text.row_max_length = canvas.unwrap().widthInGlyphs();
-        ui_render_config.text.rows_total = canvas.unwrap().heightInGlyphs() - 1;
-    }
+    // apply page links
+    root_page.attach(peer_explorer_page);
+    root_page.attach(mavlink_telemetry_page);
+    root_page.attach(raw_protocol_page);
+    root_page.attach(config_page);
 
     ui_render.callback([](auto str) -> void {
         using Palette = decltype(display_manager)::Palette;
@@ -191,93 +236,59 @@ void setup() {
         display_manager.onRender(str);
     });
 
-    WiFi.mode(WIFI_MODE_STA);
+    ui.activePage(root_page);
+    ui.addEvent(UiEvent::update());
+}
 
-    if (not transport_registry.espnow().init()) {
-        logger.error("failed to initialize espnow transport");
+static void setupGraphics() noexcept {
+    display_manager.init();
+
+    if (const auto &canvas = display_manager.canvas(); canvas.isSome()) {
+        auto &ui_render_config = config_manager.config().render_system;
+        ui_render_config.text.row_max_length = canvas.unwrap().widthInGlyphs();
+        ui_render_config.text.rows_total = canvas.unwrap().heightInGlyphs() - 1;
+        config_manager.modified(true);
+    }
+}
+
+static void setupPeriphery() noexcept {
+    if (not periphery.init()) {
+        logger.error("Periphery init failed. Resseting periphery config to defaults");
+        config_manager.config().periphery = djc::Periphery::Config::defaults();
+        config_manager.modified(true);
     }
 
-    transport_link.transport(transport_registry.get(config_manager.config().init_transport_kind));
+    if (not config_manager.config().periphery.joystick_axes_tuned) {
+        logger.debug("Tunning axes..");
+        periphery.tune(config_manager.config().periphery);
+        config_manager.modified(true);
+    }
+}
 
-    transport_link.onReceive([](const auto &, auto buffer) {
-        protocol_link.receive(buffer);
-    });
+static void setupBase() noexcept {
+    Serial.begin(115200);
+    kf::Logger::writer = [](auto str) { Serial.write(str.data(), str.size()); };
 
-    protocol_registry.mavlink().callback([](const auto &message) {
-        mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(millis()), message);
-    });
+    config_manager.load();
+    peer_favoriter_registry.init();
+}
 
-    protocol_link.protocol(protocol_registry.get(config_manager.config().init_protocol_mode));
+static void finalizeBase() noexcept {
+    if (config_manager.modified()) {
+        config_manager.save();
+    }
+}
 
+static void setupServices() noexcept {
     peer_scanner.init();
 
     auto_connect_service.callback([](const auto &address) -> void {
         logger.info("Auto Connect");
         (void) transport_link.connect(address);
     });
-
-    {
-        using UiEvent = djc::ui::UI::Traits::EventImpl;
-
-        input_handler.onLeftButton([]() {
-            if (virtual_keyboard.active()) {
-                virtual_keyboard.quit();
-            } else {
-                control.enabled(not control.enabled());
-            }
-
-            ui.addEvent(UiEvent::update());
-        });
-
-        input_handler.onRightButton([]() {
-            if (control.enabled()) { return; }
-
-            ui.addEvent(UiEvent::widgetClick());
-        });
-
-        input_handler.onDirection([](auto direction) {
-            static constexpr UiEvent navigation_event_from_direction[4] = {
-                UiEvent::pageCursorMove(-1),// Up
-                UiEvent::pageCursorMove(+1),// Down
-                UiEvent::widgetValue(-1),   // Left
-                UiEvent::widgetValue(+1),   // Right
-            };
-
-            static constexpr UiEvent virtual_keyboard_event_from_direction[4] = {
-                UiEvent::widgetValue(0),// Up
-                UiEvent::widgetValue(1),// Down
-                UiEvent::widgetValue(2),// Left
-                UiEvent::widgetValue(3),// Right
-            };
-
-            if (control.enabled()) { return; }
-
-            const auto table = virtual_keyboard.active() ? virtual_keyboard_event_from_direction : navigation_event_from_direction;
-            ui.addEvent(table[static_cast<kf::u8>(direction)]);
-        });
-
-        // apply page links
-        root_page.attach(peer_explorer_page);
-        root_page.attach(mavlink_telemetry_page);
-        root_page.attach(raw_protocol_page);
-        root_page.attach(config_page);
-
-        ui.activePage(root_page);
-        ui.addEvent(UiEvent::update());
-    }
-
-    if (config_manager.modified()) { config_manager.save(); }
 }
 
-void loop() {
-    constexpr kf::math::Milliseconds loop_period{1000 / 50};// 50 Hz
-    delay(loop_period);
-
-    const auto now = static_cast<kf::math::Milliseconds>(millis());
-    input_handler.poll(now);
-    transport_link.poll(now);
-    peer_scanner.poll(now);
-
+static void updateAutoConnect(kf::math::Milliseconds now) noexcept {
     if (auto_connect_service.config().enabled and auto_connect_service.target().isNone()) {
         const auto favorites = peer_favoriter_registry.all();
 
@@ -301,7 +312,9 @@ void loop() {
         }
     }
     auto_connect_service.poll(now);
+}
 
+static void updateControl(kf::math::Microseconds now) noexcept {
     if (control.enabled()) {
         using I = djc::ManualInput;
 
@@ -317,6 +330,37 @@ void loop() {
         control.input(control_input);
     }
     control.poll(now);
+}
+
+static void pollServices(kf::math::Milliseconds now) noexcept {
+    input_handler.poll(now);
+    transport_link.poll(now);
+    peer_scanner.poll(now);
+    updateAutoConnect(now);
+    updateControl(now);
     ui.poll(now);
     display_manager.poll(now);
+}
+
+void setup() {
+    setupBase();
+
+    setupPeriphery();
+    setupInput();
+    setupGraphics();
+
+    setupTransport();
+    setupProtocol();
+
+    setupServices();
+    setupUI();
+
+    finalizeBase();
+}
+
+void loop() {
+    constexpr kf::math::Milliseconds loop_period{1000 / 50};// 50 Hz
+    delay(loop_period);
+
+    pollServices(static_cast<kf::math::Milliseconds>(millis()));
 }
