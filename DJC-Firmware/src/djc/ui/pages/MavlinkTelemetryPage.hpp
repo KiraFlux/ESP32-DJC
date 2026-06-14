@@ -48,7 +48,7 @@ struct MavlinkTelemetryPage : UI::Page {
         _last_imu = _last_attitude = _last_serial_control = 0;
     }
 
-    void onUpdate(kf::math::Milliseconds now) noexcept override {
+    void onPoll(kf::math::Milliseconds now) noexcept override {
         bool need_update{false};
 
         if (_mavlink_telemetry_registry.scaled_imu.updatedSince(_last_imu)) {

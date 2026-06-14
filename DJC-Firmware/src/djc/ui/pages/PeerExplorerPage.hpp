@@ -60,7 +60,7 @@ struct PeerExplorerPage : UI::Page {
         _redraw_timer.start(0);// enable timer
     }
 
-    void onUpdate(kf::math::Milliseconds now) noexcept override {
+    void onPoll(kf::math::Milliseconds now) noexcept override {
         if (not _redraw_timer.expired(now)) { return; }
         _redraw_timer.start(now);
 
