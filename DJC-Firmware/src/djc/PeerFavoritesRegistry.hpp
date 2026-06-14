@@ -50,7 +50,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
     }
 
     /// @brief Return the entire slot array, including empty slots.
-    [[nodiscard]] kf::Slice<const kf::TrivialOption<Entry>> all() const noexcept {
+    [[nodiscard]] auto all() const noexcept -> kf::Slice<const kf::TrivialOption<Entry>> {
         return {_entries.data(), _active_count};
     }
 
