@@ -4,19 +4,21 @@
 #pragma once
 
 #include <kf/Slice.hpp>
-#include <kf/algorithm.hpp>
 #include <kf/memory/StringView.hpp>
-#include <kf/ui/widgets/Widget.hpp>
 #include <kf/ui/Color.hpp>
+#include <kf/ui/Style.hpp>
 
 #include "djc/ui/VirtualKeyboard.hpp"
 
 namespace djc::ui::widgets {
 
-template<typename U> struct TextInput : kf::ui::widgets::Widget<U> {
+template<typename U> struct TextInput :
 
-    explicit TextInput(VirtualKeyboard &virtual_keyboard, kf::Slice<char> source) noexcept :
-        _virtual_keyboard{virtual_keyboard}, _text_source{source} {
+    U::Widget
+
+{
+    explicit TextInput(VirtualKeyboard &virtual_keyboard, kf::Slice<char> source, kf::ui::Style style = kf::ui::Style::defaults()) noexcept :
+        U::Widget{style}, _virtual_keyboard{virtual_keyboard}, _text_source{source} {
         this->foreground(kf::ui::Color::Info);
     }
 
@@ -29,9 +31,9 @@ template<typename U> struct TextInput : kf::ui::widgets::Widget<U> {
     }
 
     void doRender(typename U::RenderImpl &render) const noexcept override {
-        render.value(kf::memory::StringView{"\""});
+        render.value('\"');
         render.value(string());
-        render.value(kf::memory::StringView{"\""});
+        render.value('\"');
     }
 
     bool onClick() noexcept override {
@@ -63,7 +65,6 @@ template<typename U> struct TextInput : kf::ui::widgets::Widget<U> {
 
 private:
     VirtualKeyboard &_virtual_keyboard;
-
     kf::Slice<char> _text_source;
 
     [[nodiscard]] kf::memory::StringView string() const noexcept {
