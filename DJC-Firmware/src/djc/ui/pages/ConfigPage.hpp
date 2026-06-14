@@ -141,7 +141,7 @@ private:
 
     // widgets
 
-    kf::memory::Array<TransportKindSelector::Item, 1> _transport_kind_options{{
+    kf::memory::Array<TransportKindSelector::Config::Item, 1> _transport_kind_options{{
         {"EspNow", transport::Kind::EspNow},
     }};
 
@@ -149,7 +149,7 @@ private:
         .items = {_transport_kind_options.data(), _transport_kind_options.size()},
     };
 
-    kf::memory::Array<ProtocolModeSelector::Item, 2> _control_mode_options{{
+    kf::memory::Array<ProtocolModeSelector::Config::Item, 2> _control_mode_options{{
         {"Mavlink", Mode::Mavlink},
         {"Raw", Mode::Raw},
     }};
