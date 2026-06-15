@@ -6,7 +6,6 @@
 #include <kf/Option.hpp>
 #include <kf/Range.hpp>
 #include <kf/Slice.hpp>
-#include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/primitives.hpp>
 
@@ -14,13 +13,13 @@
 
 namespace djc {
 
-/// @brief Registry of favorite peers (bookmarks).
+/// @brief Registry of favorite peers
 ///
 /// Maintains a list of peer entries inside an externally‑provided array of slots.
 /// The registry does not own the memory, only manipulates it.
 ///
 /// @note All methods are safe to call from different UI callbacks as long as the underlying storage is exclusively owned by the registry.
-struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable<PeerFavoritesRegistry, void> { // TODO: remove initable
+struct PeerFavoritesRegistry final : kf::mixin::NonCopyable {
 
     /// @brief A single favorite‑peer record.
     struct Entry final {
@@ -42,8 +41,6 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
         }
     };
 
-    explicit constexpr PeerFavoritesRegistry(kf::Slice<kf::TrivialOption<Entry>> entries = {}) noexcept : _entries{entries} {}
-
     /// @brief Set entries source
     void entries(kf::Slice<kf::TrivialOption<Entry>> new_entries) noexcept {
         _entries = new_entries;
@@ -54,7 +51,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
         }
     }
 
-    /// @brief Return the entire slot array, including empty slots.
+    /// @brief Return all non-empty entries
     [[nodiscard]] auto all() const noexcept -> kf::Slice<const kf::TrivialOption<Entry>> {
         return {_entries.data(), _active_count};
     }
@@ -113,7 +110,7 @@ struct PeerFavoritesRegistry final : kf::mixin::NonCopyable, kf::mixin::Initable
     }
 
 private:
-    kf::Slice<kf::TrivialOption<Entry>> _entries;
+    kf::Slice<kf::TrivialOption<Entry>> _entries{};
     kf::usize _active_count{0};
 
     /// @brief Find the index of an entry by address.
@@ -128,10 +125,6 @@ private:
         }
         return kf::none;
     }
-
-    // TODO: remove initable
-    KF_IMPL_INITABLE(PeerFavoritesRegistry, void);
-    void initImpl() noexcept {}
 };
 
 }// namespace djc

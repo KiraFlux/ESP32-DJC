@@ -69,7 +69,6 @@ private:
 
     DJC_IMPL_INITABLE(PeerSystem, void(transport::TransportLink &));
     void initImpl(transport::TransportLink &transport_link) noexcept {
-        _peer_favorites_registry.init();
         _peer_scanning_service.init();
 
         _auto_connect_service.callback([&transport_link](const auto &address) -> void {
