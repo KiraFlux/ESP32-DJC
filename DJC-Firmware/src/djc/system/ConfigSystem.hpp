@@ -13,7 +13,7 @@ namespace djc::system {
 /// @note Wraps ConfigService, load on init, and polls it periodically
 struct ConfigSystem :
 
-    System<ConfigSystem>,
+    System<ConfigSystem, void()>,
     mixin::ServiceOwner<service::ConfigService>
 
 {
@@ -21,12 +21,10 @@ struct ConfigSystem :
         mixin::ServiceOwner<service::ConfigService>{{}} {}
 
 private:
-    KF_IMPL_INITABLE(ConfigSystem, bool);
-    bool initImpl() noexcept {
+    DJC_IMPL_INITABLE(ConfigSystem, void());
+    void initImpl() noexcept {
         this->service().requestLoad();
         this->service().sync();
-
-        return true;
     }
 
     KF_IMPL_TIMED_POLLABLE(ConfigSystem);

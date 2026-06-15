@@ -17,7 +17,7 @@ namespace djc::system {
 /// @note Owns Control service. Depends Periphery (joysticks), TransportLink and ProtocolLink.
 struct ControlSystem :
 
-    System<ControlSystem>,
+    System<ControlSystem, void()>,
     mixin::ServiceOwner<service::Control>
 
 {
@@ -27,10 +27,8 @@ struct ControlSystem :
 private:
     Periphery &_periphery;
 
-    KF_IMPL_INITABLE(ControlSystem, bool);
-    bool initImpl() noexcept {
-        return true;
-    }
+    DJC_IMPL_INITABLE(ControlSystem, void());
+    void initImpl() noexcept {}
 
     KF_IMPL_TIMED_POLLABLE(ControlSystem);
     void pollImpl(kf::math::Milliseconds now) noexcept {

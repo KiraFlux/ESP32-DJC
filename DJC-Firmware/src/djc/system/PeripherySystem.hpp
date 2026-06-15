@@ -4,7 +4,6 @@
 #pragma once
 
 #include <kf/Logger.hpp>
-#include <kf/mixin/Configurable.hpp>
 
 #include "djc/Config.hpp"
 #include "djc/Periphery.hpp"
@@ -14,9 +13,10 @@ namespace djc::system {
 
 /// @brief System that owns and initializes hardware peripherals
 /// @note Provides access to peripherals for other systems via getters; no periodic polling needed.
-struct PeripherySystem : System<PeripherySystem>, kf::mixin::Configurable<Config> {
+struct PeripherySystem : System<PeripherySystem, bool()> {
 
-    using kf::mixin::Configurable<Config>::Configurable;
+    explicit PeripherySystem(const Config &config) noexcept :
+        _periphery{config.periphery} {}
 
     /// @brief Get mutable access to periphery component
     Periphery &periphery() noexcept {
@@ -31,9 +31,9 @@ struct PeripherySystem : System<PeripherySystem>, kf::mixin::Configurable<Config
 private:
     static constexpr auto logger{kf::Logger::create("PeripherySystem")};
 
-    Periphery _periphery{this->config().periphery};
+    Periphery _periphery;
 
-    KF_IMPL_INITABLE(PeripherySystem, bool);
+    DJC_IMPL_INITABLE(PeripherySystem, bool());
     bool initImpl() noexcept {
         if (_periphery.init()) {
             return true;

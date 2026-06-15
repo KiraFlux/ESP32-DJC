@@ -18,7 +18,7 @@ namespace djc::system {
 /// @note Initialises the UI with the root page and triggers an initial update event. Polls the UI on every main loop iteration
 struct UiSystem : 
 
-System<UiSystem>,
+System<UiSystem, void()>,
 mixin::ServiceOwner<djc::ui::UI>
 
 {
@@ -65,12 +65,10 @@ private:
     ui::VirtualKeyboard _virtual_keyboard{};
     ui::pages::RootPage _root_page{this->service()};
 
-    KF_IMPL_INITABLE(UiSystem, bool);
-    bool initImpl() noexcept {
+    DJC_IMPL_INITABLE(UiSystem, void());
+    void initImpl() noexcept {
         this->service().activePage(_root_page);
         this->service().addEvent(ui::UI::Traits::EventImpl::update());
-
-        return true;
     }
 
     KF_IMPL_TIMED_POLLABLE(UiSystem);

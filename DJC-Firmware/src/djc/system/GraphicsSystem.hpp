@@ -13,7 +13,7 @@ namespace djc::system {
 /// @brief System managing display output, canvas, and virtual keyboard.
 template<typename I> struct GraphicsSystem :
 
-    System<GraphicsSystem<I>>,
+    System<GraphicsSystem<I>, void()>,
     mixin::ServiceOwner<service::DisplayManager<I>>
 
 {
@@ -25,10 +25,9 @@ template<typename I> struct GraphicsSystem :
 private:
     using This = GraphicsSystem<I>;
 
-    KF_IMPL_INITABLE(This, bool);
-    bool initImpl() noexcept {
+    DJC_IMPL_INITABLE(This, void());
+    void initImpl() noexcept {
         _display_manager.init();
-        return true;
     }
 
     KF_IMPL_TIMED_POLLABLE(This);

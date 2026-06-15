@@ -15,7 +15,7 @@ namespace djc::system {
 /// @note Owns InputHandler service. Depends on Config (read‑only) and Periphery.
 struct InputSystem :
 
-    System<InputSystem>,
+    System<InputSystem, void()>,
     mixin::ServiceOwner<service::InputHandler>
 
 {
@@ -28,11 +28,8 @@ struct InputSystem :
         }} {}
 
 private:
-    KF_IMPL_INITABLE(InputSystem, bool);
-    bool initImpl() noexcept {
-        // For now, nothing to do.
-        return true;
-    }
+    DJC_IMPL_INITABLE(InputSystem, void());
+    void initImpl() noexcept {}
 
     KF_IMPL_TIMED_POLLABLE(InputSystem);
     void pollImpl(kf::math::Milliseconds now) noexcept {
