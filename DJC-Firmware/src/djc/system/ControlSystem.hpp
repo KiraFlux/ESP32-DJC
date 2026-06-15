@@ -7,7 +7,7 @@
 #include "djc/Periphery.hpp"
 #include "djc/mixin/ServiceOwner.hpp"
 #include "djc/protocol/ProtocolLink.hpp"
-#include "djc/service/Control.hpp"
+#include "djc/service/ControlService.hpp"
 #include "djc/system/System.hpp"
 #include "djc/transport/TransportLink.hpp"
 
