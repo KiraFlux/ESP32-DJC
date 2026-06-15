@@ -12,6 +12,7 @@
 #include <kf/ui/render/ColoredTextRender.hpp>
 #include <kf/ui/widgets/Widget.hpp>
 
+#include "djc/service/Service.hpp"
 #include "djc/ui/UiTraits.hpp"
 #include "djc/ui/VirtualKeyboard.hpp"
 #include "djc/ui/widgets/PeerDisplay.hpp"
@@ -32,8 +33,12 @@ namespace djc::ui {
 
 /// @brief ESP32-DJC extended UI specializalization
 /// @note djc::pages must use fields from this service (`UI::Color`, `UI::Widget`, etc.)
-struct UI : internal::UiBase {
+struct UI :
 
+    service::ServiceTag,
+    internal::UiBase
+
+{
     explicit constexpr UI(Traits::RenderImpl &render_system, VirtualKeyboard &virtual_keyboard) noexcept :
         internal::UiBase{render_system}, _virtual_keyboard{virtual_keyboard} {}
 
