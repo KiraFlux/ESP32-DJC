@@ -3,364 +3,253 @@
 
 // framework
 #include <Arduino.h>
-#include <WiFi.h>
 
-// lib
+// toolkit
 #include <kf/Logger.hpp>
+#include <kf/Slice.hpp>
+#include <kf/memory/StringView.hpp>
 
 // djc
-#include "djc/ConfigManager.hpp"
-#include "djc/ManualInput.hpp"
-#include "djc/MavlinkTelemetryRegistry.hpp"
-#include "djc/PeerFavoritesRegistry.hpp"
-#include "djc/Periphery.hpp"
 #include "djc/prelude.hpp"
 
-// djc::transport
-#include "djc/transport/TransportLink.hpp"
-#include "djc/transport/TransportRegistry.hpp"
-
-// djc::protocol
-#include "djc/protocol/ProtocolLink.hpp"
-#include "djc/protocol/ProtocolRegistry.hpp"
-
-// djc::service
-#include "djc/service/AutoConnectService.hpp"
-#include "djc/service/Control.hpp"
-#include "djc/service/DisplayManager.hpp"
-#include "djc/service/InputHandler.hpp"
-#include "djc/service/PeerScanningService.hpp"
+// djc::system
+#include "djc/system/ConfigSystem.hpp"
+#include "djc/system/ControlSystem.hpp"
+#include "djc/system/GraphicsSystem.hpp"
+#include "djc/system/InputSystem.hpp"
+#include "djc/system/PeerSystem.hpp"
+#include "djc/system/PeripherySystem.hpp"
+#include "djc/system/ProtocolSystem.hpp"
+#include "djc/system/TransportSystem.hpp"
+#include "djc/system/UiSystem.hpp"
 
 // djc::ui
 #include "djc/ui/UI.hpp"
-#include "djc/ui/VirtualKeyboard.hpp"
-
-// djc::ui::pages
 #include "djc/ui/pages/ConfigPage.hpp"
 #include "djc/ui/pages/MavlinkTelemetryPage.hpp"
 #include "djc/ui/pages/PeerExplorerPage.hpp"
 #include "djc/ui/pages/RawProtocolPage.hpp"
 #include "djc/ui/pages/RootPage.hpp"
 
-using UiEvent = djc::ui::UI::Traits::EventImpl;
+static constexpr auto loop_rate_hz{50};
 
 static constexpr auto logger{kf::Logger::create("main")};
 
-static djc::ConfigManager config_manager{};
+// systems
 
-static djc::Periphery periphery{
-    config_manager.config().periphery,
+static djc::system::ConfigSystem config_system{};
+
+static auto &config{config_system.service().config()};
+
+static djc::system::PeripherySystem periphery_system{config};
+
+static djc::system::TransportSystem transport_system{config};
+
+static djc::system::ProtocolSystem protocol_system{config};
+
+static djc::system::ControlSystem control_system{
+    periphery_system.periphery(),
+    transport_system.link(),
+    protocol_system.link(),
 };
 
-static djc::transport::TransportLink transport_link{
-    config_manager.config().transport_link,
+static djc::system::PeerSystem peer_system{
+    config,
+    transport_system.link(),
 };
 
-static djc::transport::TransportRegistry transport_registry{};
-
-static djc::protocol::ProtocolLink protocol_link{
-    config_manager.config().protocol_link,
+static djc::system::InputSystem input_system{
+    config,
+    periphery_system.periphery(),
 };
 
-static djc::protocol::ProtocolRegistry protocol_registry{
-    config_manager.config().protocol_registry,
+static djc::system::UiSystem ui_system{config};
+
+static djc::system::GraphicsSystem<djc::DisplayDriver> graphics_system{
+    periphery_system.periphery().display,
+    ui_system.virtualKeyboard(),
 };
 
-static djc::MavlinkTelemetryRegistry mavlink_telemetry_registry{};
-
-static djc::PeerFavoritesRegistry peer_favoriter_registry{
-    {config_manager.config().peer_favorites.data(), config_manager.config().peer_favorites.size()},
-};
-
-static djc::ui::VirtualKeyboard virtual_keyboard{};
-
-// services
-
-static djc::service::InputHandler input_handler{
-    config_manager.config().input_handler,
-    periphery.right_joystick,
-    periphery.left_button_listener,
-    periphery.right_button_listener,
-};
-
-static djc::service::PeerScanningService peer_scanner{
-    config_manager.config().peer_scanner,
-    transport_link,
-};
-
-static djc::service::AutoConnectService auto_connect_service{
-    config_manager.config().auto_connect_service,
-    transport_link,
-};
-
-static djc::service::Control control{
-    transport_link,
-    protocol_link,
-};
-
-static djc::service::DisplayManager<djc::DisplayDriver> display_manager{
-    periphery.display,
-    virtual_keyboard,
-};
-
-static djc::ui::UI::Traits::RenderImpl ui_render{
-    config_manager.config().render_system,
-};
-
-static djc::ui::UI ui{
-    ui_render,
-    virtual_keyboard,
-};
-
-// pages
-
-static djc::ui::pages::RootPage root_page{
-    ui,
-};
+// ui pages
 
 static djc::ui::pages::PeerExplorerPage peer_explorer_page{
-    ui,
-    root_page,
-    transport_link,
-    peer_scanner,
-    peer_favoriter_registry,
+    ui_system.service(),
+    ui_system.rootPage(),
+    transport_system.link(),
+    peer_system.scanningService(),
+    peer_system.favoritesRegistry(),
 };
 
 static djc::ui::pages::MavlinkTelemetryPage mavlink_telemetry_page{
-    ui,
-    root_page,
-    protocol_registry,
-    protocol_link,
-    mavlink_telemetry_registry,
+    ui_system.service(),
+    ui_system.rootPage(),
+    protocol_system.protocolRegistry(),
+    protocol_system.link(),
+    protocol_system.mavlinkTelemetryRegistry(),
 };
 
 static djc::ui::pages::RawProtocolPage raw_protocol_page{
-    ui,
-    root_page,
-    protocol_registry,
-    protocol_link,
-    transport_link,
+    ui_system.service(),
+    ui_system.rootPage(),
+    protocol_system.protocolRegistry(),
+    protocol_system.link(),
+    transport_system.link(),
 };
 
 static djc::ui::pages::ConfigPage config_page{
-    ui,
-    root_page,
-    config_manager,
-    peer_favoriter_registry,
+    ui_system.service(),
+    ui_system.rootPage(),
+    config_system.service(),
+    peer_system.favoritesRegistry(),
 };
 
-static void setupTransport() noexcept {
-    WiFi.mode(WIFI_MODE_STA);
+// navigation to event maps
 
-    if (not transport_registry.espnow().init()) {
-        logger.error("failed to initialize espnow transport");
+using UiEvent = djc::ui::UI::Traits::EventImpl;
+
+static constexpr UiEvent navigation_event_from_direction[4]{
+    UiEvent::pageCursorMove(-1),// Up
+    UiEvent::pageCursorMove(+1),// Down
+    UiEvent::widgetValue(-1),   // Left
+    UiEvent::widgetValue(+1),   // Right
+};
+
+static constexpr UiEvent virtual_keyboard_event_from_direction[4]{
+    UiEvent::widgetValue(0),// Up
+    UiEvent::widgetValue(1),// Down
+    UiEvent::widgetValue(2),// Left
+    UiEvent::widgetValue(3),// Right
+};
+
+// callbacks
+
+static void onReceiveFromPeer(const djc::transport::PeerAddress &address, kf::Slice<const kf::u8> buffer) noexcept {
+    (void) address;
+
+    protocol_system.link().receive(buffer);
+}
+
+static void onReceiveFromLogger(kf::memory::StringView str) noexcept {
+    Serial.write(str.data(), str.size());
+}
+
+static void onPrimaryButtonClick() noexcept {
+    if (control_system.service().enabled()) { return; }
+
+    ui_system.service().addEvent(UiEvent::widgetClick());
+}
+
+static void onSecondaryButtonClick() noexcept {
+    if (ui_system.virtualKeyboard().active()) {
+        ui_system.virtualKeyboard().quit();
+    } else {
+        control_system.service().enabled(not control_system.service().enabled());
     }
 
-    transport_link.transport(transport_registry.get(config_manager.config().init_transport_kind));
-
-    transport_link.onReceive([](const auto &, auto buffer) {
-        protocol_link.receive(buffer);
-    });
+    ui_system.service().addEvent(UiEvent::update());
 }
 
-static void setupProtocol() noexcept {
-    protocol_registry.mavlink().callback([](const auto &message) {
-        mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(millis()), message);
-    });
+static void onPrimaryJoystickDirection(djc::service::InputHandler::JoystickListener::Direction direction) noexcept {
+    if (control_system.service().enabled()) { return; }
 
-    protocol_link.protocol(protocol_registry.get(config_manager.config().init_protocol_mode));
+    const auto table = ui_system.virtualKeyboard().active() ? virtual_keyboard_event_from_direction : navigation_event_from_direction;
+    ui_system.service().addEvent(table[static_cast<kf::u8>(direction)]);
 }
 
-static void setupInput() noexcept {
-    static constexpr UiEvent navigation_event_from_direction[4] = {
-        UiEvent::pageCursorMove(-1),// Up
-        UiEvent::pageCursorMove(+1),// Down
-        UiEvent::widgetValue(-1),   // Left
-        UiEvent::widgetValue(+1),   // Right
-    };
+static void onUiRendered(kf::memory::StringView str) {
+    using Palette = std::decay_t<decltype(graphics_system.service())>::Palette;
 
-    static constexpr UiEvent virtual_keyboard_event_from_direction[4] = {
-        UiEvent::widgetValue(0),// Up
-        UiEvent::widgetValue(1),// Down
-        UiEvent::widgetValue(2),// Left
-        UiEvent::widgetValue(3),// Right
-    };
-
-    input_handler.onLeftButton([]() {
-        if (virtual_keyboard.active()) {
-            virtual_keyboard.quit();
+    if (control_system.service().enabled()) {
+        if (transport_system.link().connected()) {
+            graphics_system.service().overlay(transport_system.link().activePeerAddress().unwrap().toString().view(), Palette::light_green);
         } else {
-            control.enabled(not control.enabled());
+            graphics_system.service().overlay("Disconnected", Palette::light_yellow);
         }
-
-        ui.addEvent(UiEvent::update());
-    });
-
-    input_handler.onRightButton([]() {
-        if (control.enabled()) { return; }
-
-        ui.addEvent(UiEvent::widgetClick());
-    });
-
-    input_handler.onDirection([](auto direction) {
-        if (control.enabled()) { return; }
-
-        const auto table = virtual_keyboard.active() ? virtual_keyboard_event_from_direction : navigation_event_from_direction;
-        ui.addEvent(table[static_cast<kf::u8>(direction)]);
-    });
-}
-
-static void setupUI() noexcept {
-    config_page.init();
-
-    // apply page links
-    root_page.attach(peer_explorer_page);
-    root_page.attach(mavlink_telemetry_page);
-    root_page.attach(raw_protocol_page);
-    root_page.attach(config_page);
-
-    ui_render.callback([](auto str) -> void {
-        using Palette = decltype(display_manager)::Palette;
-
-        if (control.enabled()) {
-            const auto status = transport_link.connected() ? transport_link.activePeerAddress().unwrap().toString().view() : kf::memory::StringView{"Disconnected"};
-            display_manager.overlay(status, Palette::light_yellow);
-        } else {
-            if (const auto &p = ui.activePage(); p.isSome()) {
-                if (const auto &widget = p.unwrap().selectedWidget(); widget.isSome()) {
-                    display_manager.overlay(widget.unwrap().hint(), Palette::light_gray);
-                }
+    } else {
+        if (const auto &p = ui_system.service().activePage(); p.isSome()) {
+            if (const auto &widget = p.unwrap().selectedWidget(); widget.isSome()) {
+                graphics_system.service().overlay(widget.unwrap().hint(), Palette::light_gray);
             }
         }
-
-        display_manager.onRender(str);
-    });
-
-    ui.activePage(root_page);
-    ui.addEvent(UiEvent::update());
-}
-
-static void setupGraphics() noexcept {
-    display_manager.init();
-
-    if (const auto &canvas = display_manager.canvas(); canvas.isSome()) {
-        auto &ui_render_config = config_manager.config().render_system;
-        ui_render_config.text.row_max_length = canvas.unwrap().widthInGlyphs();
-        ui_render_config.text.rows_total = canvas.unwrap().heightInGlyphs() - 1;
-        config_manager.modified(true);
-    }
-}
-
-static void setupPeriphery() noexcept {
-    if (not periphery.init()) {
-        logger.error("Periphery init failed. Resseting periphery config to defaults");
-        config_manager.config().periphery = djc::Periphery::Config::defaults();
-        config_manager.modified(true);
     }
 
-    if (not config_manager.config().periphery.joystick_axes_tuned) {
+    graphics_system.service().onRender(str);
+}
+
+// setups
+
+static bool setupPeriphery(djc::Config &config) noexcept {
+    if (not config.periphery.joystick_axes_tuned) {
         logger.debug("Tunning axes..");
-        periphery.tune(config_manager.config().periphery);
-        config_manager.modified(true);
+        periphery_system.periphery().tune(config.periphery);
+        return true;
     }
+
+    return false;
 }
 
-static void setupBase() noexcept {
-    Serial.begin(115200);
-    kf::Logger::writer = [](auto str) { Serial.write(str.data(), str.size()); };
-
-    config_manager.load();
-    peer_favoriter_registry.init();
-}
-
-static void finalizeBase() noexcept {
-    if (config_manager.modified()) {
-        config_manager.save();
+static bool setupGraphics(djc::Config &config) noexcept {
+    if (const auto &canvas = graphics_system.service().canvas(); canvas.isSome()) {
+        config.render_system.text.row_max_length = canvas.unwrap().widthInGlyphs();
+        config.render_system.text.rows_total = canvas.unwrap().heightInGlyphs() - 1;
+        return true;
     }
+
+    return false;
 }
 
-static void setupServices() noexcept {
-    peer_scanner.init();
+#define DJC_SYSTEM_INIT(__system_instance__, ...) \
+    __system_instance__.init(__VA_ARGS__);        \
+    logger.info("done: '" #__system_instance__ "'");
 
-    auto_connect_service.callback([](const auto &address) -> void {
-        logger.info("Auto Connect");
-        (void) transport_link.connect(address);
-    });
-}
-
-static void updateAutoConnect(kf::math::Milliseconds now) noexcept {
-    if (auto_connect_service.config().enabled and auto_connect_service.target().isNone()) {
-        const auto favorites = peer_favoriter_registry.all();
-
-        if (favorites.size() > 0) {
-            auto most_trusted_favorite_index = 0u;
-
-            for (auto index = 1u; index < favorites.size(); index += 1) {
-                if (favorites[index].isSome() and favorites[most_trusted_favorite_index].isSome() and favorites[index].unwrap().trust > favorites[most_trusted_favorite_index].unwrap().trust) {
-                    most_trusted_favorite_index = index;
-                }
-            }
-
-            if (const auto &most_trusted = favorites[most_trusted_favorite_index]; most_trusted.isSome()) {
-                for (const auto &peer: peer_scanner.peers()) {
-                    if (peer.isSome() and peer.unwrap().address == most_trusted.unwrap().address) {
-                        auto_connect_service.target(most_trusted.unwrap().address);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    auto_connect_service.poll(now);
-}
-
-static void updateControl(kf::math::Microseconds now) noexcept {
-    if (control.enabled()) {
-        using I = djc::ManualInput;
-
-        const I control_input{
-            .left_x = I::fromNormalized(periphery.left_joystick.axis_x.read()),
-            .left_y = I::fromNormalized(periphery.left_joystick.axis_y.read()),
-            .right_x = I::fromNormalized(periphery.right_joystick.axis_x.read()),
-            .right_y = I::fromNormalized(periphery.right_joystick.axis_y.read()),
-        };
-
-        // todo debug log
-
-        control.input(control_input);
-    }
-    control.poll(now);
-}
-
-static void pollServices(kf::math::Milliseconds now) noexcept {
-    input_handler.poll(now);
-    transport_link.poll(now);
-    peer_scanner.poll(now);
-    updateAutoConnect(now);
-    updateControl(now);
-    ui.poll(now);
-    display_manager.poll(now);
-}
+#define DJC_DO_SETUP(__setup_function__) \
+    if (__setup_function__) { config_system.service().requestSave(); }
 
 void setup() {
-    setupBase();
+    Serial.begin(115200);
+    kf::Logger::writer = onReceiveFromLogger;
 
-    setupPeriphery();
-    setupInput();
-    setupGraphics();
+    // init
 
-    setupTransport();
-    setupProtocol();
+    DJC_SYSTEM_INIT(config_system);
+    DJC_SYSTEM_INIT(periphery_system);
+    DJC_SYSTEM_INIT(transport_system, config.init_transport_kind);
+    DJC_SYSTEM_INIT(protocol_system, config.init_protocol_mode);
+    DJC_SYSTEM_INIT(peer_system, transport_system.link());
+    DJC_SYSTEM_INIT(input_system);
+    DJC_SYSTEM_INIT(graphics_system);
+    DJC_SYSTEM_INIT(control_system);
+    DJC_SYSTEM_INIT(ui_system, {&peer_explorer_page, &mavlink_telemetry_page, &raw_protocol_page, &config_page});
 
-    setupServices();
-    setupUI();
+    // orcestre
 
-    finalizeBase();
+    transport_system.link().onReceive(onReceiveFromPeer);
+    peer_system.favoritesRegistry().entries({config.peer_favorites.data(), config.peer_favorites.size()});
+
+    input_system.service().onLeftButton(onSecondaryButtonClick);
+    input_system.service().onRightButton(onPrimaryButtonClick);
+    input_system.service().onDirection(onPrimaryJoystickDirection);
+
+    ui_system.renderer().callback(onUiRendered);
+
+    DJC_DO_SETUP(setupPeriphery(config));
+    DJC_DO_SETUP(setupGraphics(config));
 }
 
 void loop() {
-    constexpr kf::math::Milliseconds loop_period{1000 / 50};// 50 Hz
-    delay(loop_period);
+    constexpr kf::math::Milliseconds loop_period{1000 / loop_rate_hz};
 
-    pollServices(static_cast<kf::math::Milliseconds>(millis()));
+    const auto now = static_cast<kf::math::Milliseconds>(millis());
+
+    config_system.poll(now);
+    periphery_system.poll(now);
+    transport_system.poll(now);
+    protocol_system.poll(now);
+    peer_system.poll(now);
+    input_system.poll(now);
+    control_system.poll(now);
+    ui_system.poll(now);
+    graphics_system.poll(now);
+
+    delay(loop_period);
 }
