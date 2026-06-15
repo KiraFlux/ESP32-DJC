@@ -3,38 +3,35 @@
 
 #pragma once
 
+#include "djc/mixin/ServiceOwner.hpp"
 #include "djc/service/ConfigService.hpp"
 #include "djc/system/System.hpp"
 
 namespace djc::system {
 
 /// @brief System owning the config service, handling deferred NVS operations
-/// @note Wraps ConfigService, requests load on init, and polls it periodically
-struct ConfigSystem : System<ConfigSystem> {
+/// @note Wraps ConfigService, load on init, and polls it periodically
+struct ConfigSystem :
 
-    /// @brief Get mutable access to config service
-    service::ConfigService &service() noexcept {
-        return _config_service;
-    }
+    System<ConfigSystem>,
+    mixin::ServiceOwner<service::ConfigService>
 
-    /// @brief Get readonly access to config service
-    constexpr const service::ConfigService &service() const noexcept {
-        return _config_service;
-    }
+{
+    explicit ConfigSystem() noexcept :
+        mixin::ServiceOwner<service::ConfigService>{{}} {}
 
 private:
-    service::ConfigService _config_service{};
-
     KF_IMPL_INITABLE(ConfigSystem, bool);
     bool initImpl() noexcept {
-        _config_service.requestLoad();
+        this->service().requestLoad();
+        this->service().sync();
 
         return true;
     }
 
     KF_IMPL_TIMED_POLLABLE(ConfigSystem);
     void poll(kf::math::Milliseconds now) noexcept {
-        _config_service.poll(now);
+        this->service().poll(now);
     }
 };
 
