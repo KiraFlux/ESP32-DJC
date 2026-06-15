@@ -46,6 +46,7 @@ struct ConfigPage : UI::Page {
 
         _save_config_button.callback([this]() {
             _config_service.requestSave();
+            _config_service.sync();
         });
         _save_config_button.hint("Write config from RAM into NVS");
 
