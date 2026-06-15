@@ -17,8 +17,8 @@ struct SystemTag {};
 template<typename Impl, typename InitSignature> struct System :
 
     SystemTag,
-    djc::mixin::NonCopyable,
-    kf::mixin::Initable<Impl, InitSignature>,
+    kf::mixin::NonCopyable,
+    djc::mixin::Initable<Impl, InitSignature>,
     kf::mixin::TimedPollable<Impl> {};
 
 }// namespace djc::system
