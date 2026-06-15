@@ -16,13 +16,13 @@ template<typename I> struct GraphicsSystem : System<GraphicsSystem<I>> {
     explicit GraphicsSystem(I &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
         _display_manager{_display_driver, virtual_keyboard} {}
 
-    /// @brief Get mutable access to display manager service.
-    DisplayManagerImpl &displayManager() noexcept {
+    /// @brief Get mutable access to display service
+    DisplayManagerImpl &service() noexcept {
         return _display_manager;
     }
 
-    /// @brief Get readonly access to display manager service.
-    constexpr const DisplayManagerImpl &displayManager() const noexcept {
+    /// @brief Get readonly access to display service
+    constexpr const DisplayManagerImpl &service() const noexcept {
         return _display_manager;
     }
 
