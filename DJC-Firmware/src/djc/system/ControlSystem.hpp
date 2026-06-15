@@ -19,13 +19,13 @@ struct ControlSystem : System<ControlSystem> {
     explicit ControlSystem(Periphery &periphery, transport::TransportLink &transport_link, protocol::ProtocolLink &protocol_link) noexcept :
         _periphery{periphery}, _control{transport_link, protocol_link} {}
 
-    /// @brief Get mutable access to the control service.
-    service::Control &control() noexcept {
+    /// @brief Get mutable access to the control service
+    service::Control &service() noexcept {
         return _control;
     }
 
-    /// @brief Get readonly access to the control service.
-    constexpr const service::Control &control() const noexcept {
+    /// @brief Get readonly access to the control service
+    constexpr const service::Control &service() const noexcept {
         return _control;
     }
 
