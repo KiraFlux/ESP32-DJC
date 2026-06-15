@@ -5,6 +5,7 @@
 
 #include <kf/Logger.hpp>
 
+#include "djc/mixin/ServiceOwner.hpp"
 #include "djc/Config.hpp"
 #include "djc/system/System.hpp"
 #include "djc/ui/UI.hpp"
@@ -15,11 +16,16 @@ namespace djc::system {
 
 /// @brief System that owns UI components: renderer, virtual keyboard, UI instance and root page
 /// @note Initialises the UI with the root page and triggers an initial update event. Polls the UI on every main loop iteration
-struct UiSystem : System<UiSystem> {
+struct UiSystem : 
 
+System<UiSystem>,
+mixin::ServiceOwner<djc::ui::UI>
+
+{
     using Renderer = ui::UI::Traits::RenderImpl;
 
     explicit UiSystem(const Config &config) noexcept :
+        mixin::ServiceOwner<djc::ui::UI>{djc::ui::UI{_renderer, _virtual_keyboard}}, 
         _renderer{config.render_system} {}
 
     /// @brief Get mutable access to renderer component
@@ -43,16 +49,6 @@ struct UiSystem : System<UiSystem> {
     }
 
     /// @brief Get mutable access to ui service
-    ui::UI &service() noexcept {
-        return _ui_service;
-    }
-
-    /// @brief Get readonly access to ui service
-    constexpr const ui::UI &service() const noexcept {
-        return _ui_service;
-    }
-
-    /// @brief Get mutable access to ui service
     ui::pages::RootPage &rootPage() noexcept {
         return _root_page;
     }
@@ -67,20 +63,19 @@ private:
 
     Renderer _renderer;
     ui::VirtualKeyboard _virtual_keyboard{};
-    ui::UI _ui_service{_renderer, _virtual_keyboard};
-    ui::pages::RootPage _root_page{_ui_service};
+    ui::pages::RootPage _root_page{this->service()};
 
     KF_IMPL_INITABLE(UiSystem, bool);
     bool initImpl() noexcept {
-        _ui_service.activePage(_root_page);
-        _ui_service.addEvent(ui::UI::Traits::EventImpl::update());
+        this->service().activePage(_root_page);
+        this->service().addEvent(ui::UI::Traits::EventImpl::update());
 
         return true;
     }
 
     KF_IMPL_TIMED_POLLABLE(UiSystem);
     void poll(kf::math::Milliseconds now) noexcept {
-        _ui_service.poll(now);
+        this->service().poll(now);
     }
 };
 
