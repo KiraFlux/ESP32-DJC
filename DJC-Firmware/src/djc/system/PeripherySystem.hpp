@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <kf/Logger.hpp>
-
 #include "djc/Config.hpp"
 #include "djc/Periphery.hpp"
 #include "djc/system/System.hpp"
@@ -29,18 +27,11 @@ struct PeripherySystem : System<PeripherySystem, bool()> {
     }
 
 private:
-    static constexpr auto logger{kf::Logger::create("PeripherySystem")};
-
     Periphery _periphery;
 
     DJC_IMPL_INITABLE(PeripherySystem, bool());
     bool initImpl() noexcept {
-        if (_periphery.init()) {
-            return true;
-        } else {
-            logger.error("Periphery init failed");
-            return false;
-        }
+        return _periphery.init();
     }
 
     KF_IMPL_TIMED_POLLABLE(PeripherySystem);
