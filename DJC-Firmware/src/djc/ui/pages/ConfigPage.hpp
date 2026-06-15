@@ -8,9 +8,9 @@
 #include <kf/mixin/Initable.hpp>
 
 #include "djc/Config.hpp"
-#include "djc/ConfigManager.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
+#include "djc/service/ConfigService.hpp"
 #include "djc/transport/Kind.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/PeerFavoritePage.hpp"
@@ -22,10 +22,10 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
     explicit ConfigPage(
         UI &ui,
         UI::Page &root,
-        djc::ConfigManager &config_manager,
+        djc::service::ConfigService &config_service,
         PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
         Page{ui, "Config"},
-        _config_manager{config_manager},
+        _config_service{config_service},
         _peer_favorite_page{ui, *this, _peer_favoriter_registry},
         _peer_favoriter_registry{peer_favoriter_registry},
         _device_name_input{ui.createTextInput()},
@@ -42,21 +42,21 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         }} {
         widgets(layout(0));
 
-        _device_name_input.source({_config_manager.config().device_name.data(), _config_manager.config().device_name.size()});
+        _device_name_input.source({_config_service.config().device_name.data(), _config_service.config().device_name.size()});
         _device_name_input.hint("Device name");
 
-        _save_config_button.callback([this]() { _config_manager.save(); });
+        _save_config_button.callback([this]() {
+            _config_service.requestSave();
+        });
         _save_config_button.hint("Write config from RAM into NVS");
 
         _load_config_button.callback([this]() {
-            _config_manager.load();
-            this->init();
+            _config_service.requestLoad();
         });
         _load_config_button.hint("Load config from NVS into RAM");
 
         _reset_config_button.callback([this]() {
-            _config_manager.reset();
-            this->init();
+            _config_service.requestReset();
         });
         _reset_config_button.hint("Set RAM config as detaults");
 
@@ -68,17 +68,17 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         _favorite_peers_fold_toggle_button.hint("Toggle folding");
 
         _default_transport_kind_selector.callback([this](transport::Kind kind) {
-            _config_manager.config().init_transport_kind = kind;
+            _config_service.config().init_transport_kind = kind;
         });
         _labeled_default_transport_kind_selector.hint("Define transport select after init");
 
         _default_protocol_mode_selector.callback([this](Mode mode) {
-            _config_manager.config().init_protocol_mode = mode;
+            _config_service.config().init_protocol_mode = mode;
         });
         _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
 
         _autoconnect_enabled_input.callback([this](bool value) {
-            _config_manager.config().auto_connect_service.enabled = value;
+            _config_service.config().auto_connect_service.enabled = value;
         });
         _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
 
@@ -93,6 +93,8 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
             display.hint("Open peer config");
         }
     }
+
+    // TODO: add onPoll with sync
 
     void onEntry() noexcept override {
         const auto all_favorites = _peer_favoriter_registry.all();
@@ -131,7 +133,7 @@ private:
 
     // state
 
-    djc::ConfigManager &_config_manager;
+    djc::service::ConfigService &_config_service;
     PeerFavoritesRegistry &_peer_favoriter_registry;
     kf::memory::StaticString<32> _label_favorites_buffer{};
     bool show_favorites{true};
@@ -216,7 +218,7 @@ private:
     // impl
     KF_IMPL_INITABLE(ConfigPage, void);
     void initImpl() noexcept {
-        const auto &config = _config_manager.config();
+        const auto &config = _config_service.config();
         _default_protocol_mode_selector.value(config.init_protocol_mode);
         _default_transport_kind_selector.value(config.init_transport_kind);
         _autoconnect_enabled_input.value(config.auto_connect_service.enabled);
