@@ -48,6 +48,7 @@ struct PeerDetailPage final : UI::Page {
             }
         });
 
+        _peer_favorite_button.hint("Open peer favorites edit");
         _peer_favorite_button.callback([this]() -> void {
             if (_peer_address.isNone()) { return; }
             this->label("Back");
@@ -55,7 +56,6 @@ struct PeerDetailPage final : UI::Page {
             _ui.activePage(_peer_favorite_page);
             update();
         });
-        _peer_favorite_button.hint("Open peer favorites edit");
     }
 
     void bindPeer(const transport::PeerAddress &address) noexcept {
