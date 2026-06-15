@@ -86,7 +86,7 @@ private:
     static constexpr auto logger{kf::Logger::create("ConfigService")};
 
     static constexpr kf::math::Timer::Config sync_timer_config{
-        .period = 5'000,
+        .period = 20'000,
     };
 
     kf::memory::Storage<Config> _storage{
