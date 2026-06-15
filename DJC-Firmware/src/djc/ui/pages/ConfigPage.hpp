@@ -5,7 +5,6 @@
 
 #include <kf/memory/Array.hpp>
 #include <kf/memory/StaticString.hpp>
-#include <kf/mixin/Initable.hpp>
 
 #include "djc/Config.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
@@ -17,7 +16,7 @@
 
 namespace djc::ui::pages {
 
-struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
+struct ConfigPage : UI::Page {
 
     explicit ConfigPage(
         UI &ui,
@@ -215,14 +214,14 @@ private:
         return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);
     }
 
-    // impl
-    KF_IMPL_INITABLE(ConfigPage, void);
-    void initImpl() noexcept {
-        const auto &config = _config_service.config();
-        _default_protocol_mode_selector.value(config.init_protocol_mode);
-        _default_transport_kind_selector.value(config.init_transport_kind);
-        _autoconnect_enabled_input.value(config.auto_connect_service.enabled);
-    }
+    // TODO: fetch config when needed
+    // KF_IMPL_INITABLE(ConfigPage, void);
+    // void initImpl() noexcept {
+    //     const auto &config = _config_service.config();
+    //     _default_protocol_mode_selector.value(config.init_protocol_mode);
+    //     _default_transport_kind_selector.value(config.init_transport_kind);
+    //     _autoconnect_enabled_input.value(config.auto_connect_service.enabled);
+    // }
 };
 
 }// namespace djc::ui::pages
