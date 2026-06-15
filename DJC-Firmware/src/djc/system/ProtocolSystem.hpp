@@ -4,7 +4,6 @@
 #pragma once
 
 #include <kf/Logger.hpp>
-#include <kf/mixin/Configurable.hpp>
 
 #include "djc/Config.hpp"
 #include "djc/MavlinkTelemetryRegistry.hpp"
@@ -18,9 +17,11 @@ namespace djc::system {
 /// @note Owns ProtocolRegistry, ProtocolLink, and MavlinkTelemetryRegistry.
 /// @note Protocol polling is handled externally.
 /// @note MAVLink callback is configured in init().
-struct ProtocolSystem : System<ProtocolSystem>, kf::mixin::Configurable<Config> {
+struct ProtocolSystem : System<ProtocolSystem, void(protocol::ProtocolRegistry::Mode)> {
 
-    using kf::mixin::Configurable<Config>::Configurable;
+    explicit ProtocolSystem(const Config &config) noexcept :
+        _protocol_registry{config.protocol_registry},
+        _protocol_link{config.protocol_link} {}
 
     /// @brief Get mutable access to protocol link component
     protocol::ProtocolLink &link() noexcept {
@@ -56,19 +57,17 @@ private:
     static constexpr auto logger{kf::Logger::create("ProtocolSystem")};
 
     MavlinkTelemetryRegistry _mavlink_telemetry_registry{};
-    protocol::ProtocolRegistry _protocol_registry{this->config().protocol_registry};
-    protocol::ProtocolLink _protocol_link{this->config().protocol_link};
+    protocol::ProtocolRegistry _protocol_registry;
+    protocol::ProtocolLink _protocol_link;
     kf::math::Milliseconds _poll_time{};
 
-    KF_IMPL_INITABLE(ProtocolSystem, bool);
-    bool initImpl() noexcept {
+    DJC_IMPL_INITABLE(ProtocolSystem, void(protocol::ProtocolRegistry::Mode));
+    void initImpl(protocol::ProtocolRegistry::Mode mode) noexcept {
         _protocol_registry.mavlink().callback([this](const auto &message) {
             _mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(_poll_time), message);
         });
 
-        _protocol_link.protocol(_protocol_registry.get(this->config().init_protocol_mode));
-
-        return true;
+        _protocol_link.protocol(_protocol_registry.get(mode));
     }
 
     KF_IMPL_TIMED_POLLABLE(ProtocolSystem);

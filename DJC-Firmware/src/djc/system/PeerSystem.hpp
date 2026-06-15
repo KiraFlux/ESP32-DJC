@@ -6,7 +6,6 @@
 #include <WiFi.h>
 
 #include <kf/Logger.hpp>
-#include <kf/mixin/Configurable.hpp>
 
 #include "djc/Config.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
@@ -17,15 +16,19 @@
 
 namespace djc::system {
 
-/// @brief System managing peer favorites, scanning and auto-connection.
+/// @brief System managing peer favorites, scanning and auto-connection
 /// @note Owns PeerFavoritesRegistry, PeerScanningService, AutoConnectService.
 /// @note Depends on Config (readolny) and TransportLink (for scanning and connection).
 /// @note On each poll, scans visible peers and triggers auto-connection to the most trusted visible favorite.
 /// @note Peer favorites registry entries source should set extenally
-struct PeerSystem : System<PeerSystem>, kf::mixin::Configurable<Config> {
+struct PeerSystem :
 
+    System<PeerSystem, void(transport::TransportLink &)>
+
+{
     explicit PeerSystem(const Config &config, transport::TransportLink &transport_link) noexcept :
-        kf::mixin::Configurable<Config>{config}, _transport_link{transport_link} {}
+        _peer_scanning_service{config.peer_scanner, transport_link},
+        _auto_connect_service{config.auto_connect_service, transport_link} {}
 
     /// @brief Get mutable access to peer favorites registry component
     PeerFavoritesRegistry &favoritesRegistry() noexcept {
@@ -60,22 +63,19 @@ struct PeerSystem : System<PeerSystem>, kf::mixin::Configurable<Config> {
 private:
     static constexpr auto logger{kf::Logger::create("PeerSystem")};
 
-    transport::TransportLink &_transport_link;
     PeerFavoritesRegistry _peer_favorites_registry{};
-    service::PeerScanningService _peer_scanning_service{this->config().peer_scanner, _transport_link};
-    service::AutoConnectService _auto_connect_service{this->config().auto_connect_service, _transport_link};
+    service::PeerScanningService _peer_scanning_service;
+    service::AutoConnectService _auto_connect_service;
 
-    KF_IMPL_INITABLE(PeerSystem, bool);
-    bool initImpl() noexcept {
+    DJC_IMPL_INITABLE(PeerSystem, void(transport::TransportLink &));
+    void initImpl(transport::TransportLink &transport_link) noexcept {
         _peer_favorites_registry.init();
         _peer_scanning_service.init();
 
-        _auto_connect_service.callback([this](const auto &address) -> void {
+        _auto_connect_service.callback([&transport_link](const auto &address) -> void {
             logger.info("Auto Connect");
-            (void) _transport_link.connect(address);
+            (void) transport_link.connect(address);
         });
-
-        return true;
     }
 
     KF_IMPL_TIMED_POLLABLE(PeerSystem);

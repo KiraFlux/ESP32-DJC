@@ -6,10 +6,10 @@
 #include <WiFi.h>
 
 #include <kf/Logger.hpp>
-#include <kf/mixin/Configurable.hpp>
 
 #include "djc/Config.hpp"
 #include "djc/system/System.hpp"
+#include "djc/transport/Kind.hpp"
 #include "djc/transport/TransportLink.hpp"
 #include "djc/transport/TransportRegistry.hpp"
 
@@ -17,9 +17,9 @@ namespace djc::system {
 
 /// @brief System managing transport, Wraps TransportRegistry and TransportLink
 /// @note Initializes WiFi STA mode, and polls the link for connection timeouts.
-struct TransportSystem : System<TransportSystem>, kf::mixin::Configurable<Config> {
+struct TransportSystem : System<TransportSystem, void(transport::Kind)> {
 
-    using kf::mixin::Configurable<Config>::Configurable;
+    explicit TransportSystem(const Config& config) noexcept {}
 
     /// @brief Get mutable access to transport link component
     transport::TransportLink &link() noexcept {
@@ -45,19 +45,17 @@ private:
     static constexpr auto logger{kf::Logger::create("TransportSystem")};
 
     transport::TransportRegistry _transport_registry{};
-    transport::TransportLink _transport_link{this->config().transport_link};
+    transport::TransportLink _transport_link{config.transport_link};
 
-    KF_IMPL_INITABLE(TransportSystem, bool);
-    bool initImpl() noexcept {
+    DJC_IMPL_INITABLE(TransportSystem, void(transport::Kind));
+    void initImpl(transport::Kind kind) noexcept {
         WiFi.mode(WIFI_MODE_STA);
 
         if (not _transport_registry.espnow().init()) {
             logger.error("failed to initialize espnow transport");
         }
 
-        _transport_link.transport(_transport_registry.get(this->config().init_transport_kind));
-
-        return true;
+        _transport_link.transport(_transport_registry.get(kind));
     }
 
     KF_IMPL_TIMED_POLLABLE(TransportSystem);
