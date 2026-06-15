@@ -28,16 +28,6 @@ struct PeripherySystem : System<PeripherySystem>, kf::mixin::Configurable<Config
         return _periphery;
     }
 
-    /// @brief Tune periphery
-    void tune(Periphery::Config &mutable_periphery_config) noexcept {
-        if (mutable_periphery_config.joystick_axes_tuned) {
-            logger.debug("Nothing to do: axes already tuned");
-        } else {
-            logger.debug("Tunning axes..");
-            _periphery.tune(mutable_periphery_config);
-        }
-    }
-
 private:
     static constexpr auto logger{kf::Logger::create("PeripherySystem")};
 
