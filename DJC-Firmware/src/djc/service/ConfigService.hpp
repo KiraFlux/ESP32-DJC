@@ -44,27 +44,8 @@ struct ConfigService : Service<ConfigService> {
         logger.debug("reset requested");
     }
 
-private:
-    static constexpr auto logger{kf::Logger::create("ConfigService")};
-
-    static constexpr kf::math::Timer::Config sync_timer_config{
-        .period = 5'000,
-    };
-
-    kf::memory::Storage<Config> _storage{
-        .key = "DC",
-        .config = djc::Config::defaults(),
-    };
-
-    kf::math::Timer _sync_timer{sync_timer_config};
-
-    bool _save_requested{false}, _load_requested{false}, _reset_requested{false};
-
-    KF_IMPL_TIMED_POLLABLE(ConfigService);
-    void pollImpl(kf::math::Milliseconds now) noexcept {
-        if (not _sync_timer.expired(now)) { return; }
-        _sync_timer.start(now);
-
+    /// @brief Force sync now
+    void sync() noexcept {
         if (_load_requested) {
             _load_requested = false;
 
@@ -98,6 +79,30 @@ private:
             if (not _storage.save()) {
                 logger.error("Failed to save config into NVS");
             }
+        }
+    }
+
+private:
+    static constexpr auto logger{kf::Logger::create("ConfigService")};
+
+    static constexpr kf::math::Timer::Config sync_timer_config{
+        .period = 5'000,
+    };
+
+    kf::memory::Storage<Config> _storage{
+        .key = "DC",
+        .config = djc::Config::defaults(),
+    };
+
+    kf::math::Timer _sync_timer{sync_timer_config};
+
+    bool _save_requested{false}, _load_requested{false}, _reset_requested{false};
+
+    KF_IMPL_TIMED_POLLABLE(ConfigService);
+    void pollImpl(kf::math::Milliseconds now) noexcept {
+        if (_sync_timer.expired(now)) {
+            _sync_timer.start(now);
+            sync();
         }
     }
 };
