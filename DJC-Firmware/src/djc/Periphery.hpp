@@ -147,8 +147,8 @@ private:
     static constexpr auto logger = kf::Logger::create("Periphery");
 
     // impl
-    KF_IMPL_INITABLE(Periphery, bool);
-    bool initImpl() noexcept {
+    KF_IMPL_INITABLE(Periphery, void);
+    void initImpl() noexcept {
         logger.info("Initializing peripherals");
 
         left_joystick.init();
@@ -163,9 +163,6 @@ private:
         if (display.init().isError()) {
             logger.error("Display driver initialization failed");
         }
-
-        logger.info("Peripherals initialized successfully");
-        return true;
     }
 };
 

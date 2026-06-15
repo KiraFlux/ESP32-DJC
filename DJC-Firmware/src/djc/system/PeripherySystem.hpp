@@ -11,7 +11,7 @@ namespace djc::system {
 
 /// @brief System that owns and initializes hardware peripherals
 /// @note Provides access to peripherals for other systems via getters; no periodic polling needed.
-struct PeripherySystem : System<PeripherySystem, bool()> {
+struct PeripherySystem : System<PeripherySystem, void()> {
 
     explicit PeripherySystem(const Config &config) noexcept :
         _periphery{config.periphery} {}
@@ -29,9 +29,9 @@ struct PeripherySystem : System<PeripherySystem, bool()> {
 private:
     Periphery _periphery;
 
-    DJC_IMPL_INITABLE(PeripherySystem, bool());
-    bool initImpl() noexcept {
-        return _periphery.init();
+    DJC_IMPL_INITABLE(PeripherySystem, void());
+    void initImpl() noexcept {
+        _periphery.init();
     }
 
     KF_IMPL_TIMED_POLLABLE(PeripherySystem);
