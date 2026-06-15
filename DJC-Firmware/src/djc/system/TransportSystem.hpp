@@ -19,7 +19,8 @@ namespace djc::system {
 /// @note Initializes WiFi STA mode, and polls the link for connection timeouts.
 struct TransportSystem : System<TransportSystem, void(transport::Kind)> {
 
-    explicit TransportSystem(const Config& config) noexcept {}
+    explicit TransportSystem(const Config &config) noexcept :
+        _transport_link{config.transport_link} {}
 
     /// @brief Get mutable access to transport link component
     transport::TransportLink &link() noexcept {
@@ -45,7 +46,7 @@ private:
     static constexpr auto logger{kf::Logger::create("TransportSystem")};
 
     transport::TransportRegistry _transport_registry{};
-    transport::TransportLink _transport_link{config.transport_link};
+    transport::TransportLink _transport_link;
 
     DJC_IMPL_INITABLE(TransportSystem, void(transport::Kind));
     void initImpl(transport::Kind kind) noexcept {

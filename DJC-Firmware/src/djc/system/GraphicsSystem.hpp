@@ -20,19 +20,19 @@ template<typename I> struct GraphicsSystem :
     using DisplayManagerImpl = service::DisplayManager<I>;
 
     explicit GraphicsSystem(I &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
-        mixin::ServiceOwner<DisplayManagerImpl>{DisplayManagerImpl{_display_driver, virtual_keyboard}} {}
+        mixin::ServiceOwner<DisplayManagerImpl>{DisplayManagerImpl{display_driver, virtual_keyboard}} {}
 
 private:
     using This = GraphicsSystem<I>;
 
     DJC_IMPL_INITABLE(This, void());
     void initImpl() noexcept {
-        _display_manager.init();
+        this->service().init();
     }
 
     KF_IMPL_TIMED_POLLABLE(This);
     void pollImpl(kf::math::Milliseconds now) noexcept {
-        _display_manager.poll(now);
+        this->service().poll(now);
     }
 };
 
