@@ -52,11 +52,13 @@ struct ConfigPage : UI::Page {
 
         _load_config_button.callback([this]() {
             _config_service.requestLoad();
+            _config_service.sync();
         });
         _load_config_button.hint("Load config from NVS into RAM");
 
         _reset_config_button.callback([this]() {
             _config_service.requestReset();
+            _config_service.sync();
         });
         _reset_config_button.hint("Set RAM config as detaults");
 
