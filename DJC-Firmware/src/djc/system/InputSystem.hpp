@@ -25,13 +25,13 @@ struct InputSystem : System<InputSystem>, kf::mixin::Configurable<Config> {
             periphery.right_button_listener,
         } {}
 
-    /// @brief Get mutable access to the input handler service (for callback setup).
-    service::InputHandler &inputHandler() noexcept {
+    /// @brief Get mutable access to the input handler service
+    service::InputHandler &service() noexcept {
         return _input_handler;
     }
 
-    /// @brief Get readonly access to the input handler service.
-    constexpr const service::InputHandler &inputHandler() const noexcept {
+    /// @brief Get readonly access to the input handler service
+    constexpr const service::InputHandler &service() const noexcept {
         return _input_handler;
     }
 
