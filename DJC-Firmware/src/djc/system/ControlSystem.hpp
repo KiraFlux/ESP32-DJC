@@ -5,6 +5,7 @@
 
 #include "djc/ManualInput.hpp"
 #include "djc/Periphery.hpp"
+#include "djc/mixin/ServiceOwner.hpp"
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/service/Control.hpp"
 #include "djc/system/System.hpp"
@@ -12,26 +13,19 @@
 
 namespace djc::system {
 
-/// @brief System managing manual control output.
+/// @brief System managing manual control output
 /// @note Owns Control service. Depends Periphery (joysticks), TransportLink and ProtocolLink.
-struct ControlSystem : System<ControlSystem> {
+struct ControlSystem :
 
+    System<ControlSystem>,
+    mixin::ServiceOwner<service::Control>
+
+{
     explicit ControlSystem(Periphery &periphery, transport::TransportLink &transport_link, protocol::ProtocolLink &protocol_link) noexcept :
-        _periphery{periphery}, _control{transport_link, protocol_link} {}
-
-    /// @brief Get mutable access to the control service
-    service::Control &service() noexcept {
-        return _control;
-    }
-
-    /// @brief Get readonly access to the control service
-    constexpr const service::Control &service() const noexcept {
-        return _control;
-    }
+        mixin::ServiceOwner<service::Control>{service::Control{transport_link, protocol_link}}, _periphery{periphery} {}
 
 private:
     Periphery &_periphery;
-    service::Control _control;
 
     KF_IMPL_INITABLE(ControlSystem, bool);
     bool initImpl() noexcept {
@@ -40,10 +34,10 @@ private:
 
     KF_IMPL_TIMED_POLLABLE(ControlSystem);
     void pollImpl(kf::math::Milliseconds now) noexcept {
-        if (_control.enabled()) {
+        if (this->service().enabled()) {
             using I = ManualInput;
 
-            _control.input(I{
+            this->service().input(I{
                 .left_x = I::fromNormalized(_periphery.left_joystick.axis_x.read()),
                 .left_y = I::fromNormalized(_periphery.left_joystick.axis_y.read()),
                 .right_x = I::fromNormalized(_periphery.right_joystick.axis_x.read()),
@@ -51,7 +45,7 @@ private:
             });
         }
 
-        _control.poll(now);
+        this->service().poll(now);
     }
 };
 
