@@ -18,11 +18,11 @@ namespace djc::system {
 struct ControlSystem :
 
     System<ControlSystem, void()>,
-    mixin::ServiceOwner<service::Control>
+    mixin::ServiceOwner<service::ControlService>
 
 {
     explicit ControlSystem(Periphery &periphery, transport::TransportLink &transport_link, protocol::ProtocolLink &protocol_link) noexcept :
-        mixin::ServiceOwner<service::Control>{service::Control{transport_link, protocol_link}}, _periphery{periphery} {}
+        mixin::ServiceOwner<service::ControlService>{service::ControlService{transport_link, protocol_link}}, _periphery{periphery} {}
 
 private:
     Periphery &_periphery;
