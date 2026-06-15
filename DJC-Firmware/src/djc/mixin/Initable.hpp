@@ -30,6 +30,6 @@ template<typename Impl, typename... Args> struct Initable<Impl, void(Args...)> {
     }
 };
 
-#define DJC_IMPL_INITABLE(__impl__, ...) friend struct ::djc::mixin::Initable<__impl__, __VA_ARGS__>
-
 }// namespace djc::mixin
+
+#define DJC_IMPL_INITABLE(__impl__, ...) friend struct ::djc::mixin::Initable<__impl__, __VA_ARGS__>
