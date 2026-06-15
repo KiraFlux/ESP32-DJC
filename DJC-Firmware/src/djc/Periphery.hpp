@@ -75,7 +75,7 @@ private:
 struct Periphery final :
 
     kf::mixin::NonCopyable,
-    kf::mixin::Initable<Periphery, bool>,
+    kf::mixin::Initable<Periphery, void>,
     kf::mixin::Configurable<internal::PeripheryConfig>
 
 {
