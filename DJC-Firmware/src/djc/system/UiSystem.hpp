@@ -43,12 +43,12 @@ struct UiSystem : System<UiSystem> {
     }
 
     /// @brief Get mutable access to ui service
-    ui::UI &ui() noexcept {
+    ui::UI &service() noexcept {
         return _ui_service;
     }
 
     /// @brief Get readonly access to ui service
-    constexpr const ui::UI &ui() const noexcept {
+    constexpr const ui::UI &service() const noexcept {
         return _ui_service;
     }
 
