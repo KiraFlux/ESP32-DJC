@@ -44,7 +44,7 @@ private:
     }
 
     KF_IMPL_TIMED_POLLABLE(PeripherySystem);
-    void poll(kf::math::Milliseconds now) noexcept {}
+    void pollImpl(kf::math::Milliseconds now) noexcept {}
 };
 
 }// namespace djc::system

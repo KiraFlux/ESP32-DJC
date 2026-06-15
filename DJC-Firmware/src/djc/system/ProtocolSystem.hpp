@@ -71,7 +71,7 @@ private:
     }
 
     KF_IMPL_TIMED_POLLABLE(ProtocolSystem);
-    void poll(kf::math::Milliseconds now) noexcept {
+    void pollImpl(kf::math::Milliseconds now) noexcept {
         _poll_time = now;
 
         // protocol link polling in control component

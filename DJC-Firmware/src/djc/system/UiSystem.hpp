@@ -78,7 +78,7 @@ private:
     }
 
     KF_IMPL_TIMED_POLLABLE(UiSystem);
-    void poll(kf::math::Milliseconds now) noexcept {
+    void pollImpl(kf::math::Milliseconds now) noexcept {
         this->service().poll(now);
     }
 };

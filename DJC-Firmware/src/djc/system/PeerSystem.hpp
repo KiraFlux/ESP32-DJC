@@ -79,7 +79,7 @@ private:
     }
 
     KF_IMPL_TIMED_POLLABLE(PeerSystem);
-    void poll(kf::math::Milliseconds now) noexcept {
+    void pollImpl(kf::math::Milliseconds now) noexcept {
         _peer_scanning_service.poll(now);
 
         if (_auto_connect_service.config().enabled and _auto_connect_service.target().isNone()) {

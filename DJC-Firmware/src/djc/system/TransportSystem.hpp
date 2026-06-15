@@ -60,7 +60,7 @@ private:
     }
 
     KF_IMPL_TIMED_POLLABLE(TransportSystem);
-    void poll(kf::math::Milliseconds now) noexcept {
+    void pollImpl(kf::math::Milliseconds now) noexcept {
         _transport_link.poll(now);
     }
 };
