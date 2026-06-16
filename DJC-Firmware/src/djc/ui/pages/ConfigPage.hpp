@@ -5,27 +5,26 @@
 
 #include <kf/memory/Array.hpp>
 #include <kf/memory/StaticString.hpp>
-#include <kf/mixin/Initable.hpp>
 
 #include "djc/Config.hpp"
-#include "djc/ConfigManager.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
+#include "djc/service/ConfigService.hpp"
 #include "djc/transport/Kind.hpp"
 #include "djc/ui/UI.hpp"
 #include "djc/ui/pages/PeerFavoritePage.hpp"
 
 namespace djc::ui::pages {
 
-struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
+struct ConfigPage : UI::Page {
 
     explicit ConfigPage(
         UI &ui,
         UI::Page &root,
-        djc::ConfigManager &config_manager,
+        djc::service::ConfigService &config_service,
         PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
         Page{ui, "Config"},
-        _config_manager{config_manager},
+        _config_service{config_service},
         _peer_favorite_page{ui, *this, _peer_favoriter_registry},
         _peer_favoriter_registry{peer_favoriter_registry},
         _device_name_input{ui.createTextInput()},
@@ -42,59 +41,69 @@ struct ConfigPage : UI::Page, kf::mixin::Initable<ConfigPage, void> {
         }} {
         widgets(layout(0));
 
-        _device_name_input.source({_config_manager.config().device_name.data(), _config_manager.config().device_name.size()});
         _device_name_input.hint("Device name");
+        _device_name_input.source({_config_service.config().device_name.data(), _config_service.config().device_name.size()});
 
-        _save_config_button.callback([this]() { _config_manager.save(); });
         _save_config_button.hint("Write config from RAM into NVS");
-
-        _load_config_button.callback([this]() {
-            _config_manager.load();
-            this->init();
+        _save_config_button.callback([this]() {
+            _config_service.requestSave();
+            _config_service.sync();
         });
+
         _load_config_button.hint("Load config from NVS into RAM");
-
-        _reset_config_button.callback([this]() {
-            _config_manager.reset();
-            this->init();
+        _load_config_button.callback([this]() {
+            _config_service.requestLoad();
+            _config_service.sync();
         });
-        _reset_config_button.hint("Set RAM config as detaults");
 
+        _reset_config_button.hint("Set RAM config as detaults");
+        _reset_config_button.callback([this]() {
+            _config_service.requestReset();
+            _config_service.sync();
+        });
+
+        _favorite_peers_fold_toggle_button.hint("Toggle folding");
         _favorite_peers_fold_toggle_button.callback([this]() {
             show_favorites = not show_favorites;
             this->onEntry();
             update();
         });
-        _favorite_peers_fold_toggle_button.hint("Toggle folding");
 
-        _default_transport_kind_selector.callback([this](transport::Kind kind) {
-            _config_manager.config().init_transport_kind = kind;
-        });
         _labeled_default_transport_kind_selector.hint("Define transport select after init");
-
-        _default_protocol_mode_selector.callback([this](Mode mode) {
-            _config_manager.config().init_protocol_mode = mode;
+        _default_transport_kind_selector.callback([this](transport::Kind kind) {
+            _config_service.config().init_transport_kind = kind;
         });
+
         _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
-
-        _autoconnect_enabled_input.callback([this](bool value) {
-            _config_manager.config().auto_connect_service.enabled = value;
+        _default_protocol_mode_selector.callback([this](Mode mode) {
+            _config_service.config().init_protocol_mode = mode;
+            _config_service.requestSave();
         });
+
         _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
+        _autoconnect_enabled_input.callback([this](bool value) {
+            _config_service.config().auto_connect_service.enabled = value;
+            _config_service.requestSave();
+        });
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
             auto &display = _peer_favorite_displays[i];
             _layout[layout_regular_widgets + i] = &display;
 
+            display.hint("Open peer config");
             display.callback([this](const transport::PeerAddress &address) -> void {
                 _peer_favorite_page.bindPeer(address);
                 _ui.activePage(_peer_favorite_page);
             });
-            display.hint("Open peer config");
         }
     }
 
     void onEntry() noexcept override {
+        const auto &config = _config_service.config();
+        _default_protocol_mode_selector.value(config.init_protocol_mode);
+        _default_transport_kind_selector.value(config.init_transport_kind);
+        _autoconnect_enabled_input.value(config.auto_connect_service.enabled);
+
         const auto all_favorites = _peer_favoriter_registry.all();
 
         (void) _label_favorites_buffer.format(
@@ -131,7 +140,7 @@ private:
 
     // state
 
-    djc::ConfigManager &_config_manager;
+    djc::service::ConfigService &_config_service;
     PeerFavoritesRegistry &_peer_favoriter_registry;
     kf::memory::StaticString<32> _label_favorites_buffer{};
     bool show_favorites{true};
@@ -211,15 +220,6 @@ private:
 
     kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
         return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);
-    }
-
-    // impl
-    KF_IMPL_INITABLE(ConfigPage, void);
-    void initImpl() noexcept {
-        const auto &config = _config_manager.config();
-        _default_protocol_mode_selector.value(config.init_protocol_mode);
-        _default_transport_kind_selector.value(config.init_transport_kind);
-        _autoconnect_enabled_input.value(config.auto_connect_service.enabled);
     }
 };
 

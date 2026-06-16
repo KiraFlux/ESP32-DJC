@@ -16,9 +16,9 @@ namespace djc::service {
 /// @note
 /// Stores the current joystick input and a flag that enables/disables output.
 /// When enabled and the transport is connected, `pollImpl()` forwards the input to the active protocol via `ProtocolLink::poll()`.
-struct Control final : Service<Control> {
+struct ControlService final : Service<ControlService> {
 
-    explicit Control(transport::TransportLink &transport_link, protocol::ProtocolLink &protocol_link) noexcept :
+    explicit ControlService(transport::TransportLink &transport_link, protocol::ProtocolLink &protocol_link) noexcept :
         _transport_link{transport_link}, _protocol_link{protocol_link} {}
 
     /// @brief Returns the current manual input values.
@@ -47,7 +47,7 @@ private:
     ManualInput _manual_input{};
     bool _enabled{false};
 
-    KF_IMPL_TIMED_POLLABLE(Control);
+    KF_IMPL_TIMED_POLLABLE(ControlService);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         if (_enabled and _transport_link.connected()) {
             _protocol_link.poll(now, _manual_input, _transport_link);
