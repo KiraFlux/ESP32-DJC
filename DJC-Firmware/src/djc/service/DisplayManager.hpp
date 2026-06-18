@@ -18,7 +18,7 @@
 
 namespace djc::service {
 
-/// @brief Service that manages display rendering, including UI and virtual keyboard overlay.
+/// @brief Service that manages display rendering, including UI and virtual keyboard overlay
 template<typename I> struct DisplayManager final :
 
     Service<DisplayManager<I>>,
@@ -72,17 +72,21 @@ private:
     void renderUi(kf::memory::StringView str) noexcept {
         auto &canvas = _canvas.unwrap();
 
-        if (not _overlay.empty()) {
-            canvas.background(_overlay_color);
-            canvas.foreground(Palette::black);
-            const auto rows = 1 + (_overlay.size() / canvas.widthInGlyphs());
-            const auto y = static_cast<kf::math::Pixels>(canvas.maxY() - rows * canvas.font().heightTotal());
-            canvas.text(0, y, _overlay);
-        }
-
         canvas.background(Palette::black);
         canvas.foreground(Palette::white);
         canvas.text(0, 0, str.data());
+
+        if (not _overlay.empty()) {
+            const auto rows = 1 + (_overlay.size() / canvas.widthInGlyphs());
+            const auto y = static_cast<kf::math::Pixels>(canvas.maxY() - rows * canvas.font().heightTotal());
+        
+            canvas.foreground(_overlay_color);
+            canvas.rect(0, y, canvas.maxX(), canvas.maxY(), true);
+        
+            canvas.background(_overlay_color);
+            canvas.foreground(Palette::black);
+            canvas.text(0, y, _overlay);
+        }
     }
 
     void renderVirtualKeyboard() noexcept {
@@ -128,7 +132,6 @@ private:
         }
     }
 
-    // impl
     using This = DisplayManager<I>;
 
     KF_IMPL_INITABLE(This, void);
