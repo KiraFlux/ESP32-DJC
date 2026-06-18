@@ -8,16 +8,16 @@
 #include <kf/Slice.hpp>
 #include <kf/memory/StaticString.hpp>
 #include <kf/mixin/Initable.hpp>
-#include <kf/network/MacAddress.hpp>
 #include <kf/network/EspNow.hpp>
+#include <kf/network/MacAddress.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
 #include "djc/transport/Transport.hpp"
 
 namespace djc::transport {
 
-/// @brief ESP‑NOW transport implementation.
-/// @note Manages ESP‑NOW peer connections. uses dedicated active peer for communication.
+/// @brief ESP‑NOW transport implementation
+/// @note Manages ESP‑NOW peer connections. uses dedicated active peer for communication
 struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
 
     [[nodiscard]] bool send(kf::Slice<const kf::u8> buffer) noexcept override {
@@ -28,29 +28,32 @@ struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
         }
     }
 
-private:
-    using EspNow = kf::network::EspNow;
-    using LogString = kf::memory::StaticString<128>;
-
-    static constexpr auto logger{kf::Logger::create("EspNowTransport")};
-
 protected:
-    /// @brief Establish a connection to a peer.
-    /// @param address The peer's address (must be of kind `EspNow`).
-    /// @return true on success, false on failure.
-    /// @note Adds the peer to ESP‑NOW and sets up a receive callback.
+    /// @brief Establish a connection to a peer
+    /// @param address The peer's address (must be of kind `EspNow`)
+    /// @return true on success, false on failure
+    /// @note Adds the peer to ESP‑NOW and sets up a receive callback
     [[nodiscard]] bool doConnect(const PeerAddress &address) noexcept override {
         if (address.kind() != Kind::EspNow) { return false; }
 
-        _active_peer = addPeer(address.mac());
-        if (_active_peer.isNone()) { return false; }
+        auto peer_result = EspNow::Peer::create(EspNow::Peer::Config{
+            .mac_address = address.mac(),
+            .wifi_interface_sta = true,
+        });
 
-        logger.info("Connected: OK");
+        if (peer_result.isError()) {
+            logger.error(LogString::formatted("Connect to '%s' failed: %s", address.mac().toString().data(), peer_result.error().toString().data()).view());
+            return false;
+        }
+
+        _active_peer = kf::some(std::move(peer_result.ok()));
+
+        logger.info(LogString::formatted("Connected: primary peer set '%s'", address.mac().toString().data()).view());
         return true;
     }
 
-    /// @brief Disconnect from the current peer.
-    /// @note Removes the peer from ESP‑NOW and clears internal state.
+    /// @brief Disconnect from the current peer
+    /// @note Removes the peer from ESP‑NOW and clears internal state
     void doDisconnect() noexcept override {
         if (not connected()) {
             logger.warn("Disconnect failed: No active peer");
@@ -68,29 +71,12 @@ protected:
     }
 
 private:
-    kf::Option<EspNow::Peer> _active_peer{};
+    using EspNow = kf::network::EspNow;
+    using LogString = kf::memory::StaticString<128>;
 
-    static auto addPeer(const kf::network::MacAddress &mac) noexcept -> kf::Option<EspNow::Peer> {
-        auto peer_result = EspNow::Peer::create(EspNow::Peer::Config{
-            .mac_address = mac,
-            .wifi_interface_sta = true,
-        });
+    static constexpr auto logger{kf::Logger::create("EspNowTransport")};
 
-        if (peer_result.isOk()) {
-            logger.info(LogString::formatted("Peer '%s' added", mac.toString().data()).view());
-            return kf::some(std::move(peer_result.ok()));
-        } else {
-            logger.error(LogString::formatted("Failed to add peer [%s] :%s", mac.toString().data(), peer_result.error().toString().data()).view());
-            return kf::none;
-        }
-    }
-
-    static void delPeer(EspNow::Peer &peer) noexcept {
-        const auto result = peer.del();
-        if (result.isError()) {
-            logger.error(LogString::formatted("Failed to delete peer [%s] : %s", peer.mac().toString().data(), result.error().toString().data()).view());
-        }
-    }
+    kf::Option<EspNow::Peer> _active_peer{kf::none};
 
     KF_IMPL_INITABLE(EspNowTransport, bool);
     bool initImpl() noexcept {
@@ -112,7 +98,6 @@ private:
             }
         });
 
-        logger.debug("init: ok");
         return true;
     }
 };
