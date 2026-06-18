@@ -47,6 +47,7 @@ template<typename I> struct DisplayManager final :
 
     void onRender(kf::memory::StringView str) noexcept {
         if (_canvas.isNone()) { return; }
+        auto &canvas = _canvas.unwrap();
 
         _canvas.unwrap().background(Palette::black);
         _canvas.unwrap().foreground(Palette::white);
@@ -54,9 +55,9 @@ template<typename I> struct DisplayManager final :
         _canvas.unwrap().fill();
 
         if (_virtual_keyboard.active()) {
-            renderVirtualKeyboard();
+            renderVirtualKeyboard(canvas);
         } else {
-            renderUi(str);
+            renderUi(canvas, str);
         }
 
         (void) _display_driver.send();
@@ -69,9 +70,7 @@ private:
     kf::memory::StringView _overlay{};
     Color _overlay_color{};
 
-    void renderUi(kf::memory::StringView str) noexcept {
-        auto &canvas = _canvas.unwrap();
-
+    void renderUi(Canvas &canvas, kf::memory::StringView str) noexcept {
         canvas.background(Palette::black);
         canvas.foreground(Palette::white);
         canvas.text(0, 0, str.data());
@@ -79,19 +78,17 @@ private:
         if (not _overlay.empty()) {
             const auto rows = 1 + (_overlay.size() / canvas.widthInGlyphs());
             const auto y = static_cast<kf::math::Pixels>(canvas.maxY() - rows * canvas.font().heightTotal());
-        
+
             canvas.foreground(_overlay_color);
             canvas.rect(0, y, canvas.maxX(), canvas.maxY(), true);
-        
+
             canvas.background(_overlay_color);
             canvas.foreground(Palette::black);
             canvas.text(0, y, _overlay);
         }
     }
 
-    void renderVirtualKeyboard() noexcept {
-        auto &canvas = _canvas.unwrap();
-
+    void renderVirtualKeyboard(Canvas &canvas) noexcept {
         const auto longest_row = ui::VirtualKeyboard::rows[0].size();
         const auto key_width = canvas.width() / longest_row;
         const auto key_height = canvas.font().heightTotal();
