@@ -19,10 +19,10 @@
 namespace djc::service {
 
 /// @brief Service that manages display rendering, including UI and virtual keyboard overlay
-template<typename I> struct DisplayManager final :
+template<typename I> struct GraphicsService final :
 
-    Service<DisplayManager<I>>,
-    kf::mixin::Initable<DisplayManager<I>, void>
+    Service<GraphicsService<I>>,
+    kf::mixin::Initable<GraphicsService<I>, void>
 
 {
     KF_CHECK_IMPL(I, ::kf::drivers::display::DisplayDriverTag);
@@ -33,7 +33,7 @@ template<typename I> struct DisplayManager final :
     using Canvas = typename kf::gfx::Canvas<Pixel>;
     using Palette = kf::gfx::Palette<Pixel>;
 
-    explicit DisplayManager(DisplayDriverImpl &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
+    explicit GraphicsService(DisplayDriverImpl &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
         _display_driver{display_driver}, _virtual_keyboard{virtual_keyboard} {}
 
     [[nodiscard]] auto canvas() const noexcept -> const kf::Option<Canvas> & {
@@ -129,7 +129,7 @@ private:
         }
     }
 
-    using This = DisplayManager<I>;
+    using This = GraphicsService<I>;
 
     KF_IMPL_INITABLE(This, void);
     void initImpl() noexcept {

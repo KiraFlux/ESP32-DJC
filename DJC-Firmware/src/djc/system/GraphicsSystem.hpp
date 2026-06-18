@@ -4,7 +4,7 @@
 #pragma once
 
 #include "djc/mixin/ServiceOwner.hpp"
-#include "djc/service/DisplayManager.hpp"
+#include "djc/service/GraphicsService.hpp"
 #include "djc/system/System.hpp"
 #include "djc/ui/VirtualKeyboard.hpp"
 
@@ -14,13 +14,13 @@ namespace djc::system {
 template<typename I> struct GraphicsSystem :
 
     System<GraphicsSystem<I>, void()>,
-    mixin::ServiceOwner<service::DisplayManager<I>>
+    mixin::ServiceOwner<service::GraphicsService<I>>
 
 {
-    using DisplayManagerImpl = service::DisplayManager<I>;
+    using GraphicsServiceImpl = service::GraphicsService<I>;
 
     explicit GraphicsSystem(I &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
-        mixin::ServiceOwner<DisplayManagerImpl>{DisplayManagerImpl{display_driver, virtual_keyboard}} {}
+        mixin::ServiceOwner<GraphicsServiceImpl>{GraphicsServiceImpl{display_driver, virtual_keyboard}} {}
 
 private:
     using This = GraphicsSystem<I>;
