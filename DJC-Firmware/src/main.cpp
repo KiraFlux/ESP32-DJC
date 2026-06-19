@@ -189,13 +189,24 @@ static bool setupPeriphery(djc::Config &config) noexcept {
 }
 
 static bool setupGraphics(djc::Config &config) noexcept {
-    if (const auto &canvas = graphics_system.service().canvas(); canvas.isSome()) {
-        config.render_system.text.row_max_length = canvas.unwrap().widthInGlyphs();
-        config.render_system.text.rows_total = canvas.unwrap().heightInGlyphs() - 1;
-        return true;
+    const auto &canvas = graphics_system.service().canvas();
+    if (canvas.isNone()) {
+        return false;
     }
 
-    return false;
+    const auto available_width = canvas.unwrap().widthInGlyphs();
+    const auto available_height = canvas.unwrap().heightInGlyphs() - 1;
+
+    auto &render_config = config.render_system.text;
+
+    if (available_width == render_config.row_max_length and available_height == render_config.rows_total) {
+        return false;
+    }
+
+    render_config.row_max_length = available_width;
+    render_config.rows_total = available_height;
+
+    return true;
 }
 
 #define DJC_SYSTEM_INIT(__system_instance__, ...) \
