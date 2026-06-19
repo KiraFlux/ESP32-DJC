@@ -74,7 +74,7 @@ private:
     void renderUi(Canvas &canvas, kf::memory::StringView str) noexcept {
         canvas.background(Palette::black);
         canvas.foreground(Palette::white);
-        canvas.text(0, 0, str.data());
+        canvas.text(0, 0, str);
 
         if (not _overlay.empty()) {
             const auto rows = 1 + (_overlay.size() / canvas.widthInGlyphs());
@@ -97,7 +97,7 @@ private:
         const auto glyph_offset_x = (key_width - canvas.font().widthTotal()) / 2;
 
         canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _virtual_keyboard.available(), _virtual_keyboard.text().size()).data());
-        canvas.text(0, canvas.font().heightTotal(), _virtual_keyboard.text().data());
+        canvas.text(0, canvas.font().heightTotal(), _virtual_keyboard.text());
 
         canvas.background(Palette::dark_gray);
         canvas.foreground(Palette::dark_gray);
