@@ -157,23 +157,23 @@ static void onPrimaryJoystickDirection(djc::service::InputHandler::JoystickListe
 }
 
 static void onUiRendered(kf::memory::StringView str) {
-    using Palette = std::decay_t<decltype(graphics_system.service())>::Palette;
+    using Palette = std::decay_t<decltype(graphics_system)>::Palette;
 
     if (control_system.service().enabled()) {
         if (transport_system.link().connected()) {
-            graphics_system.service().overlay(transport_system.link().activePeerAddress().unwrap().toString().view(), Palette::light_green);
+            graphics_system.overlay(transport_system.link().activePeerAddress().unwrap().toString().view(), Palette::light_green);
         } else {
-            graphics_system.service().overlay("Disconnected", Palette::light_yellow);
+            graphics_system.overlay("Disconnected", Palette::light_yellow);
         }
     } else {
         if (const auto &p = ui_system.service().activePage(); p.isSome()) {
             if (const auto &widget = p.unwrap().selectedWidget(); widget.isSome()) {
-                graphics_system.service().overlay(widget.unwrap().hint(), Palette::light_gray);
+                graphics_system.overlay(widget.unwrap().hint(), Palette::light_gray);
             }
         }
     }
 
-    graphics_system.service().onRender(str);
+    graphics_system.onRender(str);
 }
 
 // setups
@@ -187,7 +187,7 @@ static void setupPeriphery(djc::Config &config) noexcept {
 }
 
 static void setupGraphics(djc::Config &config) noexcept {
-    const auto &canvas = graphics_system.service().canvas();
+    const auto &canvas = graphics_system.canvas();
     if (canvas.isNone()) { return; }
 
     const auto available_width = canvas.unwrap().widthInGlyphs();
@@ -219,7 +219,7 @@ void setup() {
     DJC_SYSTEM_INIT(protocol_system, config.init_protocol_mode);
     DJC_SYSTEM_INIT(peer_system, transport_system.link());
     DJC_SYSTEM_INIT(input_system);
-    DJC_SYSTEM_INIT(graphics_system);
+    DJC_SYSTEM_INIT(graphics_system, periphery_system.periphery().display);
     DJC_SYSTEM_INIT(control_system);
     DJC_SYSTEM_INIT(ui_system, {&peer_explorer_page, &mavlink_telemetry_page, &raw_protocol_page, &config_page});
 
