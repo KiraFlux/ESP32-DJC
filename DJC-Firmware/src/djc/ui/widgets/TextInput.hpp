@@ -17,10 +17,8 @@ template<typename U> struct TextInput :
     U::Widget
 
 {
-    explicit TextInput(VirtualKeyboard &virtual_keyboard, kf::Slice<char> source, kf::ui::Style style = kf::ui::Style::defaults()) noexcept :
-        U::Widget{style}, _virtual_keyboard{virtual_keyboard}, _text_source{source} {
-        this->foreground(kf::ui::Color::Info);
-    }
+    explicit TextInput(VirtualKeyboard &virtual_keyboard, kf::Slice<char> source, kf::ui::Style style = kf::ui::Style{.foreground_color = kf::ui::Color::Info}) noexcept :
+        U::Widget{style}, _virtual_keyboard{virtual_keyboard}, _text_source{source} {}
 
     void source(kf::Slice<char> new_source) noexcept {
         _text_source = new_source;
