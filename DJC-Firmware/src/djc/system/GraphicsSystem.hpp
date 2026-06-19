@@ -11,7 +11,7 @@
 #include <kf/memory/StaticString.hpp>
 
 #include "djc/mixin/ServiceOwner.hpp"
-#include "djc/service/GraphicsService.hpp"
+#include "djc/service/DisplayService.hpp"
 #include "djc/system/System.hpp"
 #include "djc/ui/VirtualKeyboard.hpp"
 
@@ -21,11 +21,11 @@ namespace djc::system {
 template<typename I> struct GraphicsSystem :
 
     System<GraphicsSystem<I>, void(I &)>,
-    mixin::ServiceOwner<service::GraphicsService<I>>
+    mixin::ServiceOwner<service::DisplayService<I>>
 
 {
     using DisplayDriverImpl = I;
-    using GraphicsServiceImpl = service::GraphicsService<DisplayDriverImpl>;
+    using DisplayServiceImpl = service::DisplayService<DisplayDriverImpl>;
 
     using Pixel = typename DisplayDriverImpl::PixelImpl;
     using Color = typename Pixel::ColorType;
@@ -33,7 +33,7 @@ template<typename I> struct GraphicsSystem :
     using Palette = kf::gfx::Palette<Pixel>;
 
     explicit GraphicsSystem(I &display_driver, const ui::VirtualKeyboard &virtual_keyboard) noexcept :
-        mixin::ServiceOwner<GraphicsServiceImpl>{GraphicsServiceImpl{display_driver}}, _virtual_keyboard{virtual_keyboard} {}
+        mixin::ServiceOwner<DisplayServiceImpl>{DisplayServiceImpl{display_driver}}, _virtual_keyboard{virtual_keyboard} {}
 
     [[nodiscard]] auto canvas() const noexcept -> const kf::Option<Canvas> & {
         return _canvas;

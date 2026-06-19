@@ -11,10 +11,10 @@ namespace djc::service {
 
 /// @brief Service that manages display sending
 /// @tparam I DisplayDriver Implementation class
-template<typename I> struct GraphicsService : Service<GraphicsService<I>> {
+template<typename I> struct DisplayService : Service<DisplayService<I>> {
     KF_CHECK_IMPL(I, ::kf::drivers::display::DisplayDriverTag);
 
-    explicit constexpr GraphicsService(I &display_driver) noexcept :
+    explicit constexpr DisplayService(I &display_driver) noexcept :
         _display_driver{display_driver} {}
 
     /// @brief Requests an deferred send of RAM image to display via driver
@@ -26,7 +26,7 @@ private:
     I &_display_driver;
     bool _send_requested{false};
 
-    KF_IMPL_TIMED_POLLABLE(GraphicsService<I>);
+    KF_IMPL_TIMED_POLLABLE(DisplayService<I>);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         if (_send_requested) {
             _send_requested = false;
