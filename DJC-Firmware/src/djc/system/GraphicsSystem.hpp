@@ -3,15 +3,12 @@
 
 #pragma once
 
-#include "djc/ui/VirtualKeyboard.hpp"
 #include <kf/Option.hpp>
 #include <kf/gfx/Canvas.hpp>
 #include <kf/gfx/Palette.hpp>
 #include <kf/gfx/fonts/gyver_5x7.hpp>
 #include <kf/image/DynamicImage.hpp>
-#include <kf/math/units.hpp>
 #include <kf/memory/StaticString.hpp>
-#include <kf/mixin/Initable.hpp>
 
 #include "djc/mixin/ServiceOwner.hpp"
 #include "djc/service/GraphicsService.hpp"

@@ -10,12 +10,14 @@
 namespace djc::service {
 
 /// @brief Service that manages display sending
+/// @tparam I DisplayDriver Implementation class
 template<typename I> struct GraphicsService : Service<GraphicsService<I>> {
     KF_CHECK_IMPL(I, ::kf::drivers::display::DisplayDriverTag);
 
     explicit constexpr GraphicsService(I &display_driver) noexcept :
         _display_driver{display_driver} {}
 
+    /// @brief Requests an deferred send of RAM image to display via driver
     void requestSend() noexcept {
         _send_requested = true;
     }
