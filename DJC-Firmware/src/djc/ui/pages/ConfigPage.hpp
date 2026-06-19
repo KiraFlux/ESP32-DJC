@@ -41,6 +41,8 @@ struct ConfigPage : UI::Page {
         }} {
         widgets(layout(0));
 
+        this->link().hint("Open Configuration page");
+
         _device_name_input.hint("Device name");
         _device_name_input.source({_config_service.config().device_name.data(), _config_service.config().device_name.size()});
 

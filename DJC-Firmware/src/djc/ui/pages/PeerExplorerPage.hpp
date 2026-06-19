@@ -36,6 +36,8 @@ struct PeerExplorerPage : UI::Page {
             &_primary_connection_status_button,
             &_available_label,
         }} {
+        this->link().hint("Open Peer explorer");
+
         _available_label.hint("Available peer will show below");
 
         for (auto i = 0u; i < _peer_displays.size(); i += 1) {

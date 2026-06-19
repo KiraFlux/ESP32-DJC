@@ -39,6 +39,8 @@ struct MavlinkTelemetryPage : UI::Page {
         }} {
         widgets({_layout.data(), _layout.size()});
 
+        this->link().hint("Open MAVLink page");
+
         _imu_display.hint("IMU accel vertor");
         _attitude_display.hint("attitude quaternion");
     }

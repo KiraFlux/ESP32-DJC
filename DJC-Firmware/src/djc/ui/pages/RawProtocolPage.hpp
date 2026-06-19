@@ -30,6 +30,8 @@ struct RawProtocolPage : UI::Page {
         }} {
         widgets({_layout.data(), _layout.size()});
 
+        this->link().hint("Open raw protocol page");
+
         _message_input.hint("Edit message");
 
         _send_button.hint("Send raw buffer as is");
