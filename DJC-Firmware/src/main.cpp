@@ -178,43 +178,34 @@ static void onUiRendered(kf::memory::StringView str) {
 
 // setups
 
-static bool setupPeriphery(djc::Config &config) noexcept {
+static void setupPeriphery(djc::Config &config) noexcept {
     if (not config.periphery.joystick_axes_tuned) {
         logger.debug("Tunning axes..");
         periphery_system.periphery().tune(config.periphery);
-        return true;
+        config_system.service().requestSave();
     }
-
-    return false;
 }
 
-static bool setupGraphics(djc::Config &config) noexcept {
+static void setupGraphics(djc::Config &config) noexcept {
     const auto &canvas = graphics_system.service().canvas();
-    if (canvas.isNone()) {
-        return false;
-    }
+    if (canvas.isNone()) { return; }
 
     const auto available_width = canvas.unwrap().widthInGlyphs();
     const auto available_height = canvas.unwrap().heightInGlyphs() - 1;
 
     auto &render_config = config.render_system.text;
 
-    if (available_width == render_config.row_max_length and available_height == render_config.rows_total) {
-        return false;
-    }
+    if (available_width == render_config.row_max_length and available_height == render_config.rows_total) { return; }
 
     render_config.row_max_length = available_width;
     render_config.rows_total = available_height;
 
-    return true;
+    config_system.service().requestSave();
 }
 
 #define DJC_SYSTEM_INIT(__system_instance__, ...) \
     __system_instance__.init(__VA_ARGS__);        \
     logger.info("done: '" #__system_instance__ "'");
-
-#define DJC_DO_SETUP(__setup_function__) \
-    if (__setup_function__) { config_system.service().requestSave(); }
 
 void setup() {
     Serial.begin(115200);
@@ -243,8 +234,8 @@ void setup() {
 
     ui_system.renderer().callback(onUiRendered);
 
-    DJC_DO_SETUP(setupPeriphery(config));
-    DJC_DO_SETUP(setupGraphics(config));
+    setupPeriphery(config);
+    setupGraphics(config);
 }
 
 void loop() {
