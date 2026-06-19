@@ -43,6 +43,7 @@ template<typename I> struct GraphicsService final :
     void overlay(kf::memory::StringView new_overlay, Color color) noexcept {
         _overlay = new_overlay;
         _overlay_color = color;
+        requestSend();
     }
 
     void onRender(kf::memory::StringView str) noexcept {
@@ -60,7 +61,7 @@ template<typename I> struct GraphicsService final :
             renderUi(canvas, str);
         }
 
-        (void) _display_driver.send();
+        requestSend();
     }
 
 private:
@@ -69,6 +70,11 @@ private:
     kf::Option<Canvas> _canvas{kf::none};
     kf::memory::StringView _overlay{};
     Color _overlay_color{};
+    bool _update_requested{false};
+
+    void requestSend() noexcept {
+        _update_requested = true;
+    }
 
     void renderUi(Canvas &canvas, kf::memory::StringView str) noexcept {
         canvas.background(Palette::black);
@@ -144,7 +150,12 @@ private:
     }
 
     KF_IMPL_TIMED_POLLABLE(This);
-    void pollImpl(kf::math::Milliseconds now) noexcept {}
+    void pollImpl(kf::math::Milliseconds now) noexcept {
+        if (_update_requested) {
+            _update_requested = false;
+            (void) _display_driver.send();
+        }
+    }
 };
 
 }// namespace djc::service
