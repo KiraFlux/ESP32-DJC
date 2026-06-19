@@ -96,7 +96,7 @@ private:
         const auto keyboard_offset_y = canvas.maxY() - key_height * _virtual_keyboard.rowsTotal();
         const auto glyph_offset_x = (key_width - canvas.font().widthTotal()) / 2;
 
-        canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _virtual_keyboard.available(), _virtual_keyboard.text().size()).data());
+        canvas.text(0, 0, kf::memory::StaticString<32>::formatted("\xBC\xF0Text Input: %d / %d\x80\n", _virtual_keyboard.capacity(), _virtual_keyboard.text().size()).data());
         canvas.text(0, canvas.font().heightTotal(), _virtual_keyboard.text());
 
         canvas.background(Palette::dark_gray);

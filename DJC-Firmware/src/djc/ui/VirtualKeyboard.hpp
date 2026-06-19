@@ -139,40 +139,46 @@ struct VirtualKeyboard final : kf::mixin::NonCopyable {
 
     [[nodiscard]] bool active() const noexcept { return _active; }
 
-    [[nodiscard]] kf::memory::StringView text() const noexcept { return {_text_source.data(), _text_source.size()}; }
+    [[nodiscard]] kf::memory::StringView text() const noexcept {
+        return kf::memory::StringView{_text_source.data(), static_cast<kf::usize>(_text_cursor)};
+    }
 
     [[nodiscard]] static const Key &keyAt(kf::i8 row, kf::i8 col) noexcept {
         return rows[row][col];
     }
 
+    [[nodiscard]] kf::usize capacity() const noexcept {
+        return _text_source.size();
+    }
+
     [[nodiscard]] kf::usize available() const noexcept {
         if (_text_cursor < _text_source.size()) {
             return _text_source.size() - _text_cursor;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     void begin(kf::Slice<char> text_source) noexcept {
         _active = true;
-
         _text_source = text_source;
-        _text_cursor = text().find('\0').unwrapOr(0);
+        _text_cursor = 0;
+        while (_text_cursor < _text_source.size() and _text_source[_text_cursor] != '\0') {
+            _text_cursor += 1;
+        }
     }
-
     void quit() noexcept {
         _active = false;
     }
 
     void click() noexcept {
-        if (available() == 0) { return; }
-
         const auto &key = rows[_cursor_row][_cursor_row_index];
 
         switch (key.kind) {
             case Key::Kind::Space:
             case Key::Kind::Enter:
             case Key::Kind::Common: {
+                if (available() == 0) { return; }
+
                 _text_source[_text_cursor] = key.value(shifted());
                 _text_cursor += 1;
                 _text_source[_text_cursor] = '\0';
