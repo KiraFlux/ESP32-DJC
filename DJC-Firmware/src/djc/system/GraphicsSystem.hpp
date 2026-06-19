@@ -64,6 +64,8 @@ template<typename I> struct GraphicsSystem :
     }
 
 private:
+    static constexpr auto overlay_text_padding{1};
+
     const ui::VirtualKeyboard &_virtual_keyboard;
     kf::Option<Canvas> _canvas{kf::none};
     kf::memory::StringView _overlay{};
@@ -83,7 +85,7 @@ private:
 
             canvas.background(_overlay_color);
             canvas.foreground(Palette::black);
-            canvas.text(0, y, _overlay);
+            canvas.text(overlay_text_padding, y, _overlay);
         }
     }
 
