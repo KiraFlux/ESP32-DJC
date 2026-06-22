@@ -21,7 +21,7 @@ struct ConfigSystem :
         mixin::ServiceOwner<service::ConfigService>{{}} {}
 
 private:
-    DJC_IMPL_INITABLE(ConfigSystem, void());
+    KF_IMPL_INITABLE(ConfigSystem, void());
     void initImpl() noexcept {
         this->service().requestLoad();
         this->service().sync();

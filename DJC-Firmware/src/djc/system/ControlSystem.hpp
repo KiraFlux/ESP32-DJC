@@ -27,7 +27,7 @@ struct ControlSystem :
 private:
     Periphery &_periphery;
 
-    DJC_IMPL_INITABLE(ControlSystem, void());
+    KF_IMPL_INITABLE(ControlSystem, void());
     void initImpl() noexcept {}
 
     KF_IMPL_TIMED_POLLABLE(ControlSystem);

@@ -29,7 +29,7 @@ struct PeripherySystem : System<PeripherySystem, void()> {
 private:
     Periphery _periphery;
 
-    DJC_IMPL_INITABLE(PeripherySystem, void());
+    KF_IMPL_INITABLE(PeripherySystem, void());
     void initImpl() noexcept {
         _periphery.init();
     }

@@ -132,7 +132,7 @@ private:
 
     using This = GraphicsSystem<I>;
 
-    DJC_IMPL_INITABLE(This, void(I &));
+    KF_IMPL_INITABLE(This, void(I &));
     void initImpl(DisplayDriver &display_driver) noexcept {
         _canvas = kf::some(Canvas{
             kf::image::DynamicImage<Pixel>{display_driver.image()},

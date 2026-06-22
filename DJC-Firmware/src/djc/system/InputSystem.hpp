@@ -28,7 +28,7 @@ struct InputSystem :
         }} {}
 
 private:
-    DJC_IMPL_INITABLE(InputSystem, void());
+    KF_IMPL_INITABLE(InputSystem, void());
     void initImpl() noexcept {}
 
     KF_IMPL_TIMED_POLLABLE(InputSystem);

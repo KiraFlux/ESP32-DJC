@@ -67,7 +67,7 @@ private:
     service::PeerScanningService _peer_scanning_service;
     service::AutoConnectService _auto_connect_service;
 
-    DJC_IMPL_INITABLE(PeerSystem, void(transport::TransportLink &));
+    KF_IMPL_INITABLE(PeerSystem, void(transport::TransportLink &));
     void initImpl(transport::TransportLink &transport_link) noexcept {
         _peer_scanning_service.init();
 

@@ -3,10 +3,9 @@
 
 #pragma once
 
+#include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
-
-#include "djc/mixin/Initable.hpp"
 
 namespace djc::system {
 
@@ -18,7 +17,7 @@ template<typename Impl, typename InitSignature> struct System :
 
     SystemTag,
     kf::mixin::NonCopyable,
-    djc::mixin::Initable<Impl, InitSignature>,
+    kf::mixin::Initable<Impl, InitSignature>,
     kf::mixin::TimedPollable<Impl> {};
 
 }// namespace djc::system

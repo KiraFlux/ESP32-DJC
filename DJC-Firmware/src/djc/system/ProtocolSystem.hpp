@@ -61,7 +61,7 @@ private:
     protocol::ProtocolLink _protocol_link;
     kf::math::Milliseconds _poll_time{};
 
-    DJC_IMPL_INITABLE(ProtocolSystem, void(protocol::ProtocolRegistry::Mode));
+    KF_IMPL_INITABLE(ProtocolSystem, void(protocol::ProtocolRegistry::Mode));
     void initImpl(protocol::ProtocolRegistry::Mode mode) noexcept {
         _protocol_registry.mavlink().callback([this](const auto &message) {
             _mavlink_telemetry_registry.update(static_cast<kf::math::Milliseconds>(_poll_time), message);

@@ -67,7 +67,7 @@ private:
     ui::VirtualKeyboard _virtual_keyboard{};
     ui::pages::RootPage _root_page{this->service()};
 
-    DJC_IMPL_INITABLE(UiSystem, void(std::initializer_list<ui::UI::Page *>));
+    KF_IMPL_INITABLE(UiSystem, void(std::initializer_list<ui::UI::Page *>));
     void initImpl(std::initializer_list<ui::UI::Page *> pages) noexcept {
         for (auto page : pages) {
             _root_page.attach(*page);

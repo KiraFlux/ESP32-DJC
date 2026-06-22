@@ -48,7 +48,7 @@ private:
     transport::TransportRegistry _transport_registry{};
     transport::TransportLink _transport_link;
 
-    DJC_IMPL_INITABLE(TransportSystem, void(transport::Kind));
+    KF_IMPL_INITABLE(TransportSystem, void(transport::Kind));
     void initImpl(transport::Kind kind) noexcept {
         WiFi.mode(WIFI_MODE_STA);
 
