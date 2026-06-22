@@ -22,7 +22,6 @@ struct PeerDetailPage final : UI::Page {
         transport::TransportLink &transport_link,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{ui},
-        _root{root},
         _transport_link{transport_link},
         _peer_favorites_registry{peer_favorites_registry},
         _layout{{
@@ -35,11 +34,11 @@ struct PeerDetailPage final : UI::Page {
     {
         widgets(_layout.slice());
 
-        _connection_button.callback([this]() -> void {
+        _connection_button.callback([this, &root]() -> void {
             if (_peer_address.isNone()) { return; }
 
             if (_transport_link.connect(_peer_address.unwrap())) {
-                _ui.activePage(_root);
+                _ui.activePage(root);
             } else {
                 _connection_button.label("Failed to connect");
                 _connection_button.style(UI::Style{
@@ -79,7 +78,6 @@ struct PeerDetailPage final : UI::Page {
 private:
     // state
 
-    UI::Page &_root;
     transport::TransportLink &_transport_link;
     kf::TrivialOption<transport::PeerAddress> _peer_address{};
     PeerFavoritesRegistry &_peer_favorites_registry;

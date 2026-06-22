@@ -17,7 +17,6 @@ struct PeerFavoritePage final : UI::Page {
 
     explicit PeerFavoritePage(UI &ui, UI::Page &root, PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{ui},
-        _root{root},
         _peer_favorites_registry{peer_favorites_registry},
         _description_input{ui.createTextInput()},
         _layout{{
@@ -49,12 +48,12 @@ struct PeerFavoritePage final : UI::Page {
         });
 
         _delete_button.hint("Remove from registry");
-        _delete_button.callback([this]() -> void {
+        _delete_button.callback([this, &root]() -> void {
             if (_temp_entry.isNone()) { return; }
 
             (void) _peer_favorites_registry.remove(_temp_entry.unwrap().address);
 
-            _ui.activePage(_root);
+            _ui.activePage(root);
             _ui.requestRender();
         });
     }
@@ -75,7 +74,6 @@ struct PeerFavoritePage final : UI::Page {
     }
 
 private:
-    UI::Page &_root;
     PeerFavoritesRegistry &_peer_favorites_registry;
     kf::TrivialOption<PeerFavoritesRegistry::Entry> _temp_entry{};
 
