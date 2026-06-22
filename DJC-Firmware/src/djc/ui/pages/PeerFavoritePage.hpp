@@ -71,8 +71,7 @@ struct PeerFavoritePage final : UI::Page {
         _trust_input.value(_temp_entry.unwrap().trust);
         _confirm_button.label("Confirm");
         _confirm_button.style({UI::Color::Primary, UI::Color::Normal});
-
-        widgets(kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(_layout.size() - (entry_option.isSome() ? 0 : 1)));
+        widgets(_layout.slice().first(_layout.size() - (entry_option.isSome() ? 0 : 1)));
     }
 
 private:

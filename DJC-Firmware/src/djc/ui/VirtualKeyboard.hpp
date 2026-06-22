@@ -120,11 +120,11 @@ struct VirtualKeyboard final : kf::mixin::NonCopyable {
     }}};
 
     static constexpr kf::memory::Array<kf::Slice<const Key>, 5> rows{{{
-        {row_0.data(), row_0.size()},
-        {row_1.data(), row_1.size()},
-        {row_2.data(), row_2.size()},
-        {row_3.data(), row_3.size()},
-        {row_4.data(), row_4.size()},
+        row_0.slice(),
+        row_1.slice(),
+        row_2.slice(),
+        row_3.slice(),
+        row_4.slice(),
     }}};
 
     [[nodiscard]] kf::u8 rowsTotal() const noexcept { return rows.size(); }

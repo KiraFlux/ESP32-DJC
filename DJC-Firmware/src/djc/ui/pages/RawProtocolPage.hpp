@@ -29,7 +29,7 @@ struct RawProtocolPage : UI::Page {
             &_send_button,
         }} {
         this->label("Raw Protocol");
-        widgets({_layout.data(), _layout.size()});
+        widgets(_layout.slice());
 
         this->link().hint("Open raw protocol page");
 

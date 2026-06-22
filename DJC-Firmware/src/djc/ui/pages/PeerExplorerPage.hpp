@@ -122,7 +122,7 @@ private:
     PeerDetailPage _peer_detail_page;
 
     kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
-        return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(peer_display_start_index + displayed_peers);
+        return _layout.slice().first(peer_display_start_index + displayed_peers);
     }
 
     kf::Option<UI::PeerDisplay::State> createPeerDisplayState(const kf::TrivialOption<service::PeerScanningService::Entry> &entry, kf::math::Milliseconds now) const noexcept {

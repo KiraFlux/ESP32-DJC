@@ -226,7 +226,7 @@ void setup() {
     // orcestre
 
     transport_system.link().onReceive(onReceiveFromPeer);
-    peer_system.favoritesRegistry().entries({config.peer_favorites.data(), config.peer_favorites.size()});
+    peer_system.favoritesRegistry().entries(config.peer_favorites.slice());
 
     input_system.service().onLeftButton(onSecondaryButtonClick);
     input_system.service().onRightButton(onPrimaryButtonClick);

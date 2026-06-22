@@ -222,7 +222,7 @@ private:
     PeerFavoritePage _peer_favorite_page;
 
     kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
-        return kf::Slice<UI::Widget *>{_layout.data(), _layout.size()}.first(layout_regular_widgets + displayed_peers);
+        return _layout.slice().first(layout_regular_widgets + displayed_peers);
     }
 };
 

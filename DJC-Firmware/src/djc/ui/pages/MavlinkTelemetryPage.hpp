@@ -38,7 +38,7 @@ struct MavlinkTelemetryPage : UI::Page {
             &_attitude_display,
         }} {
         this->label("Mavlink: Telemetry");
-        widgets({_layout.data(), _layout.size()});
+        widgets(_layout.slice());
 
         this->link().hint("Open MAVLink page");
 

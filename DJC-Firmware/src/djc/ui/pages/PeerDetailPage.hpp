@@ -33,7 +33,7 @@ struct PeerDetailPage final : UI::Page {
         _peer_favorite_page{ui, *this, peer_favorites_registry}
 
     {
-        widgets({_layout.data(), _layout.size()});
+        widgets(_layout.slice());
 
         _connection_button.callback([this]() -> void {
             if (_peer_address.isNone()) { return; }
