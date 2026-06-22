@@ -5,9 +5,12 @@
 
 #include <kf/Logger.hpp>
 #include <kf/math/Timer.hpp>
+#include <kf/memory/StaticString.hpp>
 #include <kf/memory/Storage.hpp>
+#include <kf/primitives.hpp>
 
 #include "djc/Config.hpp"
+#include "djc/math.hpp"
 #include "djc/service/Service.hpp"
 
 namespace djc::service {
@@ -29,36 +32,41 @@ struct ConfigService : Service<ConfigService> {
     /// @brief Requests an deferred save of the current config to NVS
     void requestSave() noexcept {
         _save_requested = true;
-        logger.debug("save requested");
+        logger.debug("Save requested");
     }
 
     /// @brief Requests an deferred load of the config from NVS
     void requestLoad() noexcept {
         _load_requested = true;
-        logger.debug("load requested");
+        logger.debug("Load requested");
     }
 
     /// @brief Requests an deferred reset of the config to defaults
     void requestReset() noexcept {
         _reset_requested = true;
-        logger.debug("reset requested");
+        logger.debug("Reset requested");
     }
 
     /// @brief Force sync now
     void sync() noexcept {
+        using LogString = kf::memory::StaticString<64>;
+
         if (_load_requested) {
             _load_requested = false;
 
-            logger.info("Loading config from NVS");
+            logger.info("Loading config from NVS...");
 
-            if (not _storage.load()) {
-                logger.error("Failed to load config");
-                requestReset();
-                requestSave();
-            }
+            if (_storage.load()) {
+                _stored_crc = crc();
+                logger.info(LogString::formatted("Config loaded from NVS (CRC: %u)", _stored_crc).view());
 
-            if (not _storage.config.isLatestVersion()) {
-                logger.error("Config version is outdated");
+                if (not _storage.config.isLatestVersion()) {
+                    logger.warn("Config version is outdated");
+                    requestReset();
+                    requestSave();
+                }
+            } else {
+                logger.error("Config load failed");
                 requestReset();
                 requestSave();
             }
@@ -66,18 +74,27 @@ struct ConfigService : Service<ConfigService> {
 
         if (_reset_requested) {
             _reset_requested = false;
+            logger.info("Config reset to defaults");
 
-            logger.info("Resetting RAM config cache to defaults");
             _storage.config = djc::Config::defaults();
         }
 
         if (_save_requested) {
             _save_requested = false;
 
-            logger.info("Saving config to NVS");
+            const auto current_crc = crc();
 
-            if (not _storage.save()) {
-                logger.error("Failed to save config into NVS");
+            if (current_crc == _stored_crc) {
+                logger.debug("Config unchanged, save skipped");
+            } else {
+                logger.info(LogString::formatted("Config changed, saving (CRC: %u -> %u)...", _stored_crc, current_crc).view());
+
+                if (_storage.save()) {
+                    _stored_crc = current_crc;
+                    logger.info("Config saved, CRC updated");
+                } else {
+                    logger.error("Config save failed");
+                }
             }
         }
     }
@@ -86,7 +103,7 @@ private:
     static constexpr auto logger{kf::Logger::create("ConfigService")};
 
     static constexpr kf::math::Timer::Config sync_timer_config{
-        .period = 20'000,
+        .period = 5'000,
     };
 
     kf::memory::Storage<Config> _storage{
@@ -96,7 +113,13 @@ private:
 
     kf::math::Timer _sync_timer{sync_timer_config};
 
+    kf::u32 _stored_crc{};
+
     bool _save_requested{false}, _load_requested{false}, _reset_requested{false};
+
+    [[nodiscard]] kf::u32 crc() const noexcept {
+        return djc::math::crc32({reinterpret_cast<const kf::u8 *>(&_storage.config), sizeof(Config)});
+    }
 
     KF_IMPL_TIMED_POLLABLE(ConfigService);
     void pollImpl(kf::math::Milliseconds now) noexcept {
