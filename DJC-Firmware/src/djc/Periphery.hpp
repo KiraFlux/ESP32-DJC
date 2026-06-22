@@ -46,10 +46,8 @@ struct PeripheryConfig final {
                 .x = axisDefaults(false),
                 .y = axisDefaults(true),
             },
-            // SPI default pins: MOSI=23, MISO=19, SCK=18
-            .spi_bus = djc::SpiBus::Config::create(),
-            // CS, SPI frequency
-            .display_spi_node = djc::SpiBus::Node::Config::create(GPIO_NUM_5, 27000000),
+            .spi_bus = djc::SpiBus::Config::create(gpio_spi_mosi, gpio_spi_miso, gpio_spi_sck),
+            .display_spi_node = djc::SpiBus::Node::Config::create(gpio_display_st7735_spi_cs, 27000000),
             .display_driver = {
                 .init_orientation = kf::drivers::display::Orientation::ClockWise,
             },
@@ -86,7 +84,7 @@ struct Periphery final :
     ButtonListener left_button_listener{
         this->config().button,
         GPIO::DigitalInput{
-            GPIO_NUM_14,
+            gpio_button_left,
             GPIO::DigitalInput::Pull::InternalUp,
         },
     };
@@ -94,14 +92,14 @@ struct Periphery final :
     Joystick left_joystick{
         this->config().left_joystick,
         this->config().axis_filter,
-        GPIO::AdcInput{GPIO_NUM_32},
-        GPIO::AdcInput{GPIO_NUM_33},
+        GPIO::AdcInput{gpio_joystick_left_x},
+        GPIO::AdcInput{gpio_joystick_left_y},
     };
 
     ButtonListener right_button_listener{
         this->config().button,
         GPIO::DigitalInput{
-            GPIO_NUM_4,
+            gpio_button_right,
             GPIO::DigitalInput::Pull::InternalUp,
         },
     };
@@ -109,8 +107,8 @@ struct Periphery final :
     Joystick right_joystick{
         this->config().right_joystick,
         this->config().axis_filter,
-        GPIO::AdcInput{GPIO_NUM_34},
-        GPIO::AdcInput{GPIO_NUM_35},
+        GPIO::AdcInput{gpio_joystick_right_x},
+        GPIO::AdcInput{gpio_joystick_right_y},
     };
 
     SpiBus spi_bus{
@@ -121,8 +119,8 @@ struct Periphery final :
     DisplayDriver display_driver{
         this->config().display_driver,
         spi_bus.createNode(this->config().display_spi_node),
-        GPIO::DigitalOutput{GPIO_NUM_22},// DC
-        GPIO::DigitalOutput{GPIO_NUM_17},// RESET
+        GPIO::DigitalOutput{gpio_display_st7735_data_command},
+        GPIO::DigitalOutput{gpio_display_st7735_reset},
     };
 
     // Analog axis calibration
