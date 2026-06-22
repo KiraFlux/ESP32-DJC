@@ -7,6 +7,7 @@
 #include <kf/ui/Color.hpp>
 #include <kf/ui/Event.hpp>
 #include <kf/ui/Style.hpp>
+#include <kf/ui/Layout.hpp>
 #include <kf/ui/UI.hpp>
 #include <kf/ui/render/ColoredTextRenderer.hpp>
 #include <kf/ui/widgets/Widget.hpp>
@@ -46,6 +47,9 @@ struct UI :
 
     /// @brief UI Widget Style
     using Style = kf::ui::Style;
+
+    /// @brief UI Page Layout
+    using Layout = kf::ui::Layout;
 
     /// @brief UI Widget Base
     using Widget = internal::UiBase::Widget;
