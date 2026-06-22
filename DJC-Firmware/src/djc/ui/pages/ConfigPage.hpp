@@ -47,22 +47,19 @@ struct ConfigPage : UI::Page {
         _device_name_input.hint("Device name");
         _device_name_input.source({_config_service.config().device_name.data(), _config_service.config().device_name.size()});
 
-        _save_config_button.hint("Write config from RAM into NVS");
+        _save_config_button.hint("Force to sync now");
         _save_config_button.callback([this]() {
-            _config_service.requestSave();
             _config_service.sync();
         });
 
-        _load_config_button.hint("Load config from NVS into RAM");
+        _load_config_button.hint("Request Load config from NVS into RAM");
         _load_config_button.callback([this]() {
             _config_service.requestLoad();
-            _config_service.sync();
         });
 
-        _reset_config_button.hint("Set RAM config as detaults");
+        _reset_config_button.hint("Request reset RAM config");
         _reset_config_button.callback([this]() {
             _config_service.requestReset();
-            _config_service.sync();
         });
 
         _favorite_peers_fold_toggle_button.hint("Toggle folding");
@@ -80,13 +77,11 @@ struct ConfigPage : UI::Page {
         _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
         _default_protocol_mode_selector.callback([this](auto item) {
             _config_service.config().init_protocol_mode = item.value();
-            _config_service.requestSave();
         });
 
         _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
         _autoconnect_enabled_input.callback([this](bool value) {
             _config_service.config().auto_connect_service.enabled = value;
-            _config_service.requestSave();
         });
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
@@ -186,7 +181,7 @@ private:
 
     UI::Button
         _save_config_button{
-            "Save",
+            "Sync now",
             UI::Style{
                 .foreground_color = UI::Color::Primary,
             },

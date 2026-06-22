@@ -29,12 +29,6 @@ struct ConfigService : Service<ConfigService> {
         return _storage.config;
     }
 
-    /// @brief Requests an deferred save of the current config to NVS
-    void requestSave() noexcept {
-        _save_requested = true;
-        logger.debug("Save requested");
-    }
-
     /// @brief Requests an deferred load of the config from NVS
     void requestLoad() noexcept {
         _load_requested = true;
@@ -63,12 +57,10 @@ struct ConfigService : Service<ConfigService> {
                 if (not _storage.config.isLatestVersion()) {
                     logger.warn("Config version is outdated");
                     requestReset();
-                    requestSave();
                 }
             } else {
                 logger.error("Config load failed");
                 requestReset();
-                requestSave();
             }
         }
 
@@ -79,22 +71,14 @@ struct ConfigService : Service<ConfigService> {
             _storage.config = djc::Config::defaults();
         }
 
-        if (_save_requested) {
-            _save_requested = false;
+        if (const auto current_crc = crc(); current_crc != _stored_crc) {
+            logger.info(LogString::formatted("Config changed, saving (CRC: %u -> %u)...", _stored_crc, current_crc).view());
 
-            const auto current_crc = crc();
-
-            if (current_crc == _stored_crc) {
-                logger.debug("Config unchanged, save skipped");
+            if (_storage.save()) {
+                _stored_crc = current_crc;
+                logger.info("Config saved, CRC updated");
             } else {
-                logger.info(LogString::formatted("Config changed, saving (CRC: %u -> %u)...", _stored_crc, current_crc).view());
-
-                if (_storage.save()) {
-                    _stored_crc = current_crc;
-                    logger.info("Config saved, CRC updated");
-                } else {
-                    logger.error("Config save failed");
-                }
+                logger.error("Config save failed");
             }
         }
     }
@@ -103,7 +87,7 @@ private:
     static constexpr auto logger{kf::Logger::create("ConfigService")};
 
     static constexpr kf::math::Timer::Config sync_timer_config{
-        .period = 5'000,
+        .period = 10'000,
     };
 
     kf::memory::Storage<Config> _storage{
@@ -115,7 +99,7 @@ private:
 
     kf::u32 _stored_crc{};
 
-    bool _save_requested{false}, _load_requested{false}, _reset_requested{false};
+    bool _load_requested{false}, _reset_requested{false};
 
     [[nodiscard]] kf::u32 crc() const noexcept {
         return djc::math::crc32({reinterpret_cast<const kf::u8 *>(&_storage.config), sizeof(Config)});

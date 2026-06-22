@@ -182,7 +182,6 @@ static void setupPeriphery(djc::Config &config) noexcept {
     if (not config.periphery.joystick_axes_tuned) {
         logger.debug("Tunning axes..");
         periphery_system.periphery().tune(config.periphery);
-        config_system.service().requestSave();
     }
 }
 
@@ -199,8 +198,6 @@ static void setupGraphics(djc::Config &config) noexcept {
 
     render_config.row_max_length = available_width;
     render_config.rows_total = available_height;
-
-    config_system.service().requestSave();
 }
 
 #define DJC_SYSTEM_INIT(__system_instance__, ...) \
