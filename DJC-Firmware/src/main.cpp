@@ -66,7 +66,7 @@ static djc::system::InputSystem input_system{
 static djc::system::UiSystem ui_system{config};
 
 static djc::system::GraphicsSystem<djc::DisplayDriver> graphics_system{
-    periphery_system.periphery().display,
+    periphery_system.periphery().display_driver,
     ui_system.virtualKeyboard(),
 };
 
@@ -208,7 +208,7 @@ void setup() {
     DJC_SYSTEM_INIT(protocol_system, config.init_protocol_mode);
     DJC_SYSTEM_INIT(peer_system, transport_system.link());
     DJC_SYSTEM_INIT(input_system);
-    DJC_SYSTEM_INIT(graphics_system, periphery_system.periphery().display);
+    DJC_SYSTEM_INIT(graphics_system, periphery_system.periphery().display_driver);
     DJC_SYSTEM_INIT(control_system);
     DJC_SYSTEM_INIT(ui_system, {&peer_explorer_page, &mavlink_telemetry_page, &raw_protocol_page, &config_page});
 

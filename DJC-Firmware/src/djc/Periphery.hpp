@@ -23,10 +23,10 @@ struct PeripheryConfig final {
     AxisInput::FilterImpl::Config axis_filter;
     Joystick::Config left_joystick, right_joystick;
 
-    SpiBus::Config bus;
-    SpiBus::Node::Config bus_node;
+    SpiBus::Config spi_bus;
+    SpiBus::Node::Config display_spi_node;
 
-    DisplayDriver::Config display;
+    DisplayDriver::Config display_driver;
     kf::u16 joystick_axes_tune_samples;
     bool joystick_axes_tuned;
 
@@ -47,10 +47,10 @@ struct PeripheryConfig final {
                 .y = axisDefaults(true),
             },
             // SPI default pins: MOSI=23, MISO=19, SCK=18
-            .bus = djc::SpiBus::Config::create(),
+            .spi_bus = djc::SpiBus::Config::create(),
             // CS, SPI frequency
-            .bus_node = djc::SpiBus::Node::Config::create(GPIO_NUM_5, 27000000),
-            .display = {
+            .display_spi_node = djc::SpiBus::Node::Config::create(GPIO_NUM_5, 27000000),
+            .display_driver = {
                 .init_orientation = kf::drivers::display::Orientation::ClockWise,
             },
             .joystick_axes_tune_samples = 100,
@@ -113,14 +113,14 @@ struct Periphery final :
         GPIO::AdcInput{GPIO_NUM_35},
     };
 
-    SpiBus bus{
-        this->config().bus,
+    SpiBus spi_bus{
+        this->config().spi_bus,
         SPI,
     };
 
-    DisplayDriver display{
-        this->config().display,
-        bus.createNode(this->config().bus_node),
+    DisplayDriver display_driver{
+        this->config().display_driver,
+        spi_bus.createNode(this->config().display_spi_node),
         GPIO::DigitalOutput{GPIO_NUM_22},// DC
         GPIO::DigitalOutput{GPIO_NUM_17},// RESET
     };
@@ -155,11 +155,11 @@ private:
         left_button_listener.init();
         right_button_listener.init();
 
-        if (bus.init().isError()) {
+        if (spi_bus.init().isError()) {
             logger.error("SpiBus initialization failed");
         }
 
-        if (display.init().isError()) {
+        if (display_driver.init().isError()) {
             logger.error("Display driver initialization failed");
         }
     }
