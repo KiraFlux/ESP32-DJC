@@ -35,7 +35,7 @@ template<typename U> struct PeerDisplay :
         _state = new_state;
     }
 
-    void doRender(typename U::RenderImpl &render) const noexcept override {
+    void doRender(typename U::RendererImpl &render) const noexcept override {
         render.beginBlock(kf::ui::Block::Alternative);
         if (_state.isSome()) {
             render.value(_state.unwrap().displayName());

@@ -18,7 +18,7 @@ namespace djc::transport {
 
 /// @brief ESP‑NOW transport implementation
 /// @note Manages ESP‑NOW peer connections. uses dedicated active peer for communication
-struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool> {
+struct EspNowTransport : Transport, kf::mixin::Initable<EspNowTransport, bool()> {
 
     [[nodiscard]] bool send(kf::Slice<const kf::u8> buffer) noexcept override {
         if (_active_peer.isSome()) {
@@ -78,7 +78,7 @@ private:
 
     kf::Option<EspNow::Peer> _active_peer{kf::none};
 
-    KF_IMPL_INITABLE(EspNowTransport, bool);
+    KF_IMPL_INITABLE(EspNowTransport, bool());
     bool initImpl() noexcept {
         logger.info("init");
 

@@ -6,10 +6,9 @@
 #include <kf/Slice.hpp>
 #include <kf/ui/Color.hpp>
 #include <kf/ui/Event.hpp>
-#include <kf/ui/Placement.hpp>
 #include <kf/ui/Style.hpp>
 #include <kf/ui/UI.hpp>
-#include <kf/ui/render/ColoredTextRender.hpp>
+#include <kf/ui/render/ColoredTextRenderer.hpp>
 #include <kf/ui/widgets/Widget.hpp>
 
 #include "djc/service/Service.hpp"
@@ -21,8 +20,8 @@
 namespace djc::internal {
 
 using WidgetBase = ::kf::ui::widgets::Widget<
-    ::kf::ui::render::ColoredTextRender<512>,// Render Engine: Buffered Colored Text UI render engine
-    ::kf::ui::Event<6>                       // Event: 6-bit Event value encoding
+    ::kf::ui::render::ColoredTextRenderer,// Render Engine: Buffered Colored Text UI render engine
+    ::kf::ui::Event<6>                    // Event: 6-bit Event value encoding
     >;
 
 using UiBase = ::kf::ui::UI<::djc::ui::UiTraits<WidgetBase>>;
@@ -39,7 +38,7 @@ struct UI :
     internal::UiBase
 
 {
-    explicit constexpr UI(Traits::RenderImpl &render_system, VirtualKeyboard &virtual_keyboard) noexcept :
+    explicit constexpr UI(Traits::RendererImpl &render_system, VirtualKeyboard &virtual_keyboard) noexcept :
         internal::UiBase{render_system}, _virtual_keyboard{virtual_keyboard} {}
 
     /// @brief UI Semantic Color
@@ -47,9 +46,6 @@ struct UI :
 
     /// @brief UI Widget Style
     using Style = kf::ui::Style;
-
-    /// @brief UI Widget value Placement
-    using Placement = kf::ui::Placement;
 
     /// @brief UI Widget Base
     using Widget = internal::UiBase::Widget;

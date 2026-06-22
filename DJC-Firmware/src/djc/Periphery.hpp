@@ -75,7 +75,7 @@ private:
 struct Periphery final :
 
     kf::mixin::NonCopyable,
-    kf::mixin::Initable<Periphery, void>,
+    kf::mixin::Initable<Periphery, void()>,
     kf::mixin::Configurable<internal::PeripheryConfig>
 
 {
@@ -146,8 +146,7 @@ struct Periphery final :
 private:
     static constexpr auto logger = kf::Logger::create("Periphery");
 
-    // impl
-    KF_IMPL_INITABLE(Periphery, void);
+    KF_IMPL_INITABLE(Periphery, void());
     void initImpl() noexcept {
         logger.info("Initializing peripherals");
 

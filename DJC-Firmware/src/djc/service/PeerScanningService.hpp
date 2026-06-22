@@ -19,7 +19,7 @@
 namespace djc::internal {
 
 /// @brief Configuration parameters for the PeerScanningService service.
-struct PeerScannerConfig final : kf::mixin::NonCopyable {
+struct PeerScannerConfig final {
     kf::math::Milliseconds entry_max_life_time;       ///< How long an entry stays in the list without being refreshed.
     kf::math::Timer::Config entries_list_update_timer;///< Interval between periodic clean-ups and list compaction.
 
@@ -45,7 +45,7 @@ namespace djc::service {
 struct PeerScanningService final :
 
     Service<PeerScanningService>,
-    kf::mixin::Initable<PeerScanningService, void>,
+    kf::mixin::Initable<PeerScanningService, void()>,
     kf::mixin::Configurable<internal::PeerScannerConfig>
 
 {
@@ -78,7 +78,7 @@ private:
     kf::math::Milliseconds _last_poll_time{0};
     kf::usize _active_count{0};
 
-    KF_IMPL_INITABLE(PeerScanningService, void);
+    KF_IMPL_INITABLE(PeerScanningService, void());
     void initImpl() noexcept {
         _update_poll_timer.start(0);// enable timer
 

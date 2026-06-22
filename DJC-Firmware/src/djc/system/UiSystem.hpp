@@ -6,6 +6,7 @@
 #include <initializer_list>
 
 #include <kf/Logger.hpp>
+#include <kf/memory/Array.hpp>
 
 #include "djc/Config.hpp"
 #include "djc/mixin/ServiceOwner.hpp"
@@ -24,11 +25,11 @@ struct UiSystem :
     mixin::ServiceOwner<djc::ui::UI>
 
 {
-    using Renderer = ui::UI::Traits::RenderImpl;
+    using Renderer = ui::UI::Traits::RendererImpl;
 
     explicit UiSystem(const Config &config) noexcept :
         mixin::ServiceOwner<djc::ui::UI>{djc::ui::UI{_renderer, _virtual_keyboard}},
-        _renderer{config.render_system} {}
+        _renderer{config.ui_renderer, _buffer.slice()} {}
 
     /// @brief Get mutable access to renderer component
     Renderer &renderer() noexcept {
@@ -63,18 +64,19 @@ struct UiSystem :
 private:
     static constexpr auto logger{kf::Logger::create("UiSystem")};
 
+    kf::memory::Array<char, 512> _buffer;
     Renderer _renderer;
     ui::VirtualKeyboard _virtual_keyboard{};
     ui::pages::RootPage _root_page{this->service()};
 
     KF_IMPL_INITABLE(UiSystem, void(std::initializer_list<ui::UI::Page *>));
     void initImpl(std::initializer_list<ui::UI::Page *> pages) noexcept {
-        for (auto page : pages) {
+        for (auto page: pages) {
             _root_page.attach(*page);
         }
-        
+
         this->service().activePage(_root_page);
-        this->service().addEvent(ui::UI::Traits::EventImpl::update());
+        this->service().requestRender();
     }
 
     KF_IMPL_TIMED_POLLABLE(UiSystem);

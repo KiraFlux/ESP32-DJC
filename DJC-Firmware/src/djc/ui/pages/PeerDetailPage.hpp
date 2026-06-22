@@ -21,7 +21,7 @@ struct PeerDetailPage final : UI::Page {
         UI::Page &root,
         transport::TransportLink &transport_link,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
-        Page{ui, {}},
+        Page{ui},
         _root{root},
         _transport_link{transport_link},
         _peer_favorites_registry{peer_favorites_registry},
@@ -54,7 +54,7 @@ struct PeerDetailPage final : UI::Page {
             this->label("Back");
             _peer_favorite_page.bindPeer(_peer_address.unwrap());
             _ui.activePage(_peer_favorite_page);
-            update();
+            _ui.requestRender();
         });
     }
 

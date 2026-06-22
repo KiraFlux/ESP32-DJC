@@ -26,7 +26,7 @@ struct PeerExplorerPage : UI::Page {
         transport::TransportLink &transport_link,
         service::PeerScanningService &peer_scanner,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
-        Page{ui, "Peer Explorer"},
+        Page{ui},
         _transport_link{transport_link},
         _peer_scanner{peer_scanner},
         _peer_favorites_registry{peer_favorites_registry},
@@ -36,6 +36,7 @@ struct PeerExplorerPage : UI::Page {
             &_primary_connection_status_button,
             &_available_label,
         }} {
+        this->label("Peer Explorer");
         this->link().hint("Open Peer explorer");
 
         _available_label.hint("Available peer will show below");
@@ -95,7 +96,7 @@ struct PeerExplorerPage : UI::Page {
         }
 
         widgets(layout(available_peers.size()));
-        update();
+        _ui.requestRender();
     }
 
 private:

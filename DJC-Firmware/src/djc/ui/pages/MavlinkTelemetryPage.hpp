@@ -27,7 +27,7 @@ struct MavlinkTelemetryPage : UI::Page {
         protocol::ProtocolRegistry &protocol_registry,
         protocol::ProtocolLink &protocol_link,
         MavlinkTelemetryRegistry &mavlink_telemetry_registry) noexcept :
-        Page{ui, "Mavlink: Telemetry"},
+        Page{ui},
         _protocol_registry{protocol_registry},
         _protocol_link{protocol_link},
         _mavlink_telemetry_registry{mavlink_telemetry_registry},
@@ -37,6 +37,7 @@ struct MavlinkTelemetryPage : UI::Page {
             &_imu_display,
             &_attitude_display,
         }} {
+        this->label("Mavlink: Telemetry");
         widgets({_layout.data(), _layout.size()});
 
         this->link().hint("Open MAVLink page");
@@ -90,7 +91,7 @@ struct MavlinkTelemetryPage : UI::Page {
         }
 
         if (need_update) {
-            update();
+            _ui.requestRender();
         }
     }
 

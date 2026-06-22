@@ -16,7 +16,7 @@ namespace djc::ui::pages {
 struct PeerFavoritePage final : UI::Page {
 
     explicit PeerFavoritePage(UI &ui, UI::Page &root, PeerFavoritesRegistry &peer_favorites_registry) noexcept :
-        Page{ui, {}},
+        Page{ui},
         _root{root},
         _peer_favorites_registry{peer_favorites_registry},
         _description_input{ui.createTextInput()},
@@ -45,7 +45,7 @@ struct PeerFavoritePage final : UI::Page {
                 .background_color = (write_ok ? UI::Color::Success : UI::Color::Error),
             });
 
-            update();
+            _ui.requestRender();
         });
 
         _delete_button.hint("Remove from registry");
@@ -55,7 +55,7 @@ struct PeerFavoritePage final : UI::Page {
             (void) _peer_favorites_registry.remove(_temp_entry.unwrap().address);
 
             _ui.activePage(_root);
-            update();
+            _ui.requestRender();
         });
     }
 
@@ -88,7 +88,6 @@ private:
         .value_range = PeerFavoritesRegistry::Entry::trust_range,
         .default_value = PeerFavoritesRegistry::Entry::trust_range.start,
         .step = static_cast<PeerFavoritesRegistry::Entry::TrustType>(1),
-        .placement = UI::Placement::Outside,
         .init_show_value = true,
     };
 

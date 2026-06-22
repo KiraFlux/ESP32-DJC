@@ -146,7 +146,7 @@ static void onSecondaryButtonClick() noexcept {
         control_system.service().enabled(not control_system.service().enabled());
     }
 
-    ui_system.service().addEvent(UiEvent::update());
+    ui_system.service().requestRender();
 }
 
 static void onPrimaryJoystickDirection(djc::service::InputHandler::JoystickListener::Direction direction) noexcept {
@@ -193,7 +193,7 @@ static void setupGraphics(djc::Config &config) noexcept {
     const auto available_width = canvas.unwrap().widthInGlyphs();
     const auto available_height = canvas.unwrap().heightInGlyphs() - 1;
 
-    auto &render_config = config.render_system.text;
+    auto &render_config = config.ui_renderer.text;
 
     if (available_width == render_config.row_max_length and available_height == render_config.rows_total) { return; }
 

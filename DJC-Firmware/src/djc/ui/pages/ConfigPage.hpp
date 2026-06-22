@@ -23,7 +23,7 @@ struct ConfigPage : UI::Page {
         UI::Page &root,
         djc::service::ConfigService &config_service,
         PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
-        Page{ui, "Config"},
+        Page{ui},
         _config_service{config_service},
         _peer_favorite_page{ui, *this, _peer_favoriter_registry},
         _peer_favoriter_registry{peer_favoriter_registry},
@@ -39,6 +39,7 @@ struct ConfigPage : UI::Page {
             &_labeled_default_protocol_mode_selector,
             &_favorite_peers_fold_toggle_button,
         }} {
+        this->label("Config");
         widgets(layout(0));
 
         this->link().hint("Open Configuration page");
@@ -68,17 +69,17 @@ struct ConfigPage : UI::Page {
         _favorite_peers_fold_toggle_button.callback([this]() {
             show_favorites = not show_favorites;
             this->onEntry();
-            update();
+            _ui.requestRender();
         });
 
         _labeled_default_transport_kind_selector.hint("Define transport select after init");
-        _default_transport_kind_selector.callback([this](transport::Kind kind) {
-            _config_service.config().init_transport_kind = kind;
+        _default_transport_kind_selector.callback([this](auto item) {
+            _config_service.config().init_transport_kind = item.value();
         });
 
         _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
-        _default_protocol_mode_selector.callback([this](Mode mode) {
-            _config_service.config().init_protocol_mode = mode;
+        _default_protocol_mode_selector.callback([this](auto item) {
+            _config_service.config().init_protocol_mode = item.value();
             _config_service.requestSave();
         });
 
@@ -149,7 +150,7 @@ private:
 
     // widgets
 
-    kf::memory::Array<TransportKindSelector::Config::Item, 1> _transport_kind_options{{
+    kf::memory::Array<TransportKindSelector::Config::Item, 1> _transport_kind_options{{{
         {
             "EspNow",
             transport::Kind::EspNow,
@@ -157,13 +158,13 @@ private:
                 .foreground_color = UI::Color::Highlight,
             },
         },
-    }};
+    }}};
 
     TransportKindSelector::Config _transport_kind_config{
         .items = {_transport_kind_options.data(), _transport_kind_options.size()},
     };
 
-    kf::memory::Array<ProtocolModeSelector::Config::Item, 2> _control_mode_options{{
+    kf::memory::Array<ProtocolModeSelector::Config::Item, 2> _control_mode_options{{{
         {
             "Mavlink",
             Mode::Mavlink,
@@ -175,7 +176,7 @@ private:
             "Raw",
             Mode::Raw,
         },
-    }};
+    }}};
 
     ProtocolModeSelector::Config _control_mode_config{
         .items = {_control_mode_options.data(), _control_mode_options.size()},

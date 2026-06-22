@@ -21,13 +21,14 @@ struct RawProtocolPage : UI::Page {
         protocol::ProtocolRegistry &protocol_registry,
         protocol::ProtocolLink &protocol_link,
         transport::TransportLink &transport_link) noexcept :
-        Page{ui, "Raw Protocol"}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link}, _transport_link{transport_link},
+        Page{ui}, _protocol_registry{protocol_registry}, _protocol_link{protocol_link}, _transport_link{transport_link},
         _message_input{ui.createTextInput({_message.data(), _message.size()})},
         _layout{{
             &root.link(),
             &_message_input,
             &_send_button,
         }} {
+        this->label("Raw Protocol");
         widgets({_layout.data(), _layout.size()});
 
         this->link().hint("Open raw protocol page");

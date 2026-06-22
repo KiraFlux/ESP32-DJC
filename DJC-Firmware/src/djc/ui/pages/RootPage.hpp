@@ -13,7 +13,8 @@ namespace djc::ui::pages {
 struct RootPage : UI::Page {
     static constexpr auto max_items{4};
 
-    explicit RootPage(UI &ui) noexcept : Page{ui, "Main"} {
+    explicit RootPage(UI &ui) noexcept : Page{ui} {
+        this->label("Main");
         this->link().hint("Return to Main page");
     }
 

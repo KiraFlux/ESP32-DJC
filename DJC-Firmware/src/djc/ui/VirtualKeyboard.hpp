@@ -54,7 +54,7 @@ struct VirtualKeyboard final : kf::mixin::NonCopyable {
 
     template<kf::usize N> using KeyRow = kf::memory::Array<Key, N>;
 
-    static constexpr KeyRow<14> row_0{{
+    static constexpr KeyRow<14> row_0{{{
         {'`', '~'},
         {'1', '!'},
         {'2', '@'},
@@ -69,9 +69,9 @@ struct VirtualKeyboard final : kf::mixin::NonCopyable {
         {'-', '_'},
         {'=', '+'},
         {Key::Kind::Backspace, 0},
-    }};
+    }}};
 
-    static constexpr KeyRow<13> row_1{{
+    static constexpr KeyRow<13> row_1{{{
         {'q', 'Q'},
         {'w', 'W'},
         {'e', 'E'},
@@ -85,9 +85,9 @@ struct VirtualKeyboard final : kf::mixin::NonCopyable {
         {'[', '{'},
         {']', '}'},
         {'\\', '|'},
-    }};
+    }}};
 
-    static constexpr KeyRow<12> row_2{{
+    static constexpr KeyRow<12> row_2{{{
         {'a', 'A'},
         {'s', 'S'},
         {'d', 'D'},
@@ -100,9 +100,9 @@ struct VirtualKeyboard final : kf::mixin::NonCopyable {
         {';', ':'},
         {'\'', '"'},
         {Key::Kind::Enter, '\n'},
-    }};
+    }}};
 
-    static constexpr KeyRow<10> row_3{{
+    static constexpr KeyRow<10> row_3{{{
         {Key::Kind::Shift, 0},
         {'z', 'Z'},
         {'x', 'X'},
@@ -113,19 +113,19 @@ struct VirtualKeyboard final : kf::mixin::NonCopyable {
         {'m', 'M'},
         {',', '<'},
         {'.', '>'},
-    }};
+    }}};
 
-    static constexpr KeyRow<1> row_4{{
+    static constexpr KeyRow<1> row_4{{{
         {Key::Kind::Space, ' '},
-    }};
+    }}};
 
-    static constexpr kf::memory::Array<kf::Slice<const Key>, 5> rows{{
+    static constexpr kf::memory::Array<kf::Slice<const Key>, 5> rows{{{
         {row_0.data(), row_0.size()},
         {row_1.data(), row_1.size()},
         {row_2.data(), row_2.size()},
         {row_3.data(), row_3.size()},
         {row_4.data(), row_4.size()},
-    }};
+    }}};
 
     [[nodiscard]] kf::u8 rowsTotal() const noexcept { return rows.size(); }
 

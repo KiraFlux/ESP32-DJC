@@ -28,7 +28,7 @@ template<typename U> struct TextInput :
         return nullptr != _text_source.data();
     }
 
-    void doRender(typename U::RenderImpl &render) const noexcept override {
+    void doRender(typename U::RendererImpl &render) const noexcept override {
         render.value('\"');
         render.value(string());
         render.value('\"');

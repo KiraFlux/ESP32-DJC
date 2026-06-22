@@ -56,7 +56,7 @@ struct Config {
     service::InputHandler::Config input_handler;
     service::PeerScanningService::Config peer_scanner;
     service::AutoConnectService::Config auto_connect_service;
-    ui::UI::Traits::RenderImpl::Config render_system;
+    ui::UI::Traits::RendererImpl::Config ui_renderer;
 
     [[nodiscard]] bool isLatestVersion() const noexcept {
         return version == latest_version;
@@ -81,7 +81,7 @@ struct Config {
             .input_handler = service::InputHandler::Config::defaults(),
             .peer_scanner = service::PeerScanningService::Config::defaults(),
             .auto_connect_service = service::AutoConnectService::Config::defaults(),
-            .render_system = ui::UI::Traits::RenderImpl::Config::defaults(),
+            .ui_renderer = ui::UI::Traits::RendererImpl::Config::defaults(),
         };
     }
 };
