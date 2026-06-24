@@ -66,7 +66,7 @@ struct NVS final :
     using ResultType = kf::Result<void, Error>;
 
     /// @brief Construct NVS storage component
-    constexpr explicit NVS(const char *nvs_namespace) noexcept :
+    explicit constexpr NVS(const char *nvs_namespace) noexcept :
         _namespace{nvs_namespace} {}
 
     [[nodiscard]] ResultType load(kf::Slice<kf::u8> buffer) noexcept {
