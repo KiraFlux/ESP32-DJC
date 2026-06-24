@@ -8,8 +8,6 @@
 #include <kf/mixin/Resettable.hpp>
 #include <kf/primitives.hpp>
 
-#include "djc/math.hpp"
-
 namespace djc::config {
 
 struct ConfigTag {};
