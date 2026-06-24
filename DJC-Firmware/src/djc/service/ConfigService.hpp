@@ -6,11 +6,11 @@
 #include <kf/Logger.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/memory/StaticString.hpp>
-#include <kf/memory/Storage.hpp>
 #include <kf/primitives.hpp>
 
 #include "djc/Config.hpp"
 #include "djc/math.hpp"
+#include "djc/memory/NVS.hpp"
 #include "djc/service/Service.hpp"
 
 namespace djc::service {
@@ -21,12 +21,12 @@ struct ConfigService : Service<ConfigService> {
 
     /// @brief Get readonly reference to the current configuration
     [[nodiscard]] constexpr const Config &config() const noexcept {
-        return _storage.config;
+        return _config;
     }
 
     /// @brief Get mutable reference to the current configuration
     [[nodiscard]] Config &config() noexcept {
-        return _storage.config;
+        return _config;
     }
 
     /// @brief Requests an deferred load of the config from NVS
@@ -45,16 +45,21 @@ struct ConfigService : Service<ConfigService> {
     void sync() noexcept {
         using LogString = kf::memory::StaticString<64>;
 
+        // init is idempotent
+        if (_nvs_entry.init().isError()) {
+            logger.error("NVS init failed");
+        }
+
         if (_load_requested) {
             _load_requested = false;
 
             logger.info("Loading config from NVS...");
 
-            if (_storage.load()) {
+            if (_nvs_entry.load(view()).isOk()) {
                 _stored_crc = crc();
                 logger.info(LogString::formatted("Config loaded from NVS (CRC: %u)", _stored_crc).view());
 
-                if (not _storage.config.isLatestVersion()) {
+                if (not _config.isLatestVersion()) {
                     logger.warn("Config version is outdated");
                     requestReset();
                 }
@@ -68,13 +73,13 @@ struct ConfigService : Service<ConfigService> {
             _reset_requested = false;
             logger.info("Config reset to defaults");
 
-            _storage.config = djc::Config::defaults();
+            _config = djc::Config::defaults();
         }
 
         if (const auto current_crc = crc(); current_crc != _stored_crc) {
             logger.info(LogString::formatted("Config changed, saving (CRC: %u -> %u)...", _stored_crc, current_crc).view());
 
-            if (_storage.save()) {
+            if (_nvs_entry.dump(view()).isOk() and _nvs_entry.commit().isOk()) {
                 _stored_crc = current_crc;
                 logger.info("Config saved, CRC updated");
             } else {
@@ -90,10 +95,8 @@ private:
         .period = 10'000,
     };
 
-    kf::memory::Storage<Config> _storage{
-        .key = "DC",
-        .config = djc::Config::defaults(),
-    };
+    Config _config{djc::Config::defaults()};
+    memory::NVS _nvs_entry{"djc"};
 
     kf::math::Timer _sync_timer{sync_timer_config};
 
@@ -101,8 +104,16 @@ private:
 
     bool _load_requested{false}, _reset_requested{false};
 
+    [[nodiscard]] kf::Slice<kf::u8> view() noexcept {
+        return {reinterpret_cast<kf::u8 *>(&_config), sizeof(Config)};
+    }
+
+    [[nodiscard]] kf::Slice<const kf::u8> view() const noexcept {
+        return const_cast<ConfigService *>(this)->view();
+    }
+
     [[nodiscard]] kf::u32 crc() const noexcept {
-        return djc::math::crc32({reinterpret_cast<const kf::u8 *>(&_storage.config), sizeof(Config)});
+        return djc::math::crc32(view());
     }
 
     KF_IMPL_TIMED_POLLABLE(ConfigService);
