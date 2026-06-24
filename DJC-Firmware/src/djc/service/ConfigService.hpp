@@ -62,8 +62,8 @@ struct ConfigService :
     internal::ConfigServiceResettingStrategy
 
 {
-    explicit constexpr ConfigService(const kf::math::Timer::Config &sync_timer_config, kf::Slice<kf::u8> config_view) noexcept :
-        _sync_timer{sync_timer_config}, _config_view{config_view} {}
+    explicit constexpr ConfigService(const char *nvs_namespace, const kf::math::Timer::Config &sync_timer_config, kf::Slice<kf::u8> config_view) noexcept :
+        _nvs_entry{nvs_namespace}, _sync_timer{sync_timer_config}, _config_view{config_view} {}
 
     /// @brief Requests an deferred load of the config from NVS
     void requestLoad() noexcept {
@@ -125,7 +125,7 @@ struct ConfigService :
 private:
     static constexpr auto logger{kf::Logger::create("ConfigService")};
 
-    memory::NVS _nvs_entry{"djc"};
+    memory::NVS _nvs_entry;
     kf::Slice<kf::u8> _config_view;
     kf::math::Timer _sync_timer;
     kf::u32 _stored_crc{};
