@@ -144,6 +144,12 @@ static void onReceiveFromPeer(const djc::transport::PeerAddress &address, kf::Sl
     protocol_system.link().receive(buffer);
 }
 
+static void onTrustedPeerDiscovered(const djc::transport::PeerAddress &address) noexcept {
+    logger.info("Auto Connect");
+
+    (void) transport_system.link().connect(address);
+}
+
 static void onReceiveFromLogger(kf::memory::StringView str) noexcept {
     Serial.write(str.data(), str.size());
 }
@@ -223,7 +229,7 @@ void setup() {
     DJC_SYSTEM_INIT(periphery_system);
     DJC_SYSTEM_INIT(transport_system, user_config.init_transport_kind);
     DJC_SYSTEM_INIT(protocol_system, user_config.init_protocol_mode);
-    DJC_SYSTEM_INIT(peer_system, transport_system.link());
+    DJC_SYSTEM_INIT(peer_system);
     DJC_SYSTEM_INIT(input_system);
     DJC_SYSTEM_INIT(graphics_system, periphery_system.periphery().display_driver);
     DJC_SYSTEM_INIT(control_system);
@@ -232,7 +238,10 @@ void setup() {
     // orchestration
 
     transport_system.link().onReceive(onReceiveFromPeer);
+
+    peer_system.autoConnectService().callback(onTrustedPeerDiscovered);
     peer_system.favoritesRegistry().entries(user_config.peer_favorites.slice());
+    
     input_system.service().onLeftButton(onSecondaryButtonClick);
     input_system.service().onRightButton(onPrimaryButtonClick);
     input_system.service().onDirection(onPrimaryJoystickDirection);

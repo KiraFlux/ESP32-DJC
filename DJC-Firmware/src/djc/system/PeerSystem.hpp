@@ -23,7 +23,7 @@ namespace djc::system {
 /// @note Peer favorites registry entries source should set externally
 struct PeerSystem :
 
-    System<PeerSystem, void(transport::TransportLink &)>
+    System<PeerSystem, void()>
 
 {
     explicit PeerSystem(const config::DeviceConfig &config, transport::TransportLink &transport_link) noexcept :
@@ -67,15 +67,9 @@ private:
     service::PeerScanningService _peer_scanning_service;
     service::AutoConnectService _auto_connect_service;
 
-    KF_IMPL_INITABLE(PeerSystem, void(transport::TransportLink &));
-    void initImpl(transport::TransportLink &transport_link) noexcept {
+    KF_IMPL_INITABLE(PeerSystem, void());
+    void initImpl() noexcept {
         _peer_scanning_service.init();
-
-        // TODO: move to main
-        _auto_connect_service.callback([&transport_link](const auto &address) -> void {
-            logger.info("Auto Connect");
-            (void) transport_link.connect(address);
-        });
     }
 
     KF_IMPL_TIMED_POLLABLE(PeerSystem);
