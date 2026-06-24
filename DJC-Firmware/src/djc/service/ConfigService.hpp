@@ -3,34 +3,65 @@
 
 #pragma once
 
+#include <utility>
+
+#include <kf/Function.hpp>
 #include <kf/Logger.hpp>
+#include <kf/Slice.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/memory/StaticString.hpp>
+#include <kf/mixin/Callbacked.hpp>
 #include <kf/primitives.hpp>
 
-#include "djc/Config.hpp"
 #include "djc/math.hpp"
 #include "djc/memory/NVS.hpp"
 #include "djc/service/Service.hpp"
+
+namespace djc::internal {
+
+using ConfigView = kf::Slice<kf::u8>;
+
+using CallbackedByConfigView = kf::mixin::Callbacked<ConfigView>;
+
+struct ConfigServiceOnLoadCallbacked : private CallbackedByConfigView {
+
+    /// @brief Set config service behavior on load
+    template<typename F> void onLoad(F &&f) noexcept {
+        this->callback(std::forward<F>(f));
+    }
+
+    void invokeOnLoad(ConfigView view) noexcept {
+        this->invoke(view);
+    }
+};
+
+struct ConfigServiceResettingStrategy : private CallbackedByConfigView {
+
+    /// @brief Set config service resetting strategy
+    template<typename F> void resettingStrategy(F &&f) noexcept {
+        this->callback(std::forward<F>(f));
+    }
+
+    void invokeResetStrategy(ConfigView view) noexcept {
+        this->invoke(view);
+    }
+};
+
+}// namespace djc::internal
 
 namespace djc::service {
 
 /// @brief Config service with delayed NVS operations
 /// @note Requests are batched and executed on a 5-second timer from the main loop.
-struct ConfigService : Service<ConfigService> {
+struct ConfigService :
 
-    explicit constexpr ConfigService(const kf::math::Timer::Config &sync_timer_config) noexcept :
-        _sync_timer{sync_timer_config} {}
+    Service<ConfigService>,
+    internal::ConfigServiceOnLoadCallbacked,
+    internal::ConfigServiceResettingStrategy
 
-    /// @brief Get readonly reference to the current configuration
-    [[nodiscard]] constexpr const Config &config() const noexcept {
-        return _config;
-    }
-
-    /// @brief Get mutable reference to the current configuration
-    [[nodiscard]] Config &config() noexcept {
-        return _config;
-    }
+{
+    explicit constexpr ConfigService(const kf::math::Timer::Config &sync_timer_config, kf::Slice<kf::u8> config_view) noexcept :
+        _sync_timer{sync_timer_config}, _config_view{config_view} {}
 
     /// @brief Requests an deferred load of the config from NVS
     void requestLoad() noexcept {
@@ -58,14 +89,12 @@ struct ConfigService : Service<ConfigService> {
 
             logger.info("Loading config from NVS...");
 
-            if (_nvs_entry.load(view()).isOk()) {
+            if (_nvs_entry.load(_config_view).isOk()) {
                 _stored_crc = crc();
                 logger.info(LogString::formatted("Config loaded from NVS (CRC: %u)", _stored_crc).view());
 
-                if (not _config.isLatestVersion()) {
-                    logger.warn("Config version is outdated");
-                    requestReset();
-                }
+                this->invokeOnLoad(_config_view);
+
             } else {
                 logger.error("Config load failed");
                 requestReset();
@@ -74,15 +103,15 @@ struct ConfigService : Service<ConfigService> {
 
         if (_reset_requested) {
             _reset_requested = false;
-            logger.info("Config reset to defaults");
 
-            _config = djc::Config::defaults();
+            this->invokeResetStrategy(_config_view);
+            logger.info("Config reset to defaults");
         }
 
         if (const auto current_crc = crc(); current_crc != _stored_crc) {
             logger.info(LogString::formatted("Config changed, saving (CRC: %u -> %u)...", _stored_crc, current_crc).view());
 
-            if (_nvs_entry.dump(view()).isOk() and _nvs_entry.commit().isOk()) {
+            if (_nvs_entry.dump(_config_view).isOk() and _nvs_entry.commit().isOk()) {
                 _stored_crc = current_crc;
                 logger.info("Config saved, CRC updated");
             } else {
@@ -93,23 +122,15 @@ struct ConfigService : Service<ConfigService> {
 
 private:
     static constexpr auto logger{kf::Logger::create("ConfigService")};
-    
-    Config _config{djc::Config::defaults()};
+
     memory::NVS _nvs_entry{"djc"};
+    kf::Slice<kf::u8> _config_view;
     kf::math::Timer _sync_timer;
     kf::u32 _stored_crc{};
     bool _load_requested{false}, _reset_requested{false};
 
-    [[nodiscard]] kf::Slice<kf::u8> view() noexcept {
-        return {reinterpret_cast<kf::u8 *>(&_config), sizeof(Config)};
-    }
-
-    [[nodiscard]] kf::Slice<const kf::u8> view() const noexcept {
-        return const_cast<ConfigService *>(this)->view();
-    }
-
     [[nodiscard]] kf::u32 crc() const noexcept {
-        return djc::math::crc32(view());
+        return djc::math::crc32(_config_view);
     }
 
     KF_IMPL_TIMED_POLLABLE(ConfigService);

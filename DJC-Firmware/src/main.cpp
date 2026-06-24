@@ -39,7 +39,7 @@ static constexpr auto logger{kf::Logger::create("main")};
 
 static djc::system::ConfigSystem config_system{};
 
-static auto &config{config_system.service().config()};
+static auto &config{config_system.config()};
 
 static djc::system::PeripherySystem periphery_system{config};
 
@@ -99,6 +99,7 @@ static djc::ui::pages::RawProtocolPage raw_protocol_page{
 static djc::ui::pages::ConfigPage config_page{
     ui_system.service(),
     ui_system.rootPage(),
+    config,
     config_system.service(),
     peer_system.favoritesRegistry(),
 };

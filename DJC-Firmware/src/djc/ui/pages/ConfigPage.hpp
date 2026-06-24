@@ -21,9 +21,11 @@ struct ConfigPage : UI::Page {
     explicit ConfigPage(
         UI &ui,
         UI::Page &root,
+        Config &config,
         djc::service::ConfigService &config_service,
         PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
         Page{ui},
+        _config{config},
         _config_service{config_service},
         _peer_favorite_page{ui, *this, _peer_favoriter_registry},
         _peer_favoriter_registry{peer_favoriter_registry},
@@ -45,7 +47,7 @@ struct ConfigPage : UI::Page {
         this->link().hint("Open Configuration page");
 
         _device_name_input.hint("Device name");
-        _device_name_input.source({_config_service.config().device_name.data(), _config_service.config().device_name.size()});
+        _device_name_input.source(_config.device_name.slice());
 
         _save_config_button.hint("Force to sync now");
         _save_config_button.callback([this]() {
@@ -71,17 +73,17 @@ struct ConfigPage : UI::Page {
 
         _labeled_default_transport_kind_selector.hint("Define transport select after init");
         _default_transport_kind_selector.callback([this](auto item) {
-            _config_service.config().init_transport_kind = item.value();
+            _config.init_transport_kind = item.value();
         });
 
         _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
         _default_protocol_mode_selector.callback([this](auto item) {
-            _config_service.config().init_protocol_mode = item.value();
+            _config.init_protocol_mode = item.value();
         });
 
         _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
         _autoconnect_enabled_input.callback([this](bool value) {
-            _config_service.config().auto_connect_service.enabled = value;
+            _config.auto_connect_service.enabled = value;
         });
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
@@ -97,10 +99,9 @@ struct ConfigPage : UI::Page {
     }
 
     void onEntry() noexcept override {
-        const auto &config = _config_service.config();
-        _default_protocol_mode_selector.value(config.init_protocol_mode);
-        _default_transport_kind_selector.value(config.init_transport_kind);
-        _autoconnect_enabled_input.value(config.auto_connect_service.enabled);
+        _default_protocol_mode_selector.value(_config.init_protocol_mode);
+        _default_transport_kind_selector.value(_config.init_transport_kind);
+        _autoconnect_enabled_input.value(_config.auto_connect_service.enabled);
 
         const auto all_favorites = _peer_favoriter_registry.all();
 
@@ -138,6 +139,7 @@ private:
 
     // state
 
+    Config &_config;
     djc::service::ConfigService &_config_service;
     PeerFavoritesRegistry &_peer_favoriter_registry;
     kf::memory::StaticString<32> _label_favorites_buffer{};
