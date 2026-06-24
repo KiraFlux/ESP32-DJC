@@ -18,9 +18,13 @@ struct ConfigSystem :
 
 {
     explicit ConfigSystem() noexcept :
-        mixin::ServiceOwner<service::ConfigService>{{}} {}
+        mixin::ServiceOwner<service::ConfigService>{service::ConfigService{sync_timer_config}} {}
 
 private:
+    static constexpr kf::math::Timer::Config sync_timer_config{
+        .period = 10'000,
+    };
+
     KF_IMPL_INITABLE(ConfigSystem, void());
     void initImpl() noexcept {
         this->service().requestLoad();

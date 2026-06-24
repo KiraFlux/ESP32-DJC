@@ -19,6 +19,9 @@ namespace djc::service {
 /// @note Requests are batched and executed on a 5-second timer from the main loop.
 struct ConfigService : Service<ConfigService> {
 
+    explicit constexpr ConfigService(const kf::math::Timer::Config &sync_timer_config) noexcept :
+        _sync_timer{sync_timer_config} {}
+
     /// @brief Get readonly reference to the current configuration
     [[nodiscard]] constexpr const Config &config() const noexcept {
         return _config;
@@ -90,18 +93,11 @@ struct ConfigService : Service<ConfigService> {
 
 private:
     static constexpr auto logger{kf::Logger::create("ConfigService")};
-
-    static constexpr kf::math::Timer::Config sync_timer_config{
-        .period = 10'000,
-    };
-
+    
     Config _config{djc::Config::defaults()};
     memory::NVS _nvs_entry{"djc"};
-
-    kf::math::Timer _sync_timer{sync_timer_config};
-
+    kf::math::Timer _sync_timer;
     kf::u32 _stored_crc{};
-
     bool _load_requested{false}, _reset_requested{false};
 
     [[nodiscard]] kf::Slice<kf::u8> view() noexcept {
