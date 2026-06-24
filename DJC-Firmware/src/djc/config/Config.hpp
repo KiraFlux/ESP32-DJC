@@ -12,9 +12,15 @@
 
 namespace djc::config {
 
-/// @brief Persistent configuration structure
-template<typename Impl, kf::u8 latest_version> struct Config : kf::mixin::Resettable<Impl> {
+struct ConfigTag {};
 
+/// @brief Persistent configuration structure
+template<typename Impl, kf::u8 latest_version> struct Config :
+
+    ConfigTag,
+    kf::mixin::Resettable<Impl>
+
+{
     kf::u8 version;
 
     [[nodiscard]] bool isLatest() const noexcept {
