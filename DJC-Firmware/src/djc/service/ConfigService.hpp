@@ -30,6 +30,7 @@ struct ConfigServiceOnLoadCallbacked : private CallbackedByConfigView {
         this->callback(std::forward<F>(f));
     }
 
+protected:
     void invokeOnLoad(ConfigView view) noexcept {
         this->invoke(view);
     }
@@ -42,6 +43,7 @@ struct ConfigServiceResettingStrategy : private CallbackedByConfigView {
         this->callback(std::forward<F>(f));
     }
 
+protected:
     void invokeResetStrategy(ConfigView view) noexcept {
         this->invoke(view);
     }
