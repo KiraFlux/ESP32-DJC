@@ -83,22 +83,22 @@ struct ConfigService :
 
         // init is idempotent
         if (_nvs_entry.init().isError()) {
-            logger.error("NVS init failed");
+            logger.error(LogString::formatted("NVS(%s) init failed", _nvs_entry.name()));
         }
 
         if (_load_requested) {
             _load_requested = false;
 
-            logger.info("Loading config from NVS...");
+            logger.info(LogString::formatted("Loading config '%s' from NVS...", _nvs_entry.name()));
 
             if (_nvs_entry.load(_config_view).isOk()) {
                 _stored_crc = crc();
-                logger.info(LogString::formatted("Config loaded from NVS (CRC: %u)", _stored_crc).view());
+                logger.info(LogString::formatted("Config '%s' loaded from NVS (CRC: %u)", _nvs_entry.name(), _stored_crc).view());
 
                 this->invokeOnLoad(_config_view);
 
             } else {
-                logger.error("Config load failed");
+                logger.error(LogString::formatted("Config '%s' load failed", _nvs_entry.name()));
                 requestReset();
             }
         }
@@ -107,17 +107,17 @@ struct ConfigService :
             _reset_requested = false;
 
             this->invokeResetStrategy(_config_view);
-            logger.info("Config reset to defaults");
+            logger.info(LogString::formatted("Config reset '%s' to defaults", _nvs_entry.name()));
         }
 
         if (const auto current_crc = crc(); current_crc != _stored_crc) {
-            logger.info(LogString::formatted("Config changed, saving (CRC: %u -> %u)...", _stored_crc, current_crc).view());
+            logger.info(LogString::formatted("Config '%s' changed, saving (CRC: %u -> %u)...", _nvs_entry.name(), _stored_crc, current_crc).view());
 
             if (_nvs_entry.dump(_config_view).isOk() and _nvs_entry.commit().isOk()) {
                 _stored_crc = current_crc;
-                logger.info("Config saved, CRC updated");
+                logger.info(LogString::formatted("Config '%s' saved, CRC updated", _nvs_entry.name()));
             } else {
-                logger.error("Config save failed");
+                logger.error(LogString::formatted("Config '%s' save failed", _nvs_entry.name()));
             }
         }
     }
