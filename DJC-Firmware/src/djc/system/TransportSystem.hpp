@@ -7,7 +7,7 @@
 
 #include <kf/Logger.hpp>
 
-#include "djc/Config.hpp"
+#include "djc/config/DeviceConfig.hpp"
 #include "djc/system/System.hpp"
 #include "djc/transport/Kind.hpp"
 #include "djc/transport/TransportLink.hpp"
@@ -19,7 +19,7 @@ namespace djc::system {
 /// @note Initializes WiFi STA mode, and polls the link for connection timeouts.
 struct TransportSystem : System<TransportSystem, void(transport::Kind)> {
 
-    explicit TransportSystem(const Config &config) noexcept :
+    explicit TransportSystem(const config::DeviceConfig &config) noexcept :
         _transport_link{config.transport_link} {}
 
     /// @brief Get mutable access to transport link component

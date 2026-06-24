@@ -6,8 +6,9 @@
 #include <kf/memory/Array.hpp>
 #include <kf/memory/StaticString.hpp>
 
-#include "djc/Config.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
+#include "djc/config/DeviceConfig.hpp"
+#include "djc/config/UserConfig.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
 #include "djc/service/ConfigService.hpp"
 #include "djc/transport/Kind.hpp"
@@ -21,12 +22,16 @@ struct ConfigPage : UI::Page {
     explicit ConfigPage(
         UI &ui,
         UI::Page &root,
-        Config &config,
-        djc::service::ConfigService &config_service,
+        config::DeviceConfig &device_config,
+        djc::service::ConfigService &device_config_service,
+        config::UserConfig &user_config,
+        djc::service::ConfigService &user_config_service,
         PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{ui},
-        _config{config},
-        _config_service{config_service},
+        _device_config{device_config},
+        _device_config_service{device_config_service},
+        _user_config{user_config},
+        _user_config_service{user_config_service},
         _peer_favorite_page{ui, *this, _peer_favorites_registry},
         _peer_favorites_registry{peer_favorites_registry},
         _device_name_input{ui.createTextInput()},
@@ -47,21 +52,23 @@ struct ConfigPage : UI::Page {
         this->link().hint("Open Configuration page");
 
         _device_name_input.hint("Device name");
-        _device_name_input.source(_config.device_name.slice());
+        _device_name_input.source(_user_config.device_name.slice());
 
         _save_config_button.hint("Force to sync now");
         _save_config_button.callback([this]() {
-            _config_service.sync();
+            _device_config_service.sync();
+            _user_config_service.sync();
         });
 
         _load_config_button.hint("Request Load config from NVS into RAM");
         _load_config_button.callback([this]() {
-            _config_service.requestLoad();
+            _device_config_service.requestLoad();
+            _user_config_service.requestLoad();
         });
 
         _reset_config_button.hint("Request reset RAM config");
         _reset_config_button.callback([this]() {
-            _config_service.requestReset();
+            _device_config_service.requestReset();
         });
 
         _favorite_peers_fold_toggle_button.hint("Toggle folding");
@@ -73,17 +80,17 @@ struct ConfigPage : UI::Page {
 
         _labeled_default_transport_kind_selector.hint("Define transport select after init");
         _default_transport_kind_selector.callback([this](auto item) {
-            _config.init_transport_kind = item.value();
+            _user_config.init_transport_kind = item.value();
         });
 
         _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
         _default_protocol_mode_selector.callback([this](auto item) {
-            _config.init_protocol_mode = item.value();
+            _user_config.init_protocol_mode = item.value();
         });
 
         _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
         _autoconnect_enabled_input.callback([this](bool value) {
-            _config.auto_connect_service.enabled = value;
+            _device_config.auto_connect_service.enabled = value;
         });
 
         for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
@@ -99,9 +106,9 @@ struct ConfigPage : UI::Page {
     }
 
     void onEntry() noexcept override {
-        _default_protocol_mode_selector.value(_config.init_protocol_mode);
-        _default_transport_kind_selector.value(_config.init_transport_kind);
-        _autoconnect_enabled_input.value(_config.auto_connect_service.enabled);
+        _default_protocol_mode_selector.value(_user_config.init_protocol_mode);
+        _default_transport_kind_selector.value(_user_config.init_transport_kind);
+        _autoconnect_enabled_input.value(_device_config.auto_connect_service.enabled);
 
         const auto all_favorites = _peer_favorites_registry.all();
 
@@ -109,7 +116,7 @@ struct ConfigPage : UI::Page {
             "[%c] Peer Favorites (%d/%d)",
             (show_favorites ? 'V' : '>'),
             all_favorites.size(),
-            Config::max_peer_favorites);
+            config::UserConfig::max_peer_favorites);
         _favorite_peers_fold_toggle_button.label(_label_favorites_buffer.view());
         _favorite_peers_fold_toggle_button.background(show_favorites ? UI::Color::Secondary : UI::Color::Primary);
 
@@ -139,9 +146,14 @@ private:
 
     // state
 
-    Config &_config;
-    djc::service::ConfigService &_config_service;
+    config::DeviceConfig &_device_config;
+    djc::service::ConfigService &_device_config_service;
+
+    config::UserConfig &_user_config;
+    djc::service::ConfigService &_user_config_service;
+
     PeerFavoritesRegistry &_peer_favorites_registry;
+
     kf::memory::StaticString<32> _label_favorites_buffer{};
     bool show_favorites{true};
 
@@ -205,14 +217,14 @@ private:
     ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};
     UI::Labeled _labeled_default_protocol_mode_selector{"Init Protocol", _default_protocol_mode_selector};
 
-    kf::memory::Array<UI::PeerDisplay, Config::max_peer_favorites> _peer_favorite_displays{};
+    kf::memory::Array<UI::PeerDisplay, config::UserConfig::max_peer_favorites> _peer_favorite_displays{};
 
     UI::CheckBox _autoconnect_enabled_input{false};
     UI::Labeled _labeled_autoconnect_enabled_input{"Autoconnect", _autoconnect_enabled_input};
 
     // layout
 
-    kf::memory::Array<UI::Widget *, (layout_regular_widgets + Config::max_peer_favorites)> _layout;
+    kf::memory::Array<UI::Widget *, (layout_regular_widgets + config::UserConfig::max_peer_favorites)> _layout;
 
     // child pages
 

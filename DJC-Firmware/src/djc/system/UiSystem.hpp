@@ -8,7 +8,7 @@
 #include <kf/Logger.hpp>
 #include <kf/memory/Array.hpp>
 
-#include "djc/Config.hpp"
+#include "djc/config/UserConfig.hpp"
 #include "djc/mixin/ServiceOwner.hpp"
 #include "djc/system/System.hpp"
 #include "djc/ui/UI.hpp"
@@ -27,7 +27,7 @@ struct UiSystem :
 {
     using Renderer = ui::UI::Traits::RendererImpl;
 
-    explicit UiSystem(const Config &config) noexcept :
+    explicit UiSystem(const config::UserConfig &config) noexcept :
         mixin::ServiceOwner<djc::ui::UI>{djc::ui::UI{_renderer, _virtual_keyboard}},
         _renderer{config.ui_renderer, _buffer.slice()} {}
 

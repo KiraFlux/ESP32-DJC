@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "djc/Config.hpp"
 #include "djc/Periphery.hpp"
+#include "djc/config/DeviceConfig.hpp"
 #include "djc/mixin/ServiceOwner.hpp"
 #include "djc/service/InputHandler.hpp"
 #include "djc/system/System.hpp"
@@ -12,14 +12,14 @@
 namespace djc::system {
 
 /// @brief System managing user input
-/// @note Owns InputHandler service. Depends on Config (read‑only) and Periphery.
+/// @note Owns InputHandler service. Depends on DeviceConfig (read‑only) and Periphery.
 struct InputSystem :
 
     System<InputSystem, void()>,
     mixin::ServiceOwner<service::InputHandler>
 
 {
-    explicit InputSystem(const Config &config, Periphery &periphery) noexcept :
+    explicit InputSystem(const config::DeviceConfig &config, Periphery &periphery) noexcept :
         mixin::ServiceOwner<service::InputHandler>{service::InputHandler{
             config.input_handler,
             periphery.right_joystick,// primary joystick for navigation/control

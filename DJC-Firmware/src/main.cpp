@@ -12,6 +12,10 @@
 // djc
 #include "djc/prelude.hpp"
 
+// djc::config
+#include "djc/config/DeviceConfig.hpp"
+#include "djc/config/UserConfig.hpp"
+
 // djc::system
 #include "djc/system/ConfigSystem.hpp"
 #include "djc/system/ControlSystem.hpp"
@@ -37,15 +41,23 @@ static constexpr auto logger{kf::Logger::create("main")};
 
 // systems
 
-static djc::system::ConfigSystem config_system{};
+static djc::system::ConfigSystem<djc::config::DeviceConfig> device_config_system{
+    "device",
+};
 
-static auto &config{config_system.config()};
+static auto &device_config{device_config_system.config()};
 
-static djc::system::PeripherySystem periphery_system{config};
+static djc::system::ConfigSystem<djc::config::UserConfig> user_config_system{
+    "user",
+};
 
-static djc::system::TransportSystem transport_system{config};
+static auto &user_config{user_config_system.config()};
 
-static djc::system::ProtocolSystem protocol_system{config};
+static djc::system::PeripherySystem periphery_system{device_config};
+
+static djc::system::TransportSystem transport_system{device_config};
+
+static djc::system::ProtocolSystem protocol_system{device_config};
 
 static djc::system::ControlSystem control_system{
     periphery_system.periphery(),
@@ -54,16 +66,16 @@ static djc::system::ControlSystem control_system{
 };
 
 static djc::system::PeerSystem peer_system{
-    config,
+    device_config,
     transport_system.link(),
 };
 
 static djc::system::InputSystem input_system{
-    config,
+    device_config,
     periphery_system.periphery(),
 };
 
-static djc::system::UiSystem ui_system{config};
+static djc::system::UiSystem ui_system{user_config};
 
 static djc::system::GraphicsSystem<djc::DisplayDriver> graphics_system{
     periphery_system.periphery().display_driver,
@@ -99,8 +111,10 @@ static djc::ui::pages::RawProtocolPage raw_protocol_page{
 static djc::ui::pages::ConfigPage config_page{
     ui_system.service(),
     ui_system.rootPage(),
-    config,
-    config_system.service(),
+    device_config,
+    device_config_system.service(),
+    user_config,
+    user_config_system.service(),
     peer_system.favoritesRegistry(),
 };
 
@@ -179,23 +193,25 @@ static void onUiRendered(kf::memory::StringView str) {
 
 // setups
 
-static void setupPeriphery(djc::Config &config) noexcept {
+static void setupPeriphery(djc::config::DeviceConfig &config) noexcept {
     if (not config.periphery.joystick_axes_tuned) {
         logger.debug("Tunning axes..");
         periphery_system.periphery().tune(config.periphery);
     }
 }
 
-static void setupGraphics(djc::Config &config) noexcept {
+static void setupGraphics(djc::config::UserConfig &config) noexcept {
     if (const auto &canvas = graphics_system.canvas(); canvas.isSome()) {
         config.ui_renderer.text.row_max_length = canvas.unwrap().widthInGlyphs();
         config.ui_renderer.text.rows_total = canvas.unwrap().heightInGlyphs() - 1;
     }
 }
 
+// TODO: add check: __system_instance__ implements System
+
 #define DJC_SYSTEM_INIT(__system_instance__, ...) \
     __system_instance__.init(__VA_ARGS__);        \
-    logger.info("done: '" #__system_instance__ "'");
+    logger.info("done: '" #__system_instance__ "'")
 
 void setup() {
     Serial.begin(115200);
@@ -203,29 +219,29 @@ void setup() {
 
     // init
 
-    DJC_SYSTEM_INIT(config_system);
+    DJC_SYSTEM_INIT(device_config_system);
+    DJC_SYSTEM_INIT(user_config_system);
     DJC_SYSTEM_INIT(periphery_system);
-    DJC_SYSTEM_INIT(transport_system, config.init_transport_kind);
-    DJC_SYSTEM_INIT(protocol_system, config.init_protocol_mode);
+    DJC_SYSTEM_INIT(transport_system, user_config.init_transport_kind);
+    DJC_SYSTEM_INIT(protocol_system, user_config.init_protocol_mode);
     DJC_SYSTEM_INIT(peer_system, transport_system.link());
     DJC_SYSTEM_INIT(input_system);
     DJC_SYSTEM_INIT(graphics_system, periphery_system.periphery().display_driver);
     DJC_SYSTEM_INIT(control_system);
     DJC_SYSTEM_INIT(ui_system, {&peer_explorer_page, &mavlink_telemetry_page, &raw_protocol_page, &config_page});
 
-    // orcestre
+    // orchestration
 
     transport_system.link().onReceive(onReceiveFromPeer);
-    peer_system.favoritesRegistry().entries(config.peer_favorites.slice());
-
+    peer_system.favoritesRegistry().entries(user_config.peer_favorites.slice());
     input_system.service().onLeftButton(onSecondaryButtonClick);
     input_system.service().onRightButton(onPrimaryButtonClick);
     input_system.service().onDirection(onPrimaryJoystickDirection);
 
     ui_system.renderer().callback(onUiRendered);
 
-    setupPeriphery(config);
-    setupGraphics(config);
+    setupPeriphery(device_config);
+    setupGraphics(user_config);
 }
 
 void loop() {
@@ -233,7 +249,8 @@ void loop() {
 
     const auto now = static_cast<kf::math::Milliseconds>(millis());
 
-    config_system.poll(now);
+    device_config_system.poll(now);
+    user_config_system.poll(now);
     periphery_system.poll(now);
     transport_system.poll(now);
     protocol_system.poll(now);

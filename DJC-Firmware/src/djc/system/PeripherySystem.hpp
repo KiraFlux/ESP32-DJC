@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "djc/Config.hpp"
 #include "djc/Periphery.hpp"
+#include "djc/config/DeviceConfig.hpp"
 #include "djc/system/System.hpp"
 
 namespace djc::system {
@@ -13,7 +13,7 @@ namespace djc::system {
 /// @note Provides access to peripherals for other systems via getters; no periodic polling needed.
 struct PeripherySystem : System<PeripherySystem, void()> {
 
-    explicit PeripherySystem(const Config &config) noexcept :
+    explicit PeripherySystem(const config::DeviceConfig &config) noexcept :
         _periphery{config.periphery} {}
 
     /// @brief Get mutable access to periphery component

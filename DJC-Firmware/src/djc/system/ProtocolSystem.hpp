@@ -5,8 +5,8 @@
 
 #include <kf/Logger.hpp>
 
-#include "djc/Config.hpp"
 #include "djc/MavlinkTelemetryRegistry.hpp"
+#include "djc/config/DeviceConfig.hpp"
 #include "djc/protocol/ProtocolLink.hpp"
 #include "djc/protocol/ProtocolRegistry.hpp"
 #include "djc/system/System.hpp"
@@ -19,7 +19,7 @@ namespace djc::system {
 /// @note MAVLink callback is configured in init().
 struct ProtocolSystem : System<ProtocolSystem, void(protocol::ProtocolRegistry::Mode)> {
 
-    explicit ProtocolSystem(const Config &config) noexcept :
+    explicit ProtocolSystem(const config::DeviceConfig &config) noexcept :
         _protocol_registry{config.protocol_registry},
         _protocol_link{config.protocol_link} {}
 

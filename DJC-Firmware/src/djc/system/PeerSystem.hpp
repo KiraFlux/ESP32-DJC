@@ -7,8 +7,8 @@
 
 #include <kf/Logger.hpp>
 
-#include "djc/Config.hpp"
 #include "djc/PeerFavoritesRegistry.hpp"
+#include "djc/config/DeviceConfig.hpp"
 #include "djc/service/AutoConnectService.hpp"
 #include "djc/service/PeerScanningService.hpp"
 #include "djc/system/System.hpp"
@@ -18,7 +18,7 @@ namespace djc::system {
 
 /// @brief System managing peer favorites, scanning and auto-connection
 /// @note Owns PeerFavoritesRegistry, PeerScanningService, AutoConnectService.
-/// @note Depends on Config (readonly) and TransportLink (for scanning and connection).
+/// @note Depends on DeviceConfig (readonly) and TransportLink (for scanning and connection).
 /// @note On each poll, scans visible peers and triggers auto-connection to the most trusted visible favorite.
 /// @note Peer favorites registry entries source should set externally
 struct PeerSystem :
@@ -26,7 +26,7 @@ struct PeerSystem :
     System<PeerSystem, void(transport::TransportLink &)>
 
 {
-    explicit PeerSystem(const Config &config, transport::TransportLink &transport_link) noexcept :
+    explicit PeerSystem(const config::DeviceConfig &config, transport::TransportLink &transport_link) noexcept :
         _peer_scanning_service{config.peer_scanner, transport_link},
         _auto_connect_service{config.auto_connect_service, transport_link} {}
 
@@ -71,6 +71,7 @@ private:
     void initImpl(transport::TransportLink &transport_link) noexcept {
         _peer_scanning_service.init();
 
+        // TODO: move to main
         _auto_connect_service.callback([&transport_link](const auto &address) -> void {
             logger.info("Auto Connect");
             (void) transport_link.connect(address);
