@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include "djc/Config.hpp"
+#include "djc/config/DeviceConfig.hpp"
+#include "djc/config/UserConfig.hpp"
 #include "djc/mixin/ServiceOwner.hpp"
 #include "djc/service/ConfigService.hpp"
 #include "djc/system/System.hpp"
@@ -11,49 +12,46 @@
 namespace djc::system {
 
 /// @brief System owning the config service, handling deferred NVS operations
+/// @tparam I Config Implementation (Must inherit from `::djc::config::ConfigTag`)
 /// @note Wraps ConfigService, load on init, and polls it periodically
-struct ConfigSystem :
+template<typename I> struct ConfigSystem :
 
     System<ConfigSystem, void()>,
     mixin::ServiceOwner<service::ConfigService>
 
 {
-    explicit ConfigSystem() noexcept :
-        mixin::ServiceOwner<service::ConfigService>{service::ConfigService{
-            sync_timer_config,
-            {reinterpret_cast<kf::u8 *>(&_config), sizeof(Config)},
-        }} {}
+    KF_CHECK_IMPL(I, ::djc::config::ConfigTag);
+    using ConfigImpl = I;
+
+    explicit ConfigSystem(const kf::math::Timer::Config &sync_timer_config) noexcept :
+        mixin::ServiceOwner<service::ConfigService>{service::ConfigService{sync_timer_config, _config.view()}} {}
 
     /// @brief Get readonly reference to the current configuration
-    [[nodiscard]] constexpr const Config &config() const noexcept {
+    [[nodiscard]] constexpr const ConfigImpl &config() const noexcept {
         return _config;
     }
 
     /// @brief Get mutable reference to the current configuration
-    [[nodiscard]] Config &config() noexcept {
+    [[nodiscard]] ConfigImpl &config() noexcept {
         return _config;
     }
 
 private:
-    Config _config{djc::Config::defaults()};
-
-    static constexpr kf::math::Timer::Config sync_timer_config{
-        .period = 10'000,
-    };
+    ConfigImpl _config{ConfigImpl::defaults()};
 
     KF_IMPL_INITABLE(ConfigSystem, void());
     void initImpl() noexcept {
         this->service().resettingStrategy([](kf::Slice<kf::u8> view) {
-            auto &config = *reinterpret_cast<Config *>(view.data());
-
-            config = Config::defaults();
+            if (auto c = ConfigImpl::interpret(view); c.isSome()) {
+                c.unwrap().reset();
+            }
         });
 
         this->service().onLoad([this](kf::Slice<kf::u8> view) {
-            auto &config = *reinterpret_cast<Config *>(view.data());
-
-            if (not _config.isLatestVersion()) {
-                this->service().requestReset();
+            if (auto c = ConfigImpl::interpret(view); c.isSome()) {
+                if (not c.unwrap().isLatest()) {
+                    this->service().requestReset();
+                }
             }
         });
 
