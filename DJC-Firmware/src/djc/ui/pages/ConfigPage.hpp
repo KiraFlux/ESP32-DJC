@@ -23,12 +23,12 @@ struct ConfigPage : UI::Page {
         UI::Page &root,
         Config &config,
         djc::service::ConfigService &config_service,
-        PeerFavoritesRegistry &peer_favoriter_registry) noexcept :
+        PeerFavoritesRegistry &peer_favorites_registry) noexcept :
         Page{ui},
         _config{config},
         _config_service{config_service},
-        _peer_favorite_page{ui, *this, _peer_favoriter_registry},
-        _peer_favoriter_registry{peer_favoriter_registry},
+        _peer_favorite_page{ui, *this, _peer_favorites_registry},
+        _peer_favorites_registry{peer_favorites_registry},
         _device_name_input{ui.createTextInput()},
         _layout{{
             &root.link(),
@@ -103,7 +103,7 @@ struct ConfigPage : UI::Page {
         _default_transport_kind_selector.value(_config.init_transport_kind);
         _autoconnect_enabled_input.value(_config.auto_connect_service.enabled);
 
-        const auto all_favorites = _peer_favoriter_registry.all();
+        const auto all_favorites = _peer_favorites_registry.all();
 
         (void) _label_favorites_buffer.format(
             "[%c] Peer Favorites (%d/%d)",
@@ -141,7 +141,7 @@ private:
 
     Config &_config;
     djc::service::ConfigService &_config_service;
-    PeerFavoritesRegistry &_peer_favoriter_registry;
+    PeerFavoritesRegistry &_peer_favorites_registry;
     kf::memory::StaticString<32> _label_favorites_buffer{};
     bool show_favorites{true};
 
