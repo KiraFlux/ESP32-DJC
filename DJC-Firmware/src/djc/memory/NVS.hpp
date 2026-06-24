@@ -28,7 +28,7 @@ struct NvsError {
         Unknown,
     } kind;
 
-    static constexpr auto fromEsp(const auto e) -> kf::internal::ResultErrorWrapper<NvsError> {
+    static constexpr auto fromEsp(const esp_err_t e) -> kf::internal::ResultErrorWrapper<NvsError> {
         switch (e) {
             case ESP_ERR_NVS_NOT_FOUND:
                 return {NotFound};
