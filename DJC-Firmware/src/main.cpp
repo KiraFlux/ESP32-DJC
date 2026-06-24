@@ -207,10 +207,9 @@ static void setupGraphics(djc::config::UserConfig &config) noexcept {
     }
 }
 
-// TODO: add check: __system_instance__ implements System
-
-#define DJC_SYSTEM_INIT(__system_instance__, ...) \
-    __system_instance__.init(__VA_ARGS__);        \
+#define DJC_SYSTEM_INIT(__system_instance__, ...)                           \
+    KF_CHECK_IMPL(decltype(__system_instance__), ::djc::system::SystemTag); \
+    __system_instance__.init(__VA_ARGS__);                                  \
     logger.info("done: '" #__system_instance__ "'")
 
 void setup() {
