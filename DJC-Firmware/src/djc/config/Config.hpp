@@ -40,12 +40,8 @@ template<typename Impl, kf::u8 latest_version> struct Config :
         return const_cast<Impl *>(this)->view();
     }
 
-    [[nodiscard]] kf::u32 crc32() const noexcept {
-        return math::crc32(view());
-    }
-
     [[nodiscard]] static constexpr auto defaults() noexcept {
-        Impl ret;
+        Impl ret{};
 
         ret.version = latest_version;
         ret.reset();
