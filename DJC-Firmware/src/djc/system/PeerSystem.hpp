@@ -18,9 +18,9 @@ namespace djc::system {
 
 /// @brief System managing peer favorites, scanning and auto-connection
 /// @note Owns PeerFavoritesRegistry, PeerScanningService, AutoConnectService.
-/// @note Depends on Config (readolny) and TransportLink (for scanning and connection).
+/// @note Depends on Config (readonly) and TransportLink (for scanning and connection).
 /// @note On each poll, scans visible peers and triggers auto-connection to the most trusted visible favorite.
-/// @note Peer favorites registry entries source should set extenally
+/// @note Peer favorites registry entries source should set externally
 struct PeerSystem :
 
     System<PeerSystem, void(transport::TransportLink &)>

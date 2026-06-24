@@ -10,7 +10,7 @@
 
 namespace djc {
 
-/// @brief Centralised storage for received MAVLink telemetry messages
+/// @brief Centralized storage for received MAVLink telemetry messages
 /// @note Holds a set of typed entries, one for each supported MAVLink message type.
 struct MavlinkTelemetryRegistry final : kf::mixin::NonCopyable {
 

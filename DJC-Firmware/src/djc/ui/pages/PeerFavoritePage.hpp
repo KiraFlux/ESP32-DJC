@@ -38,7 +38,7 @@ struct PeerFavoritePage final : UI::Page {
             _temp_entry.unwrap().trust = _trust_input.value();
 
             const bool write_ok = _peer_favorites_registry.put(_temp_entry.unwrap());
-            _confirm_button.label(write_ok ? "Writed" : "Write failed");
+            _confirm_button.label(write_ok ? "Written" : "Write failed");
             _confirm_button.style(UI::Style{
                 .foreground_color = UI::Color::Normal,
                 .background_color = (write_ok ? UI::Color::Success : UI::Color::Error),

@@ -18,7 +18,7 @@ struct Protocol : kf::mixin::NonCopyable {
 
     /// @brief Called periodically when the protocol is active and the link is connected
     /// @note
-    /// The implementation must serialise the current stick values and send them through the transport.
+    /// The implementation must serialize the current stick values and send them through the transport.
     /// Periodic tasks such as heartbeat or keep‑alive messages are also handled here, using `now` to maintain internal timers.
     virtual void poll(kf::math::Milliseconds now, const ManualInput &input, transport::TransportLink &transport_link) noexcept = 0;
 

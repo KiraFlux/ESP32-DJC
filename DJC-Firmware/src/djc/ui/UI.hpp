@@ -31,7 +31,7 @@ using UiBase = ::kf::ui::UI<::djc::ui::UiTraits<WidgetBase>>;
 
 namespace djc::ui {
 
-/// @brief ESP32-DJC extended UI specializalization
+/// @brief ESP32-DJC extended UI specialization
 /// @note djc::pages must use fields from this service (`UI::Color`, `UI::Widget`, etc.)
 struct UI :
 

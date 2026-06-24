@@ -62,7 +62,7 @@ struct MavlinkProtocol :
 
     using kf::mixin::Configurable<Config>::Configurable;
 
-    /// @brief Serialise and send a MAVLink message through the given transport.
+    /// @brief Serialize and send a MAVLink message through the given transport.
     /// @param transport_link Transport to use for sending.
     /// @param message The message to send.
     /// @return true if the transport reported success, false otherwise.
@@ -78,9 +78,9 @@ struct MavlinkProtocol :
     // impl dynamic
 
     void poll(kf::math::Milliseconds now, const ManualInput &input, transport::TransportLink &transport_link) noexcept override {
-        if (_heartbear_timer.expired(now) or _heartbeat_timer_reset_required) {
+        if (_heartbeat_timer.expired(now) or _heartbeat_timer_reset_required) {
             _heartbeat_timer_reset_required = false;
-            _heartbear_timer.start(now);
+            _heartbeat_timer.start(now);
 
             (void) sendHeartbeat(transport_link);
         }
@@ -100,7 +100,7 @@ struct MavlinkProtocol :
     }
 
 private:
-    kf::math::Timer _heartbear_timer{this->config().heartbeat_timer};
+    kf::math::Timer _heartbeat_timer{this->config().heartbeat_timer};
     bool _heartbeat_timer_reset_required{true};
 
     [[nodiscard]] bool sendHeartbeat(transport::TransportLink &transport_link) const noexcept {
