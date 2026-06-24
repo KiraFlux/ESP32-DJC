@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <kf/Option.hpp>
 #include <kf/Slice.hpp>
 #include <kf/mixin/Resettable.hpp>
 #include <kf/primitives.hpp>
@@ -18,6 +19,10 @@ template<typename Impl, kf::u8 latest_version> struct Config : kf::mixin::Resett
 
     [[nodiscard]] bool isLatest() const noexcept {
         return version == latest_version;
+    }
+
+    [[nodiscard]] static constexpr auto interpret(kf::Slice<kf::u8> view) noexcept -> kf::Option<Impl &> {
+        return (view.size() == sizeof(Impl)) ? kf::someRef(*reinterpret_cast<Impl *>(view.data())) : kf::none;
     }
 
     [[nodiscard]] constexpr auto view() noexcept -> kf::Slice<kf::u8> {
