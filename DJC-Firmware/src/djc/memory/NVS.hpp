@@ -69,6 +69,10 @@ struct NVS final :
     explicit constexpr NVS(const char *nvs_namespace) noexcept :
         _namespace{nvs_namespace} {}
 
+    [[nodiscard]] constexpr const char *name() const noexcept {
+        return _namespace;
+    }
+
     [[nodiscard]] ResultType load(kf::Slice<kf::u8> buffer) noexcept {
         auto len = buffer.size();
         return wrap(nvs_get_blob(_handle.unwrap(), blob_key, static_cast<void *>(buffer.data()), &len));
