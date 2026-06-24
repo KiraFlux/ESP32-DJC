@@ -40,7 +40,7 @@ private:
         init_protocol_mode = protocol::ProtocolRegistry::Mode::Mavlink;
         init_transport_kind = transport::Kind::EspNow;
 
-        device_name = {"ESP32-DJC"};
+        device_name = decltype(device_name){"ESP32-DJC"};
 
         peer_favorites = {};
 
