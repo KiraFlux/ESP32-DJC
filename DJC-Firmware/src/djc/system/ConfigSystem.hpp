@@ -16,15 +16,15 @@ namespace djc::system {
 /// @note Wraps ConfigService, load on init, and polls it periodically
 template<typename I> struct ConfigSystem :
 
-    System<ConfigSystem, void()>,
+    System<ConfigSystem<I>, void()>,
     mixin::ServiceOwner<service::ConfigService>
 
 {
     KF_CHECK_IMPL(I, ::djc::config::ConfigTag);
     using ConfigImpl = I;
 
-    explicit ConfigSystem(const kf::math::Timer::Config &sync_timer_config) noexcept :
-        mixin::ServiceOwner<service::ConfigService>{service::ConfigService{sync_timer_config, _config.view()}} {}
+    explicit ConfigSystem(const char *nvs_namespace) noexcept :
+        mixin::ServiceOwner<service::ConfigService>{service::ConfigService{nvs_namespace, _sync_timer_config, _config.view()}} {}
 
     /// @brief Get readonly reference to the current configuration
     [[nodiscard]] constexpr const ConfigImpl &config() const noexcept {
@@ -37,9 +37,15 @@ template<typename I> struct ConfigSystem :
     }
 
 private:
+    static constexpr kf::math::Timer::Config _sync_timer_config{
+        .period = 10'000,
+    };
+
     ConfigImpl _config{ConfigImpl::defaults()};
 
-    KF_IMPL_INITABLE(ConfigSystem, void());
+    using This = ConfigSystem<I>;
+
+    KF_IMPL_INITABLE(This, void());
     void initImpl() noexcept {
         this->service().resettingStrategy([](kf::Slice<kf::u8> view) {
             if (auto c = ConfigImpl::interpret(view); c.isSome()) {
@@ -59,7 +65,7 @@ private:
         this->service().sync();
     }
 
-    KF_IMPL_TIMED_POLLABLE(ConfigSystem);
+    KF_IMPL_TIMED_POLLABLE(This);
     void pollImpl(kf::math::Milliseconds now) noexcept {
         this->service().poll(now);
     }
