@@ -5,16 +5,20 @@
 
 #include <Arduino.h>
 
+#include <kf/gpio/ArduinoGPIO.hpp>
+
+#include <kf/bus/iic/ArduinoIIC.hpp>
 #include <kf/bus/spi/ArduinoSPI.hpp>
+
 #include <kf/drivers/display/ST7735.hpp>
 #include <kf/drivers/sensors/Joystick.hpp>
 #include <kf/drivers/sensors/NormalizedAdcInput.hpp>
-#include <kf/gpio/ArduinoGPIO.hpp>
+
 #include <kf/input/LogicalLevelListener.hpp>
 
 namespace djc {
 
-constexpr gpio_num_t 
+constexpr gpio_num_t
 
     // buttons
 
@@ -27,6 +31,11 @@ constexpr gpio_num_t
     gpio_joystick_left_y{GPIO_NUM_33},
     gpio_joystick_right_x{GPIO_NUM_34},
     gpio_joystick_right_y{GPIO_NUM_35},
+
+    // i2c
+
+    gpio_i2c_sda{GPIO_NUM_21},
+    gpio_i2c_scl{GPIO_NUM_22},
 
     // spi
 
@@ -49,6 +58,8 @@ using ButtonListener = kf::input::LogicalLevelListener<GPIO::DigitalInput>;
 using AxisInput = kf::drivers::sensors::NormalizedAdcInput<GPIO::AdcInput>;
 
 using Joystick = kf::drivers::sensors::Joystick<AxisInput>;
+
+using IicBus = kf::bus::iic::ArduinoIIC;
 
 using SpiBus = kf::bus::spi::ArduinoSPI;
 
