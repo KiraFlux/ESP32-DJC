@@ -15,7 +15,7 @@
 namespace djc::config {
 
 /// @brief Device-related configutation 
-struct DeviceConfig : Config<DeviceConfig, 0> {
+struct DeviceConfig : Config<DeviceConfig, 1> {
 
     // periphery
 

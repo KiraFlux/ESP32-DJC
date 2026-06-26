@@ -24,6 +24,8 @@ struct PeripheryConfig final {
     Joystick::Config left_joystick, right_joystick;
 
     SpiBus::Config spi_bus;
+    IicBus::Config iic_bus;
+
     SpiBus::Node::Config display_spi_node;
 
     DisplayDriver::Config display_driver;
@@ -47,6 +49,7 @@ struct PeripheryConfig final {
                 .y = axisDefaults(true),
             },
             .spi_bus = djc::SpiBus::Config::create(gpio_spi_mosi, gpio_spi_miso, gpio_spi_sck),
+            .iic_bus = djc::IicBus::Config::create(/* clock: */ 400'000, /* timeout: (=default) */ 0, /* buffer_size: */ 0, gpio_i2c_sda, gpio_i2c_scl),
             .display_spi_node = djc::SpiBus::Node::Config::create(gpio_display_st7735_spi_cs, 27000000),
             .display_driver = {
                 .init_orientation = kf::drivers::display::Orientation::ClockWise,
@@ -116,6 +119,11 @@ struct Periphery final :
         SPI,
     };
 
+    IicBus iic_bus{
+        this->config().iic_bus,
+        Wire,
+    };
+
     DisplayDriver display_driver{
         this->config().display_driver,
         spi_bus.createNode(this->config().display_spi_node),
@@ -154,11 +162,15 @@ private:
         right_button_listener.init();
 
         if (spi_bus.init().isError()) {
-            logger.error("SpiBus initialization failed");
+            logger.error("SPI bus init failed");
+        }
+
+        if (iic_bus.init().isError()) {
+            logger.error("I2C bus init failed");
         }
 
         if (display_driver.init().isError()) {
-            logger.error("Display driver initialization failed");
+            logger.error("Display driver init failed");
         }
     }
 };
