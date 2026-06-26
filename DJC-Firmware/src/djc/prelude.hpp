@@ -37,8 +37,9 @@ constexpr gpio_num_t
     // display
 
     gpio_display_st7735_spi_cs{GPIO_NUM_5},
-    gpio_display_st7735_data_command{GPIO_NUM_22},
+    gpio_display_st7735_data_command{GPIO_NUM_16},
     gpio_display_st7735_reset{GPIO_NUM_17}
+
 ;
 
 using GPIO = kf::gpio::ArduinoGPIO;
