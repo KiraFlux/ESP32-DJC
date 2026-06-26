@@ -205,8 +205,17 @@ static void setupPeriphery(djc::config::DeviceConfig &config) noexcept {
 
 static void setupGraphics(djc::config::UserConfig &config) noexcept {
     if (const auto &canvas = graphics_system.canvas(); canvas.isSome()) {
-        config.ui_renderer.text.row_max_length = canvas.unwrap().widthInGlyphs();
-        config.ui_renderer.text.rows_total = canvas.unwrap().heightInGlyphs() - 1;
+
+        auto &textual_renderer_config{
+#ifdef DJC_UI_RENDERER_IMPL_TEXTUAL_COLORED
+            config.ui_renderer.text
+#else
+            config.ui_renderer
+#endif
+        };
+
+        textual_renderer_config.row_max_length = canvas.unwrap().widthInGlyphs();
+        textual_renderer_config.rows_total = canvas.unwrap().heightInGlyphs() - 1;
     }
 }
 
@@ -238,7 +247,7 @@ void setup() {
 
     peer_system.autoConnectService().callback(onTrustedPeerDiscovered);
     peer_system.favoritesRegistry().entries(user_config.peer_favorites.slice());
-    
+
     input_system.service().onLeftButton(onSecondaryButtonClick);
     input_system.service().onRightButton(onPrimaryButtonClick);
     input_system.service().onDirection(onPrimaryJoystickDirection);

@@ -6,10 +6,9 @@
 #include <kf/Slice.hpp>
 #include <kf/ui/Color.hpp>
 #include <kf/ui/Event.hpp>
-#include <kf/ui/Style.hpp>
 #include <kf/ui/Layout.hpp>
+#include <kf/ui/Style.hpp>
 #include <kf/ui/UI.hpp>
-#include <kf/ui/render/ColoredTextRenderer.hpp>
 #include <kf/ui/widgets/Widget.hpp>
 
 #include "djc/service/Service.hpp"
@@ -18,11 +17,34 @@
 #include "djc/ui/widgets/PeerDisplay.hpp"
 #include "djc/ui/widgets/TextInput.hpp"
 
+#ifdef DJC_UI_RENDERER_IMPL_TEXTUAL_COLORED
+
+#include <kf/ui/render/ColoredTextRenderer.hpp>
+
+namespace djc::internal {
+
+/// @brief Render Engine: Buffered Colored Text UI render engine
+using Renderer = ::kf::ui::render::ColoredTextRenderer;
+
+}// namespace djc::internal
+
+#else
+
+#include <kf/ui/render/PlainTextRenderer.hpp>
+
+namespace djc::internal {
+
+using Renderer = ::kf::ui::render::PlainTextRenderer;
+
+}
+
+#endif
+
 namespace djc::internal {
 
 using WidgetBase = ::kf::ui::widgets::Widget<
-    ::kf::ui::render::ColoredTextRenderer,// Render Engine: Buffered Colored Text UI render engine
-    ::kf::ui::Event<6>                    // Event: 6-bit Event value encoding
+    Renderer,
+    ::kf::ui::Event<6>// Event: 6-bit Event value encoding
     >;
 
 using UiBase = ::kf::ui::UI<::djc::ui::UiTraits<WidgetBase>>;

@@ -10,13 +10,16 @@
 #include <kf/mixin/NonCopyable.hpp>
 #include <kf/primitives.hpp>
 
+#include <kf/gpio/ArduinoGPIO.hpp>
+#include <kf/input/LogicalLevelListener.hpp>// TODO: move to InputHandler
+
 #include <kf/bus/iic/ArduinoIIC.hpp>
 #include <kf/bus/spi/ArduinoSPI.hpp>
+
+#include <kf/drivers/display/SSD1306.hpp>
 #include <kf/drivers/display/ST7735.hpp>
 #include <kf/drivers/sensors/Joystick.hpp>
 #include <kf/drivers/sensors/NormalizedAdcInput.hpp>
-#include <kf/gpio/ArduinoGPIO.hpp>
-#include <kf/input/LogicalLevelListener.hpp>
 
 namespace djc {
 
@@ -38,9 +41,25 @@ struct Periphery final :
 
     using IicBus = kf::bus::iic::ArduinoIIC;
 
+    using SSD1306 = kf::drivers::display::SSD1306<IicBus::Node>;
+
     using SpiBus = kf::bus::spi::ArduinoSPI;
 
-    using DisplayDriver = kf::drivers::display::ST7735<SpiBus::Node, GPIO::DigitalOutput>;
+    using ST7735 = kf::drivers::display::ST7735<SpiBus::Node, GPIO::DigitalOutput>;
+
+#if defined(DJC_DISPLAY_DRIVER_ST7735)
+
+    using DisplayDriver = ST7735;
+
+#elif defined(DJC_DISPLAY_DRIVER_SSD1306)
+
+    using DisplayDriver = SSD1306;
+
+#else
+
+#error DJC_DISPLAY_DRIVER_* Must be defined!
+
+#endif
 
     static constexpr gpio_num_t
 
@@ -74,18 +93,33 @@ struct Periphery final :
     ;
 
     struct Config {
+
+        // Input
+
         ButtonListener::Config button;
 
         AxisInput::FilterImpl::Config axis_filter;
+
         Joystick::Config left_joystick, right_joystick;
 
-        SpiBus::Config spi_bus;
+        // I2C
+
         IicBus::Config iic_bus;
 
-        SpiBus::Node::Config display_spi_node;
+        IicBus::Node::Config ssd1306_iic_node;
 
-        DisplayDriver::Config display_driver;
+        // SPI
+
+        SpiBus::Config spi_bus;
+
+        SpiBus::Node::Config st7735_spi_node;
+
+        ST7735::Config st7735;
+
+        // Other
+
         kf::u16 joystick_axes_tune_samples;
+
         bool joystick_axes_tuned;
 
         static constexpr auto defaults() noexcept {
@@ -104,10 +138,13 @@ struct Periphery final :
                     .x = axisDefaults(false),
                     .y = axisDefaults(true),
                 },
+                .iic_bus = IicBus::Config::create(/* clock: */ 400'000, /* timeout: (=default) */ 0, /* buffer_size: */ 0 /* , gpio_i2c_sda, gpio_i2c_scl */),
+                .ssd1306_iic_node = {
+                    .address = SSD1306::default_address,
+                },
                 .spi_bus = SpiBus::Config::create(gpio_spi_mosi, gpio_spi_miso, gpio_spi_sck),
-                .iic_bus = IicBus::Config::create(/* clock: */ 400'000, /* timeout: (=default) */ 0, /* buffer_size: */ 0, gpio_i2c_sda, gpio_i2c_scl),
-                .display_spi_node = SpiBus::Node::Config::create(gpio_display_st7735_spi_cs, 27000000),
-                .display_driver = {
+                .st7735_spi_node = SpiBus::Node::Config::create(gpio_display_st7735_spi_cs, /* clock: */ 27'000'000),
+                .st7735 = {
                     .init_orientation = kf::drivers::display::Orientation::ClockWise,
                 },
                 .joystick_axes_tune_samples = 100,
@@ -172,10 +209,22 @@ struct Periphery final :
     };
 
     DisplayDriver display_driver{
-        config.display_driver,
-        spi_bus.createNode(config.display_spi_node),
+
+#if defined(DJC_DISPLAY_DRIVER_ST7735)
+
+        config.st7735,
+        spi_bus.createNode(config.st7735_spi_node),
         GPIO::DigitalOutput{gpio_display_st7735_data_command},
         GPIO::DigitalOutput{gpio_display_st7735_reset},
+
+#elif defined(DJC_DISPLAY_DRIVER_SSD1306)
+
+        iic_bus.createNode(config.ssd1306_iic_node),
+
+#else
+
+#endif
+
     };
 
     // Analog axis calibration
