@@ -22,8 +22,8 @@ constexpr gpio_num_t
 
     // buttons
 
-    gpio_button_left{GPIO_NUM_14},
-    gpio_button_right{GPIO_NUM_4},
+    gpio_button_left{GPIO_NUM_26},
+    gpio_button_right{GPIO_NUM_25},
 
     // joystick axis
 
