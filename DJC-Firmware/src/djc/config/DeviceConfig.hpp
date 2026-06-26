@@ -36,7 +36,7 @@ struct DeviceConfig : Config<DeviceConfig, 0> {
 private:
     KF_IMPL_RESETTABLE(DeviceConfig);
     void resetImpl() noexcept {
-        periphery = Periphery::Config::defaults();
+        periphery.reset();
 
         transport_link = transport::TransportLink::Config::defaults();
         protocol_link = protocol::ProtocolLink::Config::defaults();

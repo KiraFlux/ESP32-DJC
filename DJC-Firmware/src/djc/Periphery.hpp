@@ -8,6 +8,7 @@
 #include <kf/Logger.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/mixin/Resettable.hpp>
 #include <kf/primitives.hpp>
 
 #include <kf/gpio/ArduinoGPIO.hpp>
@@ -92,7 +93,7 @@ struct Periphery final :
 
     ;
 
-    struct Config {
+    struct Config : kf::mixin::Resettable<Config> {
 
         // Input
 
@@ -122,44 +123,47 @@ struct Periphery final :
 
         bool joystick_axes_tuned;
 
-        static constexpr auto defaults() noexcept {
-            return Config{
-                .button = {
-                    .debounce = 50,// ms
-                },
-                .axis_filter = {
-                    .factor = 0.5f,
-                },
-                .left_joystick = {
-                    .x = axisDefaults(true),
-                    .y = axisDefaults(false),
-                },
-                .right_joystick = {
-                    .x = axisDefaults(false),
-                    .y = axisDefaults(true),
-                },
-                .iic_bus = IicBus::Config::create(/* clock: */ 400'000, /* timeout: (=default) */ 0, /* buffer_size: */ 0 /* , gpio_i2c_sda, gpio_i2c_scl */),
-                .ssd1306_iic_node = {
-                    .address = SSD1306::default_address,
-                },
-                .spi_bus = SpiBus::Config::create(gpio_spi_mosi, gpio_spi_miso, gpio_spi_sck),
-                .st7735_spi_node = SpiBus::Node::Config::create(gpio_display_st7735_spi_cs, /* clock: */ 27'000'000),
-                .st7735 = {
-                    .init_orientation = kf::drivers::display::Orientation::ClockWise,
-                },
-                .joystick_axes_tune_samples = 100,
-                .joystick_axes_tuned = false,
-            };
+    private:
+        static void resetAxis(AxisInput::Config &axis, bool inverted) noexcept {
+            axis.inverted = inverted;
+            axis.dead_zone = 200;
+            axis.range_positive = 2000;
+            axis.range_negative = 2000;
         }
 
-    private:
-        static constexpr AxisInput::Config axisDefaults(bool inverted) noexcept {
-            return AxisInput::Config{
-                .inverted = inverted,
-                .dead_zone = 200,
-                .range_positive = 2000,
-                .range_negative = 2000,
-            };
+        KF_IMPL_RESETTABLE(Config);
+        void resetImpl() noexcept {
+            button.debounce = 0;
+
+            axis_filter.factor = 0.5f;
+
+            resetAxis(left_joystick.x, true);
+            resetAxis(left_joystick.y, false);
+
+            resetAxis(right_joystick.x, false);
+            resetAxis(right_joystick.y, true);
+
+            iic_bus.clock_hz = 400'000;
+            iic_bus.timeout = 0;    // wire default
+            iic_bus.buffer_size = 0;//
+            iic_bus.pin_sda = -1;   //
+            iic_bus.pin_scl = -1;   //
+
+            ssd1306_iic_node.address = SSD1306::default_address;
+
+            spi_bus.pin_mosi = gpio_spi_mosi;
+            spi_bus.pin_miso = gpio_spi_miso;
+            spi_bus.pin_sck = gpio_spi_sck;
+
+            st7735_spi_node.clock_hz = 27'000'000;
+            st7735_spi_node.pin_cs = gpio_display_st7735_spi_cs;
+            st7735_spi_node.bit_order = SpiBus::Node::Config::BitOrder::MostSignificant;
+            st7735_spi_node.clock_bits = SpiBus::Node::Config::ClockBits::None;
+
+            st7735.init_orientation = kf::drivers::display::Orientation::ClockWise;
+
+            joystick_axes_tune_samples = 100;
+            joystick_axes_tuned = false;
         }
     };
 
