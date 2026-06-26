@@ -20,24 +20,22 @@ namespace djc {
 
 constexpr gpio_num_t
 
-    // buttons
+    // inputs
 
     gpio_button_left{GPIO_NUM_26},
     gpio_button_right{GPIO_NUM_25},
-
-    // joystick axis
 
     gpio_joystick_left_x{GPIO_NUM_32},
     gpio_joystick_left_y{GPIO_NUM_33},
     gpio_joystick_right_x{GPIO_NUM_34},
     gpio_joystick_right_y{GPIO_NUM_35},
 
-    // i2c
+    gpio_battery_level{GPIO_NUM_39},
+    
+    // bus
 
     gpio_i2c_sda{GPIO_NUM_21},
     gpio_i2c_scl{GPIO_NUM_22},
-
-    // spi
 
     gpio_spi_mosi{GPIO_NUM_23},
     gpio_spi_miso{GPIO_NUM_19},
