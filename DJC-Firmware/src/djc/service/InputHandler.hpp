@@ -11,13 +11,13 @@
 #include <kf/input/JoystickListener.hpp>
 #include <kf/math/units.hpp>
 
-#include "djc/prelude.hpp"
+#include "djc/Periphery.hpp"
 #include "djc/service/Service.hpp"
 
 namespace djc::service {
 
 struct InputHandler final : Service<InputHandler> {
-    using JoystickListener = kf::input::JoystickListener<Joystick>;
+    using JoystickListener = kf::input::JoystickListener<Periphery::Joystick>;
 
     using ClickCallback = kf::Function<void()>;
     using DirectionCallback = kf::Function<void(JoystickListener::Direction)>;
@@ -40,14 +40,10 @@ struct InputHandler final : Service<InputHandler> {
         }
     };
 
-    explicit InputHandler(
-        const Config &config,
-        Joystick &primary_joystick,
-        ButtonListener &left_button_listener,
-        ButtonListener &right_button_listener) noexcept :
-        _joystick_listener{primary_joystick, config.joystick_listener},
-        _left_button_listener{left_button_listener},
-        _right_button_listener{right_button_listener} {}
+    explicit InputHandler(const Config &config, Periphery &periphery) noexcept :
+        _joystick_listener{periphery.right_joystick, config.joystick_listener},
+        _left_button_listener{periphery.left_button_listener},
+        _right_button_listener{periphery.right_button_listener} {}
 
     template<typename F> void onRightButton(F &&callback) noexcept {
         _right_click_callback = kf::some(ClickCallback{std::forward<F>(callback)});
@@ -75,7 +71,7 @@ struct InputHandler final : Service<InputHandler> {
 
 private:
     JoystickListener _joystick_listener;
-    ButtonListener &_left_button_listener, &_right_button_listener;
+    Periphery::ButtonListener &_left_button_listener, &_right_button_listener;
 
     kf::Option<DirectionCallback> _direction_callback{kf::none};
     kf::Option<ClickCallback> _left_click_callback{kf::none}, _right_click_callback{kf::none};

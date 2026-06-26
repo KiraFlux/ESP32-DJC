@@ -9,9 +9,6 @@
 #include <kf/Slice.hpp>
 #include <kf/memory/StringView.hpp>
 
-// djc
-#include "djc/prelude.hpp"
-
 // djc::config
 #include "djc/config/DeviceConfig.hpp"
 #include "djc/config/UserConfig.hpp"
@@ -77,7 +74,7 @@ static djc::system::InputSystem input_system{
 
 static djc::system::UiSystem ui_system{user_config};
 
-static djc::system::GraphicsSystem<djc::DisplayDriver> graphics_system{
+static djc::system::GraphicsSystem<djc::Periphery::DisplayDriver> graphics_system{
     periphery_system.periphery().display_driver,
     ui_system.virtualKeyboard(),
 };

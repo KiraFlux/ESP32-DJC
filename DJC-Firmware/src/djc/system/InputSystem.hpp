@@ -20,12 +20,7 @@ struct InputSystem :
 
 {
     explicit InputSystem(const config::DeviceConfig &config, Periphery &periphery) noexcept :
-        mixin::ServiceOwner<service::InputHandler>{service::InputHandler{
-            config.input_handler,
-            periphery.right_joystick,// primary joystick for navigation/control
-            periphery.left_button_listener,
-            periphery.right_button_listener,
-        }} {}
+        mixin::ServiceOwner<service::InputHandler>{service::InputHandler{config.input_handler, periphery}} {}
 
 private:
     KF_IMPL_INITABLE(InputSystem, void());
