@@ -62,7 +62,7 @@ namespace djc::protocol {
 struct MavlinkProtocol :
 
     Protocol,
-    kf::mixin::Callbacked<const mavlink_message_t &>,// TODO: add mavlink_chan_t to callback argument for multi-channel work
+    kf::mixin::Callbacked<const mavlink_message_t &>,
     kf::mixin::Configurable<internal::MavlinkProtocolConfig>
 
 {
@@ -86,8 +86,7 @@ struct MavlinkProtocol :
     // impl dynamic
 
     void poll(kf::math::Milliseconds now, const ManualInput &input, transport::TransportLink &transport_link) noexcept override {
-        if (_heartbeat_timer.expired(now) or _heartbeat_timer_reset_required) {// TODO: remove flag
-            _heartbeat_timer_reset_required = false;
+        if (_heartbeat_timer.expired(now)) {
             _heartbeat_timer.start(now);
 
             (void) sendHeartbeat(transport_link);
@@ -109,7 +108,6 @@ struct MavlinkProtocol :
 
 private:
     kf::math::Timer _heartbeat_timer{this->config().heartbeat_timer};
-    bool _heartbeat_timer_reset_required{true};
 
     [[nodiscard]] bool sendHeartbeat(transport::TransportLink &transport_link) const noexcept {
         mavlink_message_t message;
