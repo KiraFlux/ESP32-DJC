@@ -10,6 +10,7 @@
 #include <kf/math/units.hpp>
 #include <kf/mixin/Callbacked.hpp>
 #include <kf/mixin/Configurable.hpp>
+#include <kf/mixin/Resettable.hpp>
 #include <kf/primitives.hpp>
 
 #include "djc/ManualInput.hpp"
@@ -19,26 +20,33 @@
 namespace djc::internal {
 
 /// @brief Configuration for the MAVLink protocol
-struct MavlinkProtocolConfig final {
+struct MavlinkProtocolConfig : kf::mixin::Resettable<MavlinkProtocolConfig> {
 
-    using IdType = kf::u8;
+    /// @brief Timer for HEARTBEAT messages (ms)
+    kf::math::Timer::Config heartbeat_timer;
 
-    kf::math::Timer::Config heartbeat_timer;///< Timer for  HEARTBEAT messages (ms)
-    IdType system_id_self;                  ///< MAVLink system ID of this controller
-    IdType system_id_target;                ///< MAVLink system ID of the target drone (0 = broadcast)
-    IdType component_id_heartbeat;
-    IdType component_id_manual_control;
+    kf::u8
 
-    [[nodiscard]] static constexpr auto defaults() noexcept {
-        return MavlinkProtocolConfig{
-            .heartbeat_timer = {
-                .period = 2'000,// ms
-            },
-            .system_id_self = 0x7f,
-            .system_id_target = 0x01,
-            .component_id_heartbeat = MAV_COMP_ID_USER1,
-            .component_id_manual_control = MAV_COMP_ID_USER2,
-        };
+        /// @brief MAVLink system ID of this controller
+        system_id_self,
+
+        /// @brief MAVLink system ID of the target drone (0 = broadcast)
+        system_id_target,
+
+        // components
+
+        component_id_heartbeat,
+        component_id_manual_control;
+
+private:
+    KF_IMPL_RESETTABLE(MavlinkProtocolConfig);
+    void resetImpl() noexcept {
+        heartbeat_timer.period = 2'000;// ms
+
+        system_id_self = 0x7f;
+        system_id_target = 0x01;
+        component_id_heartbeat = MAV_COMP_ID_USER1;
+        component_id_manual_control = MAV_COMP_ID_USER2;
     }
 };
 
@@ -54,7 +62,7 @@ namespace djc::protocol {
 struct MavlinkProtocol :
 
     Protocol,
-    kf::mixin::Callbacked<const mavlink_message_t &>,
+    kf::mixin::Callbacked<const mavlink_message_t &>,// TODO: add mavlink_chan_t to callback argument for multi-channel work
     kf::mixin::Configurable<internal::MavlinkProtocolConfig>
 
 {
@@ -78,7 +86,7 @@ struct MavlinkProtocol :
     // impl dynamic
 
     void poll(kf::math::Milliseconds now, const ManualInput &input, transport::TransportLink &transport_link) noexcept override {
-        if (_heartbeat_timer.expired(now) or _heartbeat_timer_reset_required) {
+        if (_heartbeat_timer.expired(now) or _heartbeat_timer_reset_required) {// TODO: remove flag
             _heartbeat_timer_reset_required = false;
             _heartbeat_timer.start(now);
 

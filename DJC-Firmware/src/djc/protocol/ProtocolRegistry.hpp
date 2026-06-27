@@ -22,7 +22,7 @@ struct ProtocolRegistryConfig : kf::mixin::Resettable<ProtocolRegistryConfig> {
 private:
     KF_IMPL_RESETTABLE(ProtocolRegistryConfig);
     void resetImpl() noexcept {
-        mavlink = protocol::MavlinkProtocol::Config::defaults();
+        mavlink.reset();
     }
 };
 
