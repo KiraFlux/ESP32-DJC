@@ -43,7 +43,7 @@ private:
         protocol_registry.reset();
 
         input_handler = service::InputHandler::Config::defaults();
-        peer_scanner = service::PeerScanningService::Config::defaults();
+        peer_scanner.reset();
         auto_connect_service = service::AutoConnectService::Config::defaults();
     }
 };

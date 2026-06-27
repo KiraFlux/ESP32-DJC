@@ -10,6 +10,7 @@
 #include <kf/memory/Array.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
+#include <kf/mixin/Resettable.hpp>
 #include <kf/primitives.hpp>
 
 #include "djc/service/Service.hpp"
@@ -18,18 +19,20 @@
 
 namespace djc::internal {
 
-/// @brief Configuration parameters for the PeerScanningService service.
-struct PeerScannerConfig final {
-    kf::math::Milliseconds entry_max_life_time;       ///< How long an entry stays in the list without being refreshed.
-    kf::math::Timer::Config entries_list_update_timer;///< Interval between periodic clean-ups and list compaction.
+/// @brief Configuration parameters for the PeerScanningService service
+struct PeerScannerConfig : kf::mixin::Resettable<PeerScannerConfig> {
 
-    [[nodiscard]] static constexpr PeerScannerConfig defaults() noexcept {
-        return PeerScannerConfig{
-            .entry_max_life_time = 8'000,
-            .entries_list_update_timer = {
-                .period = 100,
-            },
-        };
+    /// @brief How long an entry stays in the list without being refreshed
+    kf::math::Milliseconds entry_max_life_time;
+
+    /// @brief Interval between periodic clean-ups and list compaction
+    kf::math::Timer::Config entries_list_update_timer;
+
+private:
+    KF_IMPL_RESETTABLE(PeerScannerConfig);
+    void resetImpl() noexcept {
+        entry_max_life_time = 8'000;
+        entries_list_update_timer.period = 100;
     }
 };
 
@@ -37,12 +40,12 @@ struct PeerScannerConfig final {
 
 namespace djc::service {
 
-/// @brief Background service that listens for foreign (broadcast) packets and maintains a list of visible peers.
+/// @brief Background service that listens for foreign (broadcast) packets and maintains a list of visible peers
 /// @note
 /// The scanner subscribes to `TransportLink::onReceiveForeign` and keeps up to `max_entries` entries
 /// Entries are refreshed every time a packet from the corresponding peer is received.
 /// Periodically, expired entries are removed and the list is compacted so that the first `peers().size()` elements are always valid.
-struct PeerScanningService final :
+struct PeerScanningService :
 
     Service<PeerScanningService>,
     kf::mixin::Initable<PeerScanningService, void()>,
