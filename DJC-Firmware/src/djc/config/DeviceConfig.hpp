@@ -14,7 +14,7 @@
 
 namespace djc::config {
 
-/// @brief Device-related configutation 
+/// @brief Device-related configutation
 struct DeviceConfig : Config<DeviceConfig, 0> {
 
     // periphery
@@ -38,7 +38,7 @@ private:
     void resetImpl() noexcept {
         periphery.reset();
 
-        transport_link = transport::TransportLink::Config::defaults();
+        transport_link.reset();
         protocol_link = protocol::ProtocolLink::Config::defaults();
         protocol_registry = protocol::ProtocolRegistry::Config::defaults();
 

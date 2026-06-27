@@ -8,6 +8,7 @@
 #include <kf/math/units.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/mixin/Resettable.hpp>
 #include <kf/mixin/TimedPollable.hpp>
 
 #include "djc/transport/PeerAddress.hpp"
@@ -15,16 +16,14 @@
 
 namespace djc::internal {
 
-/// @brief Configuration parameters for the Transport Link.
-struct TransportLinkConfig final : kf::mixin::NonCopyable {
+/// @brief Configuration parameters for the Transport Link
+struct TransportLinkConfig : kf::mixin::Resettable<TransportLinkConfig> {
     kf::math::Timer::Config disconnect_timer;
 
-    [[nodiscard]] static constexpr TransportLinkConfig defaults() noexcept {
-        return TransportLinkConfig{
-            .disconnect_timer = {
-                .period = 15'000,
-            },
-        };
+private:
+    KF_IMPL_RESETTABLE(TransportLinkConfig);
+    void resetImpl() noexcept {
+        disconnect_timer.period = 15'000;
     }
 };
 
@@ -32,10 +31,10 @@ struct TransportLinkConfig final : kf::mixin::NonCopyable {
 
 namespace djc::transport {
 
-/// @brief Connection manager for a single transport.
+/// @brief Connection manager for a single transport
 /// @note Separates connection lifecycle and inactivity timeout from higher‑level logic.
 ///       Keeps the transport abstract: the rest of the firmware only talks to `TransportLink`, never to a concrete transport.
-struct TransportLink final :
+struct TransportLink :
 
     kf::mixin::NonCopyable,
     kf::mixin::Configurable<internal::TransportLinkConfig>,
