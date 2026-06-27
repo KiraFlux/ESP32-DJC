@@ -77,6 +77,11 @@ struct ConfigService :
         logger.debug("Reset requested");
     }
 
+    /// @brief Calculate CRC32 for config view
+    [[nodiscard]] kf::u32 crc() const noexcept {
+        return djc::math::crc32(_config_view);
+    }
+
     /// @brief Force sync now
     void sync() noexcept {
         using LogString = kf::memory::StaticString<64>;
@@ -132,10 +137,6 @@ private:
     kf::math::Timer _sync_timer;
     kf::u32 _stored_crc{};
     bool _load_requested{false}, _reset_requested{false};
-
-    [[nodiscard]] kf::u32 crc() const noexcept {
-        return djc::math::crc32(_config_view);
-    }
 
     KF_IMPL_TIMED_POLLABLE(ConfigService);
     void pollImpl(kf::math::Milliseconds now) noexcept {
