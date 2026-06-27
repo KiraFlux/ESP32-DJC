@@ -8,6 +8,7 @@
 #include <kf/math/units.hpp>
 #include <kf/mixin/Callbacked.hpp>
 #include <kf/mixin/Configurable.hpp>
+#include <kf/mixin/Resettable.hpp>
 
 #include "djc/service/Service.hpp"
 #include "djc/transport/PeerAddress.hpp"
@@ -15,18 +16,19 @@
 
 namespace djc::internal {
 
-struct AutoConnectServiceConfig final {
+struct AutoConnectServiceConfig : kf::mixin::Resettable<AutoConnectServiceConfig> {
 
-    kf::math::Timer::Config cooldown_timer;///< Delay before the service reacts to a new target.
-    bool enabled;                          ///< Whether the service is active.
+    /// @brief Delay before the service reacts to a new target
+    kf::math::Timer::Config cooldown_timer;
 
-    [[nodiscard]] static constexpr AutoConnectServiceConfig defaults() noexcept {
-        return AutoConnectServiceConfig{
-            .cooldown_timer = {
-                .period = 10'000,
-            },
-            .enabled = true,
-        };
+    /// @brief Whether the service is active
+    bool enabled;
+
+private:
+    KF_IMPL_RESETTABLE(AutoConnectServiceConfig);
+    void resetImpl() noexcept {
+        cooldown_timer.period = 10'000;
+        enabled = true;
     }
 };
 

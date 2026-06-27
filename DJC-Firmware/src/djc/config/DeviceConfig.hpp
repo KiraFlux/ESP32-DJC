@@ -44,7 +44,7 @@ private:
 
         input_handler.reset();
         peer_scanner.reset();
-        auto_connect_service = service::AutoConnectService::Config::defaults();
+        auto_connect_service.reset();
     }
 };
 
