@@ -5,6 +5,7 @@
 
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/mixin/Resettable.hpp>
 
 #include "djc/protocol/MavlinkProtocol.hpp"
 #include "djc/protocol/Protocol.hpp"
@@ -12,15 +13,16 @@
 
 namespace djc::internal {
 
-/// @brief Configuration container for the ProtocolRegistry.
-struct ProtocolRegistryConfig final {
+/// @brief Configuration container for the ProtocolRegistry
+struct ProtocolRegistryConfig : kf::mixin::Resettable<ProtocolRegistryConfig> {
 
-    protocol::MavlinkProtocol::Config mavlink;///< MAVLink protocol configuration
+    /// @brief MAVLink protocol configuration
+    protocol::MavlinkProtocol::Config mavlink;
 
-    [[nodiscard]] static constexpr auto defaults() noexcept {
-        return ProtocolRegistryConfig{
-            .mavlink = protocol::MavlinkProtocol::Config::defaults(),
-        };
+private:
+    KF_IMPL_RESETTABLE(ProtocolRegistryConfig);
+    void resetImpl() noexcept {
+        mavlink = protocol::MavlinkProtocol::Config::defaults();
     }
 };
 
@@ -28,7 +30,7 @@ struct ProtocolRegistryConfig final {
 
 namespace djc::protocol {
 
-/// @brief Storage for all available protocol implementations.
+/// @brief Storage for all available protocol implementations
 struct ProtocolRegistry final :
 
     kf::mixin::NonCopyable,
@@ -37,7 +39,7 @@ struct ProtocolRegistry final :
 {
     using Config = internal::ProtocolRegistryConfig;
 
-    /// @brief Available protocol modes.
+    /// @brief Available protocol modes
     enum class Mode : char {
         Raw = 0x00,    ///< Raw binary protocol (sends ManualInput as-is)
         Mavlink = 0x01,///< MAVLink protocol (sends MANUAL_CONTROL and HEARTBEAT)
@@ -45,7 +47,7 @@ struct ProtocolRegistry final :
 
     using kf::mixin::Configurable<Config>::Configurable;
 
-    /// @brief Retrieve a protocol instance by mode.
+    /// @brief Retrieve a protocol instance by mode
     /// @param mode Requested protocol mode
     /// @return Reference to the corresponding protocol object.
     [[nodiscard]] Protocol &get(Mode mode) noexcept {
@@ -59,12 +61,12 @@ struct ProtocolRegistry final :
         }
     }
 
-    /// @brief Direct access to the Raw protocol instance.
+    /// @brief Direct access to the Raw protocol instance
     [[nodiscard]] RawProtocol &raw() noexcept {
         return _raw_protocol;
     }
 
-    /// @brief Direct access to the MAVLink protocol instance.
+    /// @brief Direct access to the MAVLink protocol instance
     [[nodiscard]] MavlinkProtocol &mavlink() noexcept {
         return _mavlink_protocol;
     }
