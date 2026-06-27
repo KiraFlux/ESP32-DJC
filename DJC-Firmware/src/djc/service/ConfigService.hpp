@@ -63,7 +63,7 @@ struct ConfigService :
 
 {
     explicit constexpr ConfigService(const char *nvs_namespace, const kf::math::Timer::Config &sync_timer_config, kf::Slice<kf::u8> config_view) noexcept :
-        _nvs_entry{nvs_namespace}, _sync_timer{sync_timer_config}, _config_view{config_view} {}
+        _nvs{nvs_namespace}, _sync_timer{sync_timer_config}, _config_view{config_view} {}
 
     /// @brief Requests an deferred load of the config from NVS
     void requestLoad() noexcept {
@@ -82,23 +82,23 @@ struct ConfigService :
         using LogString = kf::memory::StaticString<64>;
 
         // init is idempotent
-        if (_nvs_entry.init().isError()) {
-            logger.error(LogString::formatted("NVS(%s) init failed", _nvs_entry.name()));
+        if (_nvs.init().isError()) {
+            logger.error(LogString::formatted("NVS(%s) init failed", _nvs.name()));
         }
 
         if (_load_requested) {
             _load_requested = false;
 
-            logger.info(LogString::formatted("Loading config '%s' from NVS...", _nvs_entry.name()));
+            logger.info(LogString::formatted("Loading config '%s' from NVS...", _nvs.name()));
 
-            if (_nvs_entry.load(_config_view).isOk()) {
+            if (_nvs.getBlob(blob_key, _config_view).isOk()) {
                 _stored_crc = crc();
-                logger.info(LogString::formatted("Config '%s' loaded from NVS (CRC: %u)", _nvs_entry.name(), _stored_crc).view());
+                logger.info(LogString::formatted("Config '%s' loaded from NVS (CRC: %u)", _nvs.name(), _stored_crc).view());
 
                 this->invokeOnLoad(_config_view);
 
             } else {
-                logger.error(LogString::formatted("Config '%s' load failed", _nvs_entry.name()));
+                logger.error(LogString::formatted("Config '%s' load failed", _nvs.name()));
                 requestReset();
             }
         }
@@ -107,17 +107,17 @@ struct ConfigService :
             _reset_requested = false;
 
             this->invokeResetStrategy(_config_view);
-            logger.info(LogString::formatted("Config reset '%s' to defaults", _nvs_entry.name()));
+            logger.info(LogString::formatted("Config reset '%s' to defaults", _nvs.name()));
         }
 
         if (const auto current_crc = crc(); current_crc != _stored_crc) {
-            logger.info(LogString::formatted("Config '%s' changed, saving (CRC: %u -> %u)...", _nvs_entry.name(), _stored_crc, current_crc).view());
+            logger.info(LogString::formatted("Config '%s' changed, saving (CRC: %u -> %u)...", _nvs.name(), _stored_crc, current_crc).view());
 
-            if (_nvs_entry.dump(_config_view).isOk() and _nvs_entry.commit().isOk()) {
+            if (_nvs.setBlob(blob_key, _config_view).isOk() and _nvs.commit().isOk()) {
                 _stored_crc = current_crc;
-                logger.info(LogString::formatted("Config '%s' saved, CRC updated", _nvs_entry.name()));
+                logger.info(LogString::formatted("Config '%s' saved, CRC updated", _nvs.name()));
             } else {
-                logger.error(LogString::formatted("Config '%s' save failed", _nvs_entry.name()));
+                logger.error(LogString::formatted("Config '%s' save failed", _nvs.name()));
             }
         }
     }
@@ -125,7 +125,9 @@ struct ConfigService :
 private:
     static constexpr auto logger{kf::Logger::create("ConfigService")};
 
-    memory::NVS _nvs_entry;
+    static constexpr auto blob_key{"blob"};
+
+    memory::NVS _nvs;
     kf::Slice<kf::u8> _config_view;
     kf::math::Timer _sync_timer;
     kf::u32 _stored_crc{};

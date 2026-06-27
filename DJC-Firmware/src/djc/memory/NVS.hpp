@@ -73,13 +73,13 @@ struct NVS final :
         return _namespace;
     }
 
-    [[nodiscard]] ResultType load(kf::Slice<kf::u8> buffer) noexcept {
+    [[nodiscard]] ResultType getBlob(const char *key, kf::Slice<kf::u8> buffer) noexcept {
         auto len = buffer.size();
-        return wrap(nvs_get_blob(_handle.unwrap(), blob_key, static_cast<void *>(buffer.data()), &len));
+        return wrap(nvs_get_blob(_handle.unwrap(), key, static_cast<void *>(buffer.data()), &len));
     }
 
-    [[nodiscard]] ResultType dump(kf::Slice<const kf::u8> buffer) noexcept {
-        return wrap(nvs_set_blob(_handle.unwrap(), blob_key, buffer.data(), buffer.size()));
+    [[nodiscard]] ResultType setBlob(const char *key, kf::Slice<const kf::u8> buffer) noexcept {
+        return wrap(nvs_set_blob(_handle.unwrap(), key, buffer.data(), buffer.size()));
     }
 
     [[nodiscard]] ResultType commit() noexcept {
@@ -87,8 +87,6 @@ struct NVS final :
     }
 
 private:
-    static constexpr auto blob_key{"blob"};
-
     const char *_namespace;
     kf::TrivialOption<nvs_handle_t> _handle{kf::none};
 
