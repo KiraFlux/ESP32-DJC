@@ -39,7 +39,7 @@ private:
         periphery.reset();
 
         transport_link.reset();
-        protocol_link = protocol::ProtocolLink::Config::defaults();
+        protocol_link.reset();
         protocol_registry = protocol::ProtocolRegistry::Config::defaults();
 
         input_handler = service::InputHandler::Config::defaults();

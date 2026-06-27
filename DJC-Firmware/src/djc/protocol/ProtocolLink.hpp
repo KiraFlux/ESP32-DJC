@@ -10,6 +10,7 @@
 #include <kf/math/units.hpp>
 #include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/mixin/Resettable.hpp>
 #include <kf/primitives.hpp>
 
 #include "djc/ManualInput.hpp"
@@ -18,17 +19,16 @@
 
 namespace djc::internal {
 
-/// @brief Configuration for the ProtocolLink.
-struct ProtocolLinkConfig final {
+/// @brief Configuration for the ProtocolLink
+struct ProtocolLinkConfig : kf::mixin::Resettable<ProtocolLinkConfig> {
 
-    kf::math::Timer::Config poll_timer;///< Interval between calls to the active protocol's `poll()` method.
+    ///@brief Interval between calls to the active protocol's `poll()` method
+    kf::math::Timer::Config poll_timer;
 
-    [[nodiscard]] static constexpr auto defaults() noexcept {
-        return ProtocolLinkConfig{
-            .poll_timer = {
-                .period = static_cast<kf::math::Milliseconds>(1000 / 50),
-            },
-        };
+private:
+    KF_IMPL_RESETTABLE(ProtocolLinkConfig);
+    void resetImpl() noexcept {
+        poll_timer.period = static_cast<kf::math::Milliseconds>(1000 / 50);
     }
 };
 
@@ -36,7 +36,7 @@ struct ProtocolLinkConfig final {
 
 namespace djc::protocol {
 
-/// @brief Manages the active protocol and calls its `poll()` method at fixed intervals.
+/// @brief Manages the active protocol and calls its `poll()` method at fixed intervals
 /// @note
 /// Holds a pointer to a `Protocol` instance.
 /// On every `poll()` call, checks a timer and invokes `_protocol.unwrap().poll()` if the period has expired.
