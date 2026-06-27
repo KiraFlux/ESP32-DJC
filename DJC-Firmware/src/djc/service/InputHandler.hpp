@@ -10,33 +10,29 @@
 #include <kf/Option.hpp>
 #include <kf/input/JoystickListener.hpp>
 #include <kf/math/units.hpp>
+#include <kf/mixin/Resettable.hpp>
 
 #include "djc/Periphery.hpp"
 #include "djc/service/Service.hpp"
 
 namespace djc::service {
 
-struct InputHandler final : Service<InputHandler> {
+// TODO: make implements 3x callbacked
+struct InputHandler : Service<InputHandler> {
     using JoystickListener = kf::input::JoystickListener<Periphery::Joystick>;
 
     using ClickCallback = kf::Function<void()>;
     using DirectionCallback = kf::Function<void(JoystickListener::Direction)>;
 
-    struct Config final {
+    struct Config : kf::mixin::Resettable<Config> {
         JoystickListener::Config joystick_listener;
 
-        static constexpr Config defaults() noexcept {
-            return Config{
-                .joystick_listener = JoystickListener::Config{
-                    .repeat_timer = {
-                        .period = 100,// ms
-                    },
-                    .delay_timer = {
-                        .period = 400,// ms
-                    },
-                    .threshold = 0.6f,
-                },
-            };
+    private:
+        KF_IMPL_RESETTABLE(Config);
+        void resetImpl() noexcept {
+            joystick_listener.repeat_timer.period = 100;// ms
+            joystick_listener.delay_timer.period = 400; // ms
+            joystick_listener.threshold = 0.6f;
         }
     };
 
