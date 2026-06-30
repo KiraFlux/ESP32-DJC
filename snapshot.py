@@ -10,7 +10,7 @@ target_ext = (
 )
 
 target_dirs = (
-    "examples", "src", "test", ".github"
+    "DJC-Firmware/src", ".github"
 )
 
 def _write(f: Path):

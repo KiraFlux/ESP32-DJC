@@ -3,129 +3,238 @@
 
 #pragma once
 
-#include <utility>
-
-#include <Arduino.h>// for delay
+#include <Arduino.h>// delay, gpio_num_t
 
 #include <kf/Logger.hpp>
-#include <kf/Option.hpp>
-#include <kf/aliases.hpp>
-#include <kf/mixin/Configurable.hpp>
 #include <kf/mixin/Initable.hpp>
 #include <kf/mixin/NonCopyable.hpp>
+#include <kf/mixin/Resettable.hpp>
+#include <kf/primitives.hpp>
 
-#include "djc/prelude.hpp"
+#include <kf/gpio/ArduinoGPIO.hpp>
+#include <kf/input/LogicalLevelListener.hpp>// TODO: move to InputHandler
+
+#include <kf/bus/iic/ArduinoIIC.hpp>
+#include <kf/bus/spi/ArduinoSPI.hpp>
+
+#include <kf/drivers/display/SSD1306.hpp>
+#include <kf/drivers/display/ST7735.hpp>
+#include <kf/drivers/sensors/Joystick.hpp>
+#include <kf/drivers/sensors/NormalizedAdcInput.hpp>
 
 namespace djc {
 
-namespace internal {
-
-struct PeripheryConfig final : kf::mixin::NonCopyable {
-    ButtonListener::Config button;
-
-    AxisInput::FilterImpl::Config axis_filter;
-    Joystick::Config left_joystick, right_joystick;
-
-    Bus::Config bus;
-    Bus::Node::Config bus_node;
-
-    DisplayDriver::Config display;
-    kf::u16 joystick_axes_tune_samples;
-    bool joystick_axes_tuned;
-
-    static constexpr PeripheryConfig defaults() noexcept {
-        return PeripheryConfig{
-            .button = {
-                .debounce = 50,// ms
-            },
-            .axis_filter = {
-                .factor = 0.5f,
-            },
-            .left_joystick = {
-                .x = axisDefaults(true),
-                .y = axisDefaults(false),
-            },
-            .right_joystick = {
-                .x = axisDefaults(false),
-                .y = axisDefaults(true),
-            },
-            // SPI default pins: MOSI=23, MISO=19, SCK=18
-            .bus = djc::Bus::Config::create(),
-            // CS, SPI frequency
-            .bus_node = djc::Bus::Node::Config::create(GPIO_NUM_5, 27000000),
-            .display = {
-                .init_orientation = kf::drivers::display::Orientation::ClockWise,
-            },
-            .joystick_axes_tune_samples = 100,
-            .joystick_axes_tuned = false,
-        };
-    }
-
-private:
-    static constexpr AxisInput::Config axisDefaults(bool inverted) noexcept {
-        return AxisInput::Config{
-            .inverted = inverted,
-            .dead_zone = 200,
-            .range_positive = 2000,
-            .range_negative = 2000,
-        };
-    }
-};
-
-}// namespace internal
-
 /// @brief ESP32-DJC Hardware Periphery
-struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, bool>, kf::mixin::Configurable<internal::PeripheryConfig> {
-    using Config = internal::PeripheryConfig;
+struct Periphery final :
 
-    using Configurable<Config>::Configurable;
+    kf::mixin::NonCopyable,
+    kf::mixin::Initable<Periphery, void()>
+
+{
+
+    using GPIO = kf::gpio::ArduinoGPIO;
+
+    using ButtonListener = kf::input::LogicalLevelListener<GPIO::DigitalInput>;
+
+    using AxisInput = kf::drivers::sensors::NormalizedAdcInput<GPIO::AdcInput>;
+
+    using Joystick = kf::drivers::sensors::Joystick<AxisInput>;
+
+    using IicBus = kf::bus::iic::ArduinoIIC;
+
+    using SSD1306 = kf::drivers::display::SSD1306<IicBus::Node>;
+
+    using SpiBus = kf::bus::spi::ArduinoSPI;
+
+    using ST7735 = kf::drivers::display::ST7735<SpiBus::Node, GPIO::DigitalOutput>;
+
+#if defined(DJC_DISPLAY_DRIVER_ST7735)
+
+    using DisplayDriver = ST7735;
+
+#elif defined(DJC_DISPLAY_DRIVER_SSD1306)
+
+    using DisplayDriver = SSD1306;
+
+#else
+
+#error DJC_DISPLAY_DRIVER_* Must be defined!
+
+#endif
+
+    static constexpr gpio_num_t
+
+        // inputs
+
+        gpio_button_left{GPIO_NUM_26},
+        gpio_button_right{GPIO_NUM_25},
+
+        gpio_joystick_left_x{GPIO_NUM_32},
+        gpio_joystick_left_y{GPIO_NUM_33},
+        gpio_joystick_right_x{GPIO_NUM_34},
+        gpio_joystick_right_y{GPIO_NUM_35},
+
+        gpio_battery_level{GPIO_NUM_39},
+
+        // bus
+
+        gpio_i2c_sda{GPIO_NUM_21},
+        gpio_i2c_scl{GPIO_NUM_22},
+
+        gpio_spi_mosi{GPIO_NUM_23},
+        gpio_spi_miso{GPIO_NUM_19},
+        gpio_spi_sck{GPIO_NUM_18},
+
+        // display
+
+        gpio_display_st7735_spi_cs{GPIO_NUM_5},
+        gpio_display_st7735_data_command{GPIO_NUM_16},
+        gpio_display_st7735_reset{GPIO_NUM_17}
+
+    ;
+
+    struct Config : kf::mixin::Resettable<Config> {
+
+        // Input
+
+        ButtonListener::Config button;
+
+        AxisInput::FilterImpl::Config axis_filter;
+
+        Joystick::Config left_joystick, right_joystick;
+
+        // I2C
+
+        IicBus::Config iic_bus;
+
+        IicBus::Node::Config ssd1306_iic_node;
+
+        // SPI
+
+        SpiBus::Config spi_bus;
+
+        SpiBus::Node::Config st7735_spi_node;
+
+        ST7735::Config st7735;
+
+        // Other
+
+        kf::u16 joystick_axes_tune_samples;
+
+        bool joystick_axes_tuned;
+
+    private:
+        static void resetAxis(AxisInput::Config &axis, bool inverted) noexcept {
+            axis.inverted = inverted;
+            axis.dead_zone = 200;
+            axis.range_positive = 2000;
+            axis.range_negative = 2000;
+        }
+
+        KF_IMPL_RESETTABLE(Config);
+        void resetImpl() noexcept {
+            button.debounce = 0;
+
+            axis_filter.factor = 0.5f;
+
+            resetAxis(left_joystick.x, true);
+            resetAxis(left_joystick.y, false);
+
+            resetAxis(right_joystick.x, false);
+            resetAxis(right_joystick.y, true);
+
+            iic_bus.clock_hz = 400'000;
+            iic_bus.timeout = 0;    // wire default
+            iic_bus.buffer_size = 0;//
+            iic_bus.pin_sda = -1;   //
+            iic_bus.pin_scl = -1;   //
+
+            ssd1306_iic_node.address = SSD1306::default_address;
+
+            spi_bus.pin_mosi = gpio_spi_mosi;
+            spi_bus.pin_miso = gpio_spi_miso;
+            spi_bus.pin_sck = gpio_spi_sck;
+
+            st7735_spi_node.clock_hz = 27'000'000;
+            st7735_spi_node.pin_cs = gpio_display_st7735_spi_cs;
+            st7735_spi_node.bit_order = SpiBus::Node::Config::BitOrder::MostSignificant;
+            st7735_spi_node.clock_bits = SpiBus::Node::Config::ClockBits::None;
+
+            st7735.init_orientation = kf::drivers::display::Orientation::ClockWise;
+
+            joystick_axes_tune_samples = 100;
+            joystick_axes_tuned = false;
+        }
+    };
+
+    explicit Periphery(const Config &config) noexcept :
+        config{config} {}
+
+    const Config &config;
 
     ButtonListener left_button_listener{
-        this->config().button,
-        DigitalInput{
-            GPIO_NUM_14,
-            DigitalInput::Pull::InternalUp,
+        config.button,
+        GPIO::DigitalInput{
+            gpio_button_left,
+            GPIO::DigitalInput::Pull::InternalUp,
+        },
+    };
+
+    ButtonListener right_button_listener{
+        config.button,
+        GPIO::DigitalInput{
+            gpio_button_right,
+            GPIO::DigitalInput::Pull::InternalUp,
         },
     };
 
     Joystick left_joystick{
-        this->config().left_joystick,
-        this->config().axis_filter,
-        AdcInput{GPIO_NUM_32},
-        AdcInput{GPIO_NUM_33},
-    };
-
-    ButtonListener right_button_listener{
-        this->config().button,
-        DigitalInput{
-            GPIO_NUM_4,
-            DigitalInput::Pull::InternalUp,
-        },
+        config.left_joystick,
+        config.axis_filter,
+        GPIO::AdcInput{gpio_joystick_left_x},
+        GPIO::AdcInput{gpio_joystick_left_y},
     };
 
     Joystick right_joystick{
-        this->config().right_joystick,
-        this->config().axis_filter,
-        AdcInput{GPIO_NUM_34},
-        AdcInput{GPIO_NUM_35},
+        config.right_joystick,
+        config.axis_filter,
+        GPIO::AdcInput{gpio_joystick_right_x},
+        GPIO::AdcInput{gpio_joystick_right_y},
     };
 
-    Bus bus{
-        this->config().bus,
+    SpiBus spi_bus{
+        config.spi_bus,
         SPI,
     };
 
-    DisplayDriver display{
-        this->config().display,
-        bus.createNode(this->config().bus_node),
-        DigitalOutput{GPIO_NUM_22},// DC
-        DigitalOutput{GPIO_NUM_17},// RESET
+    IicBus iic_bus{
+        config.iic_bus,
+        Wire,
+    };
+
+    DisplayDriver display_driver{
+
+#if defined(DJC_DISPLAY_DRIVER_ST7735)
+
+        config.st7735,
+        spi_bus.createNode(config.st7735_spi_node),
+        GPIO::DigitalOutput{gpio_display_st7735_data_command},
+        GPIO::DigitalOutput{gpio_display_st7735_reset},
+
+#elif defined(DJC_DISPLAY_DRIVER_SSD1306)
+
+        iic_bus.createNode(config.ssd1306_iic_node),
+
+#else
+
+#endif
+
     };
 
     // Analog axis calibration
-    void tune(Config &mut_config) noexcept {
-        Joystick::Tuner left_tuner{mut_config.left_joystick, left_joystick, mut_config.joystick_axes_tune_samples};
-        Joystick::Tuner right_tuner{mut_config.right_joystick, right_joystick, mut_config.joystick_axes_tune_samples};
+    void tune(Config &mutable_config) noexcept {
+        Joystick::Tuner left_tuner{mutable_config.left_joystick, left_joystick, mutable_config.joystick_axes_tune_samples};
+        Joystick::Tuner right_tuner{mutable_config.right_joystick, right_joystick, mutable_config.joystick_axes_tune_samples};
 
         left_tuner.reset();
         right_tuner.reset();
@@ -137,15 +246,14 @@ struct Periphery final : kf::mixin::NonCopyable, kf::mixin::Initable<Periphery, 
             delay(1);
         }
 
-        mut_config.joystick_axes_tuned = true;
+        mutable_config.joystick_axes_tuned = true;
     }
 
 private:
     static constexpr auto logger = kf::Logger::create("Periphery");
 
-    // impl
-    KF_IMPL_INITABLE(Periphery, bool);
-    bool initImpl() noexcept {
+    KF_IMPL_INITABLE(Periphery, void());
+    void initImpl() noexcept {
         logger.info("Initializing peripherals");
 
         left_joystick.init();
@@ -153,16 +261,17 @@ private:
         left_button_listener.init();
         right_button_listener.init();
 
-        if (bus.init().isError()) {
-            logger.error("Bus initialization failed");
+        if (spi_bus.init().isError()) {
+            logger.error("SPI bus init failed");
         }
 
-        if (not display.init()) {
-            logger.error("Display driver initialization failed");
+        if (iic_bus.init().isError()) {
+            logger.error("I2C bus init failed");
         }
 
-        logger.info("Peripherals initialized successfully");
-        return true;
+        if (display_driver.init().isError()) {
+            logger.error("Display driver init failed");
+        }
     }
 };
 

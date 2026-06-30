@@ -3,61 +3,76 @@
 
 #pragma once
 
-#include <kf/algorithm.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/Slice.hpp>
 #include <kf/memory/StringView.hpp>
+#include <kf/ui/Color.hpp>
+#include <kf/ui/Style.hpp>
 
-#include "djc/input/VirtualKeyboard.hpp"
-#include "djc/ui/UI.hpp"
+#include "djc/ui/VirtualKeyboard.hpp"
 
 namespace djc::ui::widgets {
 
-struct TextInput final : UI::Widget {
+template<typename U> struct TextInput :
 
-    constexpr TextInput() noexcept : _text_source{} {}
+    U::Widget
 
-    explicit constexpr TextInput(kf::memory::Slice<char> source) noexcept : _text_source{source} {}
+{
+    explicit TextInput(VirtualKeyboard &virtual_keyboard, kf::Slice<char> source, kf::ui::Style style = kf::ui::Style{.foreground_color = kf::ui::Color::Info}) noexcept :
+        U::Widget{style}, _virtual_keyboard{virtual_keyboard}, _text_source{source} {}
 
-    void source(kf::memory::Slice<char> new_source) noexcept { _text_source = new_source; }
+    void source(kf::Slice<char> new_source) noexcept {
+        _text_source = new_source;
+    }
 
-    bool available() const noexcept { return nullptr != _text_source.data(); }
+    bool available() const noexcept {
+        return nullptr != _text_source.data();
+    }
 
-    void doRender(UI::RenderImpl &render) const noexcept override {
-        if (not available()) {
-            render.value(kf::memory::StringView{"not available"});
-            return;
-        }
-
-        const kf::memory::StringView s{_text_source.data(), _text_source.size()};
-        const auto end_index = s.find('\0');
-        render.value(end_index.hasValue() ? s.sub(0, end_index.value()) : s);
+    void doRender(typename U::RendererImpl &render) const noexcept override {
+        render.value('\"');
+        render.value(string());
+        render.value('\"');
     }
 
     bool onClick() noexcept override {
         if (not available()) { return false; }
 
-        if (virtual_keyboard.active()) {
-            virtual_keyboard.click();
+        if (_virtual_keyboard.active()) {
+            _virtual_keyboard.click();
         } else {
-            virtual_keyboard.begin(_text_source);
+            _virtual_keyboard.begin(_text_source);
         }
 
         return true;
     }
 
-    bool onEventValue(UI::Event::Value event_value) noexcept {
-        if (virtual_keyboard.active()) {
-            virtual_keyboard.move(static_cast<input::VirtualKeyboard::Direction>(event_value));
-            return true;
+    bool onEventValue(typename U::EventImpl::Value event_value) noexcept {
+        if (not _virtual_keyboard.active()) {
+            return false;
         }
 
-        return false;
+        switch (event_value) {
+            case 0: _virtual_keyboard.moveCursorRow(-1); break;
+            case 1: _virtual_keyboard.moveCursorRow(+1); break;
+            case 2: _virtual_keyboard.moveCursorCol(-1); break;
+            case 3: _virtual_keyboard.moveCursorCol(+1); break;
+        }
+
+        return true;
     }
 
 private:
-    inline static auto &virtual_keyboard{input::VirtualKeyboard::instance()};
+    VirtualKeyboard &_virtual_keyboard;
+    kf::Slice<char> _text_source;
 
-    kf::memory::Slice<char> _text_source;
+    [[nodiscard]] kf::memory::StringView string() const noexcept {
+        if (available()) {
+            const kf::memory::StringView s{_text_source.data(), _text_source.size()};
+            return s.sub(0, s.find('\0').unwrapOr(s.size()));
+        } else {
+            return kf::memory::StringView{"not available"};
+        }
+    }
 };
 
 }// namespace djc::ui::widgets

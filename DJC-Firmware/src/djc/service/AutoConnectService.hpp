@@ -1,0 +1,92 @@
+// Copyright (c) 2026 KiraFlux
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#pragma once
+
+#include <kf/Option.hpp>
+#include <kf/math/Timer.hpp>
+#include <kf/math/units.hpp>
+#include <kf/mixin/Callbacked.hpp>
+#include <kf/mixin/Configurable.hpp>
+#include <kf/mixin/Resettable.hpp>
+
+#include "djc/service/Service.hpp"
+#include "djc/transport/PeerAddress.hpp"
+#include "djc/transport/TransportLink.hpp"
+
+namespace djc::internal {
+
+struct AutoConnectServiceConfig : kf::mixin::Resettable<AutoConnectServiceConfig> {
+
+    /// @brief Delay before the service reacts to a new target
+    kf::math::Timer::Config cooldown_timer;
+
+    /// @brief Whether the service is active
+    bool enabled;
+
+private:
+    KF_IMPL_RESETTABLE(AutoConnectServiceConfig);
+    void resetImpl() noexcept {
+        cooldown_timer.period = 10'000;
+        enabled = true;
+    }
+};
+
+}// namespace djc::internal
+
+namespace djc::service {
+
+/// @brief Service that automatically connects to a trusted peer after a configurable delay
+/// @note
+/// Receives a target from outside.
+/// When the timeout expires, the service invokes its callback with the peer address.
+/// After the callback, the target is cleared and the service waits for a new one.
+struct AutoConnectService final :
+
+    Service<AutoConnectService>,
+    kf::mixin::Configurable<internal::AutoConnectServiceConfig>,
+    kf::mixin::Callbacked<const transport::PeerAddress &>
+
+{
+    /// @brief Configuration for the AutoConnectService
+    using Config = internal::AutoConnectServiceConfig;
+
+    explicit AutoConnectService(const Config &config, const transport::TransportLink &transport_link) noexcept :
+        kf::mixin::Configurable<Config>{config}, _transport_link{transport_link} {
+        _cooldown_timer.start(0);
+    }
+
+    [[nodiscard]] auto target() const noexcept -> const kf::TrivialOption<transport::PeerAddress> & {
+        return _target;
+    }
+
+    /// @brief Assign a new target for automatic connection
+    /// @note
+    /// The target is ignored if the transport is already connected.
+    /// This prevents interrupting an active connection.
+    void target(const transport::PeerAddress &new_target) noexcept {
+        if (not _transport_link.connected()) {
+            _target = kf::someTrivial(new_target);
+        }
+    }
+
+private:
+    const transport::TransportLink &_transport_link;
+    kf::TrivialOption<transport::PeerAddress> _target{};
+    kf::math::Timer _cooldown_timer{this->config().cooldown_timer};
+
+    KF_IMPL_TIMED_POLLABLE(AutoConnectService);
+    void pollImpl(kf::math::Milliseconds now) noexcept {
+        if (not this->config().enabled) { return; }
+        if (_target.isNone()) { return; }
+
+        if (not _cooldown_timer.expired(now)) { return; }
+
+        this->invoke(_target.unwrap());
+        _target.reset();
+
+        _cooldown_timer.start(now);
+    }
+};
+
+}// namespace djc::service

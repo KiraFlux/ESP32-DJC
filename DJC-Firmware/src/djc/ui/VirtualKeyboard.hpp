@@ -3,19 +3,16 @@
 
 #pragma once
 
+#include <kf/Slice.hpp>
 #include <kf/algorithm.hpp>
-#include <kf/aliases.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/Slice.hpp>
 #include <kf/memory/StringView.hpp>
 #include <kf/mixin/NonCopyable.hpp>
-#include <kf/mixin/Singleton.hpp>
+#include <kf/primitives.hpp>
 
-namespace djc::input {
+namespace djc::internal {
 
-namespace internal {
-
-struct Key {
+struct Key : kf::mixin::NonCopyable {
 
     enum class Kind : kf::u8 {
         Common,
@@ -35,18 +32,17 @@ struct Key {
     constexpr char value(bool shifted = false) const noexcept {
         return shifted ? shift_value : normal_value;
     }
+
+    constexpr bool isCommon() const noexcept {
+        return kind == Kind::Common;
+    }
 };
 
-}
+}// namespace djc::internal
 
-struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
+namespace djc::ui {
 
-    enum class Direction : kf::u8 {
-        Up = 0,
-        Down = 1,
-        Left = 2,
-        Right = 3,
-    };
+struct VirtualKeyboard final : kf::mixin::NonCopyable {
 
     enum class State : kf::u8 {
         Normal,
@@ -58,7 +54,7 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
 
     template<kf::usize N> using KeyRow = kf::memory::Array<Key, N>;
 
-    static constexpr KeyRow<14> row_0{{
+    static constexpr KeyRow<14> row_0{{{
         {'`', '~'},
         {'1', '!'},
         {'2', '@'},
@@ -72,10 +68,10 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {'0', ')'},
         {'-', '_'},
         {'=', '+'},
-        {Key::Kind::Backspace, 0},        
-    }};
+        {Key::Kind::Backspace, 0},
+    }}};
 
-    static constexpr KeyRow<13> row_1{{
+    static constexpr KeyRow<13> row_1{{{
         {'q', 'Q'},
         {'w', 'W'},
         {'e', 'E'},
@@ -89,9 +85,9 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {'[', '{'},
         {']', '}'},
         {'\\', '|'},
-    }};
+    }}};
 
-    static constexpr KeyRow<12> row_2{{
+    static constexpr KeyRow<12> row_2{{{
         {'a', 'A'},
         {'s', 'S'},
         {'d', 'D'},
@@ -104,9 +100,9 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {';', ':'},
         {'\'', '"'},
         {Key::Kind::Enter, '\n'},
-    }};
+    }}};
 
-    static constexpr KeyRow<10> row_3{{
+    static constexpr KeyRow<10> row_3{{{
         {Key::Kind::Shift, 0},
         {'z', 'Z'},
         {'x', 'X'},
@@ -117,19 +113,19 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         {'m', 'M'},
         {',', '<'},
         {'.', '>'},
-    }};
+    }}};
 
-    static constexpr KeyRow<1> row_4{{
+    static constexpr KeyRow<1> row_4{{{
         {Key::Kind::Space, ' '},
-    }};
+    }}};
 
-    static constexpr kf::memory::Array<kf::memory::Slice<const Key>, 5> rows{{
-        {row_0.data(), row_0.size()},
-        {row_1.data(), row_1.size()},
-        {row_2.data(), row_2.size()},
-        {row_3.data(), row_3.size()},
-        {row_4.data(), row_4.size()},
-    }};
+    static constexpr kf::memory::Array<kf::Slice<const Key>, 5> rows{{{
+        row_0.slice(),
+        row_1.slice(),
+        row_2.slice(),
+        row_3.slice(),
+        row_4.slice(),
+    }}};
 
     [[nodiscard]] kf::u8 rowsTotal() const noexcept { return rows.size(); }
 
@@ -143,40 +139,46 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
 
     [[nodiscard]] bool active() const noexcept { return _active; }
 
-    [[nodiscard]] kf::memory::StringView text() const noexcept { return {_text_source.data(), _text_source.size()}; }
+    [[nodiscard]] kf::memory::StringView text() const noexcept {
+        return kf::memory::StringView{_text_source.data(), static_cast<kf::usize>(_text_cursor)};
+    }
 
     [[nodiscard]] static const Key &keyAt(kf::i8 row, kf::i8 col) noexcept {
         return rows[row][col];
     }
 
+    [[nodiscard]] kf::usize capacity() const noexcept {
+        return _text_source.size();
+    }
+
     [[nodiscard]] kf::usize available() const noexcept {
         if (_text_cursor < _text_source.size()) {
             return _text_source.size() - _text_cursor;
-        } else {
-            return 0;
+        }
+        return 0;
+    }
+
+    void begin(kf::Slice<char> text_source) noexcept {
+        _active = true;
+        _text_source = text_source;
+        _text_cursor = 0;
+        while (_text_cursor < _text_source.size() and _text_source[_text_cursor] != '\0') {
+            _text_cursor += 1;
         }
     }
-
-    void begin(kf::memory::Slice<char> text_source) noexcept {
-        _active = true;
-
-        _text_source = text_source;
-        _text_cursor = text().find('\0').value();
-    }
-
     void quit() noexcept {
         _active = false;
     }
 
     void click() noexcept {
-        if (available() == 0) { return; }
-
         const auto &key = rows[_cursor_row][_cursor_row_index];
 
         switch (key.kind) {
             case Key::Kind::Space:
             case Key::Kind::Enter:
             case Key::Kind::Common: {
+                if (available() == 0) { return; }
+
                 _text_source[_text_cursor] = key.value(shifted());
                 _text_cursor += 1;
                 _text_source[_text_cursor] = '\0';
@@ -198,33 +200,6 @@ struct VirtualKeyboard final : kf::mixin::Singleton<VirtualKeyboard> {
         }
     }
 
-    void move(Direction direction) noexcept {
-        switch (direction) {
-            case Direction::Down:
-                moveCursorRow(+1);
-                return;
-
-            case Direction::Up:
-                moveCursorRow(-1);
-                return;
-
-            case Direction::Left:
-                moveCursorCol(-1);
-                return;
-
-            case Direction::Right:
-                moveCursorCol(+1);
-                return;
-        }
-    }
-
-private:
-    kf::memory::Slice<char> _text_source{};
-    kf::isize _text_cursor{};
-    kf::i8 _cursor_row{0}, _cursor_row_index{0};
-    bool _active{false};
-    State _state{State::Normal};
-
     void moveCursorRow(kf::i8 delta) noexcept {
         _cursor_row = (_cursor_row + delta + rowsTotal()) % rowsTotal();
         _cursor_row_index = kf::clamp<kf::i8>(_cursor_row_index, 0, colsTotal() - 1);
@@ -233,6 +208,13 @@ private:
     void moveCursorCol(kf::i8 delta) noexcept {
         _cursor_row_index = (_cursor_row_index + delta + colsTotal()) % colsTotal();
     }
+
+private:
+    kf::Slice<char> _text_source{};
+    kf::isize _text_cursor{};
+    kf::i8 _cursor_row{0}, _cursor_row_index{0};
+    bool _active{false};
+    State _state{State::Normal};
 
     static State evolvedState(State state) noexcept {
         switch (state) {
@@ -247,4 +229,4 @@ private:
     }
 };
 
-}// namespace djc::input
+}// namespace djc::ui

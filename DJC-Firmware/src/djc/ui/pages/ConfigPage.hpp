@@ -4,73 +4,235 @@
 #pragma once
 
 #include <kf/memory/Array.hpp>
+#include <kf/memory/StaticString.hpp>
 
-#include "djc/ConfigManager.hpp"
+#include "djc/PeerFavoritesRegistry.hpp"
+#include "djc/config/DeviceConfig.hpp"
+#include "djc/config/UserConfig.hpp"
+#include "djc/protocol/ProtocolRegistry.hpp"
+#include "djc/service/ConfigService.hpp"
+#include "djc/transport/Kind.hpp"
 #include "djc/ui/UI.hpp"
-#include "djc/ui/widgets/TextInput.hpp"
+#include "djc/ui/pages/PeerFavoritePage.hpp"
 
 namespace djc::ui::pages {
 
 struct ConfigPage : UI::Page {
 
-    explicit ConfigPage(UI::Page &root) noexcept :
-        Page{"Config"},
+    explicit ConfigPage(
+        UI &ui,
+        UI::Page &root,
+        config::DeviceConfig &device_config,
+        djc::service::ConfigService &device_config_service,
+        config::UserConfig &user_config,
+        djc::service::ConfigService &user_config_service,
+        PeerFavoritesRegistry &peer_favorites_registry) noexcept :
+        Page{ui},
+        _device_config{device_config},
+        _device_config_service{device_config_service},
+        _user_config{user_config},
+        _user_config_service{user_config_service},
+        _peer_favorite_page{ui, *this, _peer_favorites_registry},
+        _peer_favorites_registry{peer_favorites_registry},
+        _device_name_input{ui.createTextInput()},
         _layout{{
             &root.link(),
+            &_save_config_button,
+            &_load_config_button,
+            &_reset_config_button,
             &_device_name_input,
-            &_init_mode_selector_label,
-            &_save_storage,
-            &_load_storage,
-            &_reset_storage,
+            &_labeled_autoconnect_enabled_input,
+            &_labeled_default_transport_kind_selector,
+            &_labeled_default_protocol_mode_selector,
+            &_favorite_peers_fold_toggle_button,
         }} {
-        widgets({_layout.data(), _layout.size()});
+        this->label("Config");
+        widgets(layout(0));
 
-        _device_name_input.source({storage.config().device_name.data(), storage.config().device_name.size()});
+        this->link().hint("Open Configuration page");
 
-        _save_storage.callback([]() {
-            storage.save();
+        _device_name_input.hint("Device name");
+        _device_name_input.source(_user_config.device_name.slice());
+
+        _save_config_button.hint("Force to sync now");
+        _save_config_button.callback([this]() {
+            _device_config_service.sync();
+            _user_config_service.sync();
         });
 
-        _load_storage.callback([]() {
-            storage.load();
+        _load_config_button.hint("Request Load config from NVS into RAM");
+        _load_config_button.callback([this]() {
+            _device_config_service.requestLoad();
+            _user_config_service.requestLoad();
         });
 
-        _reset_storage.callback([]() {
-            storage.reset();
+        _reset_config_button.hint("Request reset RAM config");
+        _reset_config_button.callback([this]() {
+            _device_config_service.requestReset();
         });
 
-        _init_mode_selector.callback([](Control::Mode init_mode) {
-            storage.config().control.init_mode = init_mode;
+        _favorite_peers_fold_toggle_button.hint("Toggle folding");
+        _favorite_peers_fold_toggle_button.callback([this]() {
+            show_favorites = not show_favorites;
+            this->onEntry();
+            _ui.requestRender();
         });
+
+        _labeled_default_transport_kind_selector.hint("Define transport select after init");
+        _default_transport_kind_selector.callback([this](auto item) {
+            _user_config.init_transport_kind = item.value();
+        });
+
+        _labeled_default_protocol_mode_selector.hint("Define protocol select after init");
+        _default_protocol_mode_selector.callback([this](auto item) {
+            _user_config.init_protocol_mode = item.value();
+        });
+
+        _labeled_autoconnect_enabled_input.hint("Auto connect to most trusted peer");
+        _autoconnect_enabled_input.callback([this](bool value) {
+            _device_config.auto_connect_service.enabled = value;
+        });
+
+        for (auto i = 0u; i < _peer_favorite_displays.size(); i += 1) {
+            auto &display = _peer_favorite_displays[i];
+            _layout[layout_regular_widgets + i] = &display;
+
+            display.hint("Open peer config");
+            display.callback([this](const transport::PeerAddress &address) -> void {
+                _peer_favorite_page.bindPeer(address);
+                _ui.activePage(_peer_favorite_page);
+            });
+        }
+    }
+
+    void onEntry() noexcept override {
+        _default_protocol_mode_selector.value(_user_config.init_protocol_mode);
+        _default_transport_kind_selector.value(_user_config.init_transport_kind);
+        _autoconnect_enabled_input.value(_device_config.auto_connect_service.enabled);
+
+        const auto all_favorites = _peer_favorites_registry.all();
+
+        (void) _label_favorites_buffer.format(
+            "[%c] Peer Favorites (%d/%d)",
+            (show_favorites ? 'V' : '>'),
+            all_favorites.size(),
+            config::UserConfig::max_peer_favorites);
+        _favorite_peers_fold_toggle_button.label(_label_favorites_buffer.view());
+        _favorite_peers_fold_toggle_button.background(show_favorites ? UI::Color::Secondary : UI::Color::Primary);
+
+        if (show_favorites) {
+            for (auto i = 0u; i < all_favorites.size(); i += 1) {
+                const auto &favorite = all_favorites[i];
+                if (favorite.isSome()) {
+                    _peer_favorite_displays[i].state(kf::some(UI::PeerDisplay::State{
+                        .address = favorite.unwrap().address,
+                        .name = kf::some(kf::memory::StringView{favorite.unwrap().name.data(), favorite.unwrap().name.size()}),
+                    }));
+                    _peer_favorite_displays[i].foreground(UI::Color::Primary);
+                }
+            }
+        }
+
+        widgets(layout(show_favorites ? all_favorites.size() : 0));
     }
 
 private:
-    using ControlModeSelectWidget = UI::ComboBox<Control::Mode>;
+    using TransportKindSelector = UI::ComboBox<transport::Kind>;
 
-    inline static auto &storage{djc::ConfigManager::instance()};
+    using Mode = protocol::ProtocolRegistry::Mode;
+    using ProtocolModeSelector = UI::ComboBox<Mode>;
+
+    static constexpr auto layout_regular_widgets{9u};
+
+    // state
+
+    config::DeviceConfig &_device_config;
+    djc::service::ConfigService &_device_config_service;
+
+    config::UserConfig &_user_config;
+    djc::service::ConfigService &_user_config_service;
+
+    PeerFavoritesRegistry &_peer_favorites_registry;
+
+    kf::memory::StaticString<32> _label_favorites_buffer{};
+    bool show_favorites{true};
 
     // widgets
-    widgets::TextInput _device_name_input{};
-    UI::Button _save_storage{"Save"};
-    UI::Button _load_storage{"Load"};
-    UI::Button _reset_storage{"Reset"};
 
-    kf::memory::Array<ControlModeSelectWidget::Item, 2> _control_mode_options{{
-        {Control::stringFromMode(Control::Mode::MavLink), Control::Mode::MavLink},
-        {Control::stringFromMode(Control::Mode::Raw), Control::Mode::Raw},
-    }};
+    kf::memory::Array<TransportKindSelector::Config::Item, 1> _transport_kind_options{{{
+        {
+            "EspNow",
+            transport::Kind::EspNow,
+            UI::Style{
+                .foreground_color = UI::Color::Highlight,
+            },
+        },
+    }}};
 
-    ControlModeSelectWidget::Config _control_mode_config{
+    TransportKindSelector::Config _transport_kind_config{
+        .items = {_transport_kind_options.data(), _transport_kind_options.size()},
+    };
+
+    kf::memory::Array<ProtocolModeSelector::Config::Item, 2> _control_mode_options{{{
+        {
+            "Mavlink",
+            Mode::Mavlink,
+            UI::Style{
+                .foreground_color = UI::Color::Highlight,
+            },
+        },
+        {
+            "Raw",
+            Mode::Raw,
+        },
+    }}};
+
+    ProtocolModeSelector::Config _control_mode_config{
         .items = {_control_mode_options.data(), _control_mode_options.size()},
     };
 
-    // TODO: set init value from storage
-    ControlModeSelectWidget _init_mode_selector{_control_mode_config};
+    UI::TextInput _device_name_input;
 
-    UI::Labeled _init_mode_selector_label{"Init Control", _init_mode_selector};
+    UI::Button
+        _save_config_button{
+            "Sync now",
+            UI::Style{
+                .foreground_color = UI::Color::Primary,
+            },
+        },
+        _load_config_button{
+            "Load",
+        },
+        _reset_config_button{
+            "Reset",
+            UI::Style{
+                .foreground_color = UI::Color::Danger,
+            },
+        },
+        _favorite_peers_fold_toggle_button{{}};
+
+    TransportKindSelector _default_transport_kind_selector{_transport_kind_config};
+    UI::Labeled _labeled_default_transport_kind_selector{"Init Transport", _default_transport_kind_selector};
+
+    ProtocolModeSelector _default_protocol_mode_selector{_control_mode_config};
+    UI::Labeled _labeled_default_protocol_mode_selector{"Init Protocol", _default_protocol_mode_selector};
+
+    kf::memory::Array<UI::PeerDisplay, config::UserConfig::max_peer_favorites> _peer_favorite_displays{};
+
+    UI::CheckBox _autoconnect_enabled_input{false};
+    UI::Labeled _labeled_autoconnect_enabled_input{"Autoconnect", _autoconnect_enabled_input};
 
     // layout
-    kf::memory::Array<UI::Widget *, 6> _layout;
+
+    kf::memory::Array<UI::Widget *, (layout_regular_widgets + config::UserConfig::max_peer_favorites)> _layout;
+
+    // child pages
+
+    PeerFavoritePage _peer_favorite_page;
+
+    kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
+        return _layout.slice().first(layout_regular_widgets + displayed_peers);
+    }
 };
 
 }// namespace djc::ui::pages

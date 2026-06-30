@@ -3,125 +3,148 @@
 
 #pragma once
 
-#include <Arduino.h>// for millis
-
-#include <kf/Logger.hpp>
+#include <kf/Slice.hpp>
 #include <kf/math/Timer.hpp>
 #include <kf/math/units.hpp>
 #include <kf/memory/Array.hpp>
-#include <kf/memory/ArrayString.hpp>
-#include <kf/memory/Slice.hpp>
+#include <kf/memory/StaticString.hpp>
 
-#include "djc/Control.hpp"
+#include "djc/PeerFavoritesRegistry.hpp"
+#include "djc/service/PeerScanningService.hpp"
+#include "djc/transport/PeerAddress.hpp"
+#include "djc/transport/TransportLink.hpp"
 #include "djc/ui/UI.hpp"
-#include "djc/ui/widgets/PeerDisplay.hpp"
-#include "djc/prelude.hpp"
+#include "djc/ui/pages/PeerDetailPage.hpp"
 
 namespace djc::ui::pages {
 
 struct PeerExplorerPage : UI::Page {
 
-    static constexpr auto max_peer_display{8};
-    static constexpr auto peer_display_start_index{3};
-    static constexpr kf::math::Milliseconds redraw_period{500};
-
-    explicit constexpr PeerExplorerPage(UI::Page &root, Control &control) noexcept :
-        Page{"Peer Explorer"},
-        _control{control},
+    explicit PeerExplorerPage(
+        UI &ui,
+        UI::Page &root,
+        transport::TransportLink &transport_link,
+        service::PeerScanningService &peer_scanner,
+        PeerFavoritesRegistry &peer_favorites_registry) noexcept :
+        Page{ui},
+        _transport_link{transport_link},
+        _peer_scanner{peer_scanner},
+        _peer_favorites_registry{peer_favorites_registry},
+        _peer_detail_page{ui, *this, _transport_link, _peer_favorites_registry},
         _layout{{
             &root.link(),
-            &_connection_button,
+            &_primary_connection_status_button,
             &_available_label,
-        }}
+        }} {
+        this->label("Peer Explorer");
+        this->link().hint("Open Peer explorer");
 
-    {
-        for (auto i = 0; i < _peer_displays.size(); i += 1) {
-            _peer_displays[i].control(_control);
-            _layout[i + peer_display_start_index] = &_peer_displays[i];
+        _available_label.hint("Available peer will show below");
+
+        for (auto i = 0u; i < _peer_displays.size(); i += 1) {
+            auto &display = _peer_displays[i];
+            _layout[i + peer_display_start_index] = &display;
+
+            display.hint("Click for details");
+            display.callback([this](const transport::PeerAddress &address) -> void {
+                _peer_detail_page.bindPeer(address);
+                _ui.activePage(_peer_detail_page);
+            });
         }
 
-        _connection_button.callback([this]() {
-            if (_control.activeMac().hasValue()) {
-                _control.disconnect();
+        _primary_connection_status_button.callback([this]() {
+            if (_transport_link.connected()) {
+                _transport_link.disconnect();
             }
         });
 
-        widgets({_layout.data(), _layout.size()});
+        widgets(layout(0));
 
-        _redraw_timer.start(millis());
+        _redraw_timer.start(0);// enable timer
     }
 
-    void onEntry() noexcept override {
-        _control.onReceiveFromUnknown([this](const EspNow::Mac &mac, kf::memory::Slice<const kf::u8> data) {
-            logger.debug(
-                kf::memory::ArrayString<64>::formatted(
-                    "Got %d bytes from %s",
-                    data.size(),
-                    EspNow::stringFromMac(mac).data()));
+    void onPoll(kf::math::Milliseconds now) noexcept override {
+        if (not _redraw_timer.expired(now)) { return; }
+        _redraw_timer.start(now);
 
-            getMatched(mac).update(mac, millis());
-        });
-    }
-
-    void onExit() noexcept override {
-        _control.onReceiveFromUnknown(Control::ReceiveFromUnknownCallback{nullptr});
-    }
-
-    void onUpdate(kf::math::Milliseconds now) noexcept override {
-        for (auto &_peer_display: _peer_displays) {
-            _peer_display.checkForClear(now);
+        if (_transport_link.activePeerAddress().isSome()) {
+            (void) _connection_button_buffer.format("%s", _transport_link.activePeerAddress().unwrap().toString().data());
+            _primary_connection_status_button.label(_connection_button_buffer.view());
+            _primary_connection_status_button.hint("Click to disconnect");
+            _primary_connection_status_button.style({UI::Color::Normal, UI::Color::Success});
+        } else {
+            _primary_connection_status_button.label("Disconnected");
+            _primary_connection_status_button.hint("Primary peer not set");
+            _primary_connection_status_button.style({UI::Color::Disabled, UI::Color::Normal});
         }
 
-        if (_redraw_timer.expired(now)) {
-            _redraw_timer.start(now);
+        const auto available_peers = _peer_scanner.peers();
+        (void) _available_label_buffer.format(" Available: %d", available_peers.size());
+        _available_label.value(_available_label_buffer.view());
 
-            if (_control.activeMac().hasValue()) {
-                (void) _connection_button_label.format(
-                    "\xFC""OK: %s\x80",
-                    EspNow::stringFromMac(_control.activeMac().value()).data());
-                _connection_button.label(_connection_button_label.view());
-            } else {
-                _connection_button.label("\xF9""Disconnected\x80");
+        for (auto i = 0u; i < available_peers.size(); i += 1) {
+            const auto &entry = available_peers[i];
+            _peer_displays[i].state(createPeerDisplayState(entry, now));
+
+            if (entry.isSome()) {
+                constexpr auto extreme_age_factor{0.75f};
+                const auto extreme_age = _peer_scanner.config().entry_max_life_time * extreme_age_factor;
+                const auto age = now - entry.unwrap().last_seen;
+
+                _peer_displays[i].foreground((age < extreme_age) ? UI::Color::Primary : UI::Color::Warning);
             }
-
-            (void) _available_label_value.format(" Available: %d", countAvailablePeers());
-            _available_label.value(_available_label_value.view());
-
-            UI::instance().addEvent(UI::Event::update());
         }
+
+        widgets(layout(available_peers.size()));
+        _ui.requestRender();
     }
 
 private:
-    static constexpr auto logger{kf::Logger::create("PeerExplorerPage")};
+    static constexpr auto peer_display_start_index{3u};
 
-    Control &_control;
-    kf::math::Timer _redraw_timer{redraw_period};
-    kf::memory::ArrayString<16> _available_label_value{""};
-    kf::memory::ArrayString<64> _connection_button_label{};
+    transport::TransportLink &_transport_link;
+    service::PeerScanningService &_peer_scanner;
+    PeerFavoritesRegistry &_peer_favorites_registry;
+    kf::math::Timer::Config _redraw_timer_config{
+        .period = 500,
+    };
+    kf::math::Timer _redraw_timer{_redraw_timer_config};
 
-    // widgets
-    UI::Button _connection_button{""};
-    UI::Display<kf::memory::StringView> _available_label{_available_label_value.view()};
-    kf::memory::Array<widgets::PeerDisplay, max_peer_display> _peer_displays{};
+    kf::memory::StaticString<64> _available_label_buffer{}, _connection_button_buffer{};
 
-    // layout
-    kf::memory::Array<UI::Widget *, (peer_display_start_index + max_peer_display)> _layout;
+    UI::Button _primary_connection_status_button{{}};
+    UI::Display<kf::memory::StringView> _available_label{_available_label_buffer.view()};
+    kf::memory::Array<UI::PeerDisplay, service::PeerScanningService::max_entries> _peer_displays{};
 
-    widgets::PeerDisplay &getMatched(const EspNow::Mac &mac) noexcept {
-        for (auto &_peer_display: _peer_displays) {
-            if (not _peer_display.mac().hasValue()) { return _peer_display; }
-            if (_peer_display.mac().value() == mac) { return _peer_display; }
-        }
+    kf::memory::Array<UI::Widget *, (peer_display_start_index + service::PeerScanningService::max_entries)> _layout;
 
-        return _peer_displays[0];
+    // child pages
+    PeerDetailPage _peer_detail_page;
+
+    kf::Slice<UI::Widget *> layout(kf::usize displayed_peers) noexcept {
+        return _layout.slice().first(peer_display_start_index + displayed_peers);
     }
 
-    int countAvailablePeers() const noexcept {
-        int available = 0;
-        for (auto &_peer_display: _peer_displays) {
-            available += int(_peer_display.mac().hasValue());
+    kf::Option<UI::PeerDisplay::State> createPeerDisplayState(const kf::TrivialOption<service::PeerScanningService::Entry> &entry, kf::math::Milliseconds now) const noexcept {
+        using P = UI::PeerDisplay;
+
+        const auto map_record = [](kf::Option<const PeerFavoritesRegistry::Entry &> record) -> kf::Option<kf::memory::StringView> {
+            if (record.isSome()) {
+                const auto &name = record.unwrap().name;
+                return kf::some(kf::memory::StringView{name.data(), name.size()});
+            } else {
+                return kf::none;
+            }
+        };
+
+        if (entry.isSome()) {
+            return kf::some(P::State{
+                .address = entry.unwrap().address,
+                .name = map_record(_peer_favorites_registry.get(entry.unwrap().address)),
+            });
+        } else {
+            return kf::none;
         }
-        return available;
     }
 };
 
